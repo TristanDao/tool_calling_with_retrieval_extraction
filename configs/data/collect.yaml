@@ -1,0 +1,16 @@
+defaults:
+  - _self_
+
+raw_dir: data/raw
+
+datasets:
+  glaive:
+    hf_name: glaiveai/glaive-function-calling-v2
+    split: train
+  xlam:
+    hf_name: Salesforce/xlam-function-calling-60k
+    split: train
+
+hf:
+  token: ${oc.env:HF_TOKEN}
+  cache_dir: ${oc.env:HF_HOME}

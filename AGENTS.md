@@ -13,7 +13,7 @@
 - **Repo path**: `/home/thinh/project/UIT/tool_calling_with_retrieval_extraction`
 - **Loại**: Đồ án / luận văn UIT (nghiên cứu thực nghiệm + xây dựng hệ thống)
 - **Tác giả**: Thinh
-- **Trạng thái**: Phase 0 — Skeleton (chỉ có .md + folder, chưa code Python)
+- **Trạng thái**: Phase 0.5 — Skeleton + Cross-Encoder code (6 files done) + chờ Phase 1 (data pipeline)
 
 ---
 
@@ -275,13 +275,35 @@ Cập nhật mục này khi có câu hỏi chưa giải quyết:
 - **[x] Local LLM baseline (Qwen2.5/Llama Unsloth)**: **ĐÃ BỎ** — ngoài scope 3 tháng.
   Chỉ so sánh với OpenAI FC + Gemini FC.
 - **[x] Datasets**: Chỉ dùng **2 nguồn chính** — Glaive Function Calling v2 + xLAM.
+- **[x] Phase 0 done**: Cross-Encoder code skeleton 6/6 files (heads, losses, data_collator, label_generator, inference, model).
+- **[ ] Phase 1 in progress** (data pipeline):
+  - [x] Decision: Glaive CHỈ single-turn
+  - [x] Decision: Translation model = `ALIBABA_MODEL` env (qwen3.7-flash)
+  - [x] Decision: QA judge model = `qwen3.7-max`
+  - [x] Decision: Alibaba OpenAI-compatible API (KHÔNG dùng dashscope)
+  - [ ] Download Glaive Function Calling v2 từ HF
+  - [ ] Download xLAM function-calling-60k từ HF
+  - [ ] EDA format (notebook 01)
+  - [ ] `src/data/normalize_schema.py` → unified format
+  - [ ] `src/data/translate.py` pilot 2k (1k Glaive + 1k xLAM)
+  - [ ] `src/data/qa_translation.py` (qwen3.7-max judge)
+  - [ ] Validate QA pass rate (target > 90%) trước khi scale
+  - [ ] Translate full ~140k (Glaive single ~80k + xLAM ~60k)
+  - [ ] `src/data/build_benchmark.py` (split 80/10/10, seed=42)
+- **[ ] Phase 2/3 deferred** (quay lại sau khi data xong):
+  - [ ] 4 configs/crossencoder/ (model, heads, losses, training)
+  - [ ] 4 tests/crossencoder/ (heads, losses, label_generator, inference)
+- **[ ] Normalization decisions (PENDING — chờ user hội ý nhóm 2026-07-26)**:
+  - [ ] **xLAM multi-call (53% có 2+ tools)**: first only / expand thành N samples / giữ multi-call?
+  - [ ] **feature_group (cả 2 dataset không có)**: default 'Tools' / LLM classify / cluster rule-based?
+  - [ ] **Pilot translate size**: 2k (1k+1k) / 20k / full ~74k?
+  - [ ] Sau khi user confirm → viết `src/data/normalize_schema.py` rồi tiếp tục
 - **[ ] Số lượng tool trong benchmark**: Chưa quyết (10? 50? 100?).
-- **[ ] Splits train/val/test ratio**: Chưa quyết.
+- **[ ] Splits train/val/test ratio**: Chưa quyết (đề xuất 80/10/10, seed=42).
 - **[ ] Metric chính để so sánh**: Chưa quyết (End-to-end accuracy? F1 từng thành phần?).
-- **[ ] Qwen-MT context size**: Tận dụng 1M token để dịch whole-file hay per-sample.
 - **[ ] Tool pool size sau khi gộp Glaive + xLAM**: ước tính 500-2000 tools, chưa đo được.
 - **[ ] Số feature_group unique trong tool pool**: chưa rõ.
-- **[ ] Sample size cho train/val**: tạm thời 15-20k samples, sẽ verify khi collect thực tế.
+- **[ ] Sample size cho train/val**: pilot 2k trước, sẽ scale tùy QA pass rate.
 
 ---
 
@@ -305,3 +327,7 @@ Cập nhật mục này khi có câu hỏi chưa giải quyết:
 | 2026-07-26 | Đóng decision: BGE-M3 base cho cả 2 model (FlagEmbedding + MNRL cho Bi-Encoder, custom head cho Cross-Encoder); bỏ Unsloth + local LLM baseline; chỉ dùng 2 nguồn dataset (Glaive + xLAM); Cross-Encoder format = schema first `[CLS] schema [SEP] query [SEP]`. Update AGENTS.md + toàn bộ docs. |
 | 2026-07-26 | Đổi Cross-Encoder architecture: từ generation sang **Span Prediction** (3 output: span/enum/null). Lý do: nhanh hơn, ít hallucination, khớp "Schema-aware", F1/EM evaluation chuẩn. Update docs. |
 | 2026-07-26 | Refactor Cross-Encoder sang **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head: span/enum/boolean). Bỏ `value_type` head vì type đã có sẵn trong schema question. Null coi là "absence of value" (gate qua `has_value`) thay vì "một loại giá trị". Đổi input format sang **BERT-QA style**: `[CLS] query [SEP] Param=... Type=...[. Enum=...] [SEP]`. Per-parameter forward pass (N passes / query), max_length=1024, truncation="only_first" (cắt query nếu quá dài). Tạo skeleton `src/models/crossencoder/` (6 files) + `configs/crossencoder/` (4 files) + `tests/crossencoder/` (4 files). Update architecture.md, methodology.md, references.md, AGENTS.md. |
+| 2026-07-26 | Cross-Encoder skeleton code 6/6 files done (heads.py, losses.py, data_collator.py, label_generator.py, inference.py, model.py). CHƯA tạo configs/crossencoder/ (0/4) + tests/crossencoder/ (0/4). Tạm dừng model work để làm data trước (Phase 1). |
+| 2026-07-26 | Decision data: Glaive CHỈ single-turn; Qwen-MT token không giới hạn (nhiều model free Alibaba); API key chưa có (cần đăng ký); khi quay lại model: Configs → Tests. |
+| 2026-07-26 | Update .env.example theo .env của user: dùng Alibaba OpenAI-compatible API (`ALIBABA_URL` + `ALIBABA_MODEL` + `ALIBABA_QA_MODEL=qwen3.7-max`) thay cho DashScope SDK. Bỏ section vLLM local. Update pyproject.toml: thêm `openai>=1.0`, `datasets>=2.18`, bỏ `dashscope`. Start Phase 1: data pipeline (collect → normalize → translate → QA → benchmark). |
+| 2026-07-26 | Download data thành công: Glaive 112,960 + xLAM 60,000 → `data/raw/`. EDA findings: Glaive 45,593 single-turn usable (40%), xLAM 28,461 single-call (47%). Tool pool: 1,040 + 3,605 unique. 3 decision pending (multi-call, feature_group, pilot size) chờ user hội ý nhóm. |

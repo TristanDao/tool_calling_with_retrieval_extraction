@@ -99,7 +99,10 @@ query (VI)
 
 1. **Collect**: tải dataset từ HuggingFace / GitHub repo gốc.
 2. **Normalize**: chuẩn hóa schema về format chung (xem `docs/benchmark.md`).
-3. **Translate**: dùng **Qwen-MT** (Alibaba, 1M token context) qua DashScope API.
+3. **Translate**: dùng **Alibaba Cloud models** qua **OpenAI-compatible API** (`ALIBABA_URL`).
+   - Model mặc định: `qwen3.7-flash-2026-07-15` (general, free).
+   - Backup chuyên dịch: `qwen-mt-plus`.
+   - QA judge: `qwen3.7-max` (mạnh hơn, kiểm tra semantic + rule).
    - Áp dụng **Translation Guidelines** (`docs/translation_guidelines.md`):
      - KHÔNG dịch: function name (snake_case), argument keys, identifier rõ ràng.
      - CHỈ dịch: user query, tool description, argument values (nếu là natural language).

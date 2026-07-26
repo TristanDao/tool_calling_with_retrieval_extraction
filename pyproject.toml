@@ -14,10 +14,16 @@ authors = [
 ]
 keywords = ["tool-calling", "function-calling", "vietnamese", "nlp", "llm", "agent"]
 
-# Runtime dependencies — sẽ bổ sung khi viết code
+# Runtime dependencies
 dependencies = [
-    # sẽ thêm khi code: torch, transformers, flagembedding, hydra-core,
-    # openai, google-generativeai, jsonschema, pydantic, ...
+    "torch>=2.1",
+    "transformers>=4.40",
+    "flagembedding>=1.2",
+    "openai>=1.0",
+    "hydra-core>=1.3",
+    "datasets>=2.18",
+    "jsonschema>=4.21",
+    "pydantic>=2.5",
 ]
 
 [project.optional-dependencies]
@@ -31,8 +37,9 @@ dev = [
     "ipython",
     "jupyter",
 ]
+# Lưu ý: KHÔNG dùng dashscope — Alibaba Cloud dùng OpenAI-compatible API (ALIBABA_URL)
 translate = [
-    "dashscope",
+    "openai>=1.0",
 ]
 
 [project.scripts]
