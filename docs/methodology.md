@@ -88,12 +88,12 @@ query (VI)
 
 ## 4. Dataset & Benchmark
 
-### 4.1 Nguồn dữ liệu (EN)
+### 4.1 Nguồn dữ liệu (EN) — chỉ dùng 2 nguồn chính
 
-- **Glaive Function Calling v2** (~110k samples)
-- **ToolBench** (API-Bank, RestBench)
-- **xLAM** (Salesforce)
-- **ToolACE** (Huawei)
+- **Glaive Function Calling v2** (~110k samples, đa dạng tool, có multi-turn).
+- **xLAM** (Salesforce, ~60k samples, function call chuẩn, schema rõ ràng).
+
+> Quyết định chỉ dùng 2 nguồn: Glaive + xLAM. Các dataset khác (ToolBench, ToolACE) không dùng trong khóa luận này. Lý do: dataset đủ lớn, schema rõ ràng, đa dạng domain.
 
 ### 4.2 Pipeline xây dựng benchmark tiếng Việt
 
@@ -144,28 +144,60 @@ Mỗi sample:
 ### 5.1 Bi-Encoder (Retrieval)
 
 - **Base model**: `BAAI/bge-m3` (multilingual, hỗ trợ tiếng Việt tốt).
-- **Loss**: InfoNCE (contrastive) với in-batch negatives.
+- **Framework**: **FlagEmbedding** (BAAI official).
+- **Loss**: **MultipleNegativesRankingLoss** (contrastive) với in-batch negatives.
 - **Hard negative mining**: dùng chính Bi-Encoder retrieve top-k sai → dùng làm hard negative.
 - **Hyperparameter**: lr=2e-5, batch=32, epochs=3.
 - **Metric đánh giá**: Recall@1, Recall@5, MRR, NDCG@10.
 
-### 5.2 Cross-Encoder (Parameter Extraction)
+### 5.2 Cross-Encoder (Parameter Extraction) — Hierarchical Span Prediction
 
-- **Base model**: `BAAI/bge-m3` (encoder) + generation/classification head.
-- **Input**: `[CLS] query [SEP] tool_schema_formatted [SEP]`.
-- **Output**: chuỗi JSON `{"tool": name, "arguments": {...}}`.
-- **Loss**: cross-entropy trên token output.
-- **Hyperparameter**: lr=2e-5, batch=16, max_len=1024 (chứa schema), epochs=3.
-- **Metric đánh giá**: JSON validity, schema-validity, argument-level F1/EM.
+- **Base model**: `BAAI/bge-m3` (encoder) + custom Hierarchical heads.
+- **Framework**: HuggingFace Transformers (cần custom head, FlagEmbedding không hỗ trợ).
+- **Input (BERT-QA style)**: `[CLS] <query> [SEP] Param=<name>. Desc=<desc>. Type=<type>[. Enum=<v1>|<v2>|...] [SEP]`
+  - Query làm context, param schema làm question.
+  - Per-parameter forward pass (tool có N params = N passes).
+  - max_length=1024, truncation="only_first" (cắt query nếu cần).
+- **Architecture**: shared BGE-M3 encoder + **Hierarchical heads** (schema-driven routing, không cần type-prediction head).
+  - **Head 1: `has_value` (BCE)** — phân biệt null vs có giá trị.
+  - **Sub-head 2a: Span** (string/number) — 2 đầu `(start, end)` chỉ trên query tokens.
+  - **Sub-head 2b: Enum** — N-way classification.
+  - **Sub-head 2c: Boolean** — 2-way (true/false).
+- **Loss (gated multi-task)**:
+  ```
+  L = BCE(has_value)
+    + 𝟙[has_value=1, type∈{string,number}] · (CE_start + CE_end)
+    + 𝟙[has_value=1, type=enum]           · CE(enum)
+    + 𝟙[has_value=1, type=boolean]        · CE(boolean)
+  ```
+  - Default weight = 1.0 cho mỗi sub-loss; có thể tune nếu imbalance.
+- **Hyperparameter**: lr=2e-5, batch=16, max_len=1024, epochs=3.
+- **Metric đánh giá**:
+  - `has_value_acc`: % params predict đúng có/không có giá trị.
+  - `span_F1` (SQuAD-style) cho string/number, restricted trên query tokens.
+  - `span_EM` (Exact Match).
+  - `enum_acc`, `boolean_acc`.
+  - `end_to_end_F1`: has_value đúng + sub-head đúng.
+  - `argument_level_F1/EM`: aggregate trên toàn bộ arguments của 1 query.
+- **Label generation rule-based** (`src/models/crossencoder/label_generator.py`):
+  - String/number: substring match gold value trong query → (start, end) token positions.
+  - Enum: match gold value với enum options → enum index.
+  - Boolean: rule "có"/"không"/"muốn"/... → true/false; phủ định ngầm skip sample.
+  - Null: param optional + không có trong gold arguments → has_value=0.
+- **Tại sao Hierarchical + BERT-QA**:
+  - **Null tách bạch khỏi type**: has_value head học "absence of value" (state) thay vì "null là 1 loại value" → training ổn định.
+  - **Schema-driven routing**: type đã có trong input, model tập trung sub-head tương ứng → ít confusion, dễ debug.
+  - **Khớp pre-train BGE-M3**: BERT-QA format quen thuộc, span head áp dụng tự nhiên.
+  - **1 forward pass / param** → low latency.
+  - **Span bắt buộc có trong query** → ít hallucination.
 
-### 5.3 Local LLM Baseline (Unsloth)
+### 5.3 Baselines (API-based)
 
-- **Base model**: `Qwen/Qwen2.5-7B-Instruct` hoặc `meta-llama/Llama-3.1-8B-Instruct`.
-- **Method**: LoRA fine-tune trên benchmark_vi/train.
-- **Serving**: vLLM.
-- **Mục đích**: so sánh công bằng với pipeline 2 thành phần dưới cùng điều kiện local.
+- **OpenAI Function Calling** (`gpt-4o-mini`): API generative LLM.
+- **Google Gemini Function Calling** (`gemini-1.5-flash`): API generative LLM.
+- Cả 2 dùng **JSON Schema của tool** làm input (giống Cross-Encoder) nhưng sinh JSON tự do qua autoregressive generation.
 
----
+> **Ngoài scope**: Local LLM baseline (Qwen2.5/Llama Unsloth + vLLM) đã bỏ do timeline 3 tháng.
 
 ## 6. Phương pháp đánh giá
 
@@ -175,31 +207,97 @@ Mỗi sample:
 - **MRR** (Mean Reciprocal Rank).
 - **NDCG@k**.
 
-### 6.2 Metric cho Parameter Extraction
+### 6.2 Metric cho Parameter Extraction (Span Prediction)
 
-- **JSON validity rate**: % output parse được thành JSON.
-- **Schema validity rate**: % output khớp schema.
-- **Argument-level Exact Match (EM)**.
-- **Argument-level F1**.
+- **Type accuracy**: % params predict đúng type (span/enum/null).
+- **Span F1 (SQuAD-style)**: chuẩn metric cho span prediction, computed trên (start, end) coordinates.
+- **Span EM (Exact Match)**: % spans khớp 100% với gold span.
+- **Enum accuracy**: % enum values khớp gold.
+- **End-to-end F1**: type đúng + (span đúng HOẶC enum đúng).
+- **Argument-level F1/EM**: aggregate trên toàn bộ arguments của 1 query.
 
 ### 6.3 Metric cho End-to-End Pipeline
 
 - **End-to-end accuracy**: tool name đúng + tất cả arguments khớp label.
+- **End-to-end F1**: argument-level F1 aggregate trên toàn sample.
 - **Latency** (ms/query).
 - **Throughput** (queries/sec).
-- **Cost** ($/1k queries) — ước lượng cho OpenAI/Gemini API; tính theo GPU-hour cho local.
+- **Cost** ($/1k queries) — ước lượng cho OpenAI/Gemini API.
 
 ### 6.4 So sánh
 
 Bảng so sánh chính sẽ gồm các hàng:
 
-| Method | Tool Acc | Arg F1 | JSON Valid | Latency | Cost/1k |
+| Method | Tool Acc | Arg F1 | Span F1 | Latency | Cost/1k |
 |---|---|---|---|---|---|
 | Pipeline (ours) | … | … | … | … | … |
 | OpenAI FC | … | … | … | … | … |
 | Gemini FC | … | … | … | … | … |
-| Qwen2.5 local | … | … | … | … | … |
-| Llama-3.1 local | … | … | … | … | … |
+
+---
+
+## 6.5 Stress Test (RAG-MCP inspired) — Phase 7
+
+### Mục đích
+Đánh giá khả năng **scale** của pipeline khi tool pool tăng lên.
+Lấy cảm hứng từ **RAG-MCP** (arXiv:2505.03275) — biến thể của Needle-in-a-Haystack cho tool selection.
+
+### Concept (mượn từ paper)
+- Mỗi trial: 1 **ground-truth tool** + **(N-1) distractor tools**.
+- Vary `N` (số candidate tools) và đo **degradation curve**.
+- 4 metric chính: selection accuracy, task success, prompt token usage, latency.
+
+### Điểm khác biệt với paper
+- Paper dùng `random` distractor trên generic MCP (web search).
+- Đề tài dùng `random` + `same_domain` distractor trên **domain-specific VI function calling**.
+- Paper test 1 model end-to-end. Đề tài tách **retrieval vs extraction** → đo riêng từng thành phần.
+
+### Setup
+- **Tool pool**: gộp unique tools từ Glaive + xLAM (sau dịch VI).
+  Lưu trong `data/benchmark_vi/tool_pool.json` (~500-2000 tools).
+- **Anchors**: 200 samples từ `benchmark_vi/test.jsonl`.
+  Lưu trong `data/processed/stress_test/anchors.jsonl`.
+  Đa dạng `feature_group` để cover nhiều domain.
+- **N values**: `[3, 10, 50, 100, 500, 1000]` (số candidate tools).
+- **Distractor strategies**:
+  - `random`: random từ tool pool, loại trừ ground truth.
+  - `same_domain`: random từ cùng `feature_group` với ground truth.
+- **Augmented test set**: mỗi `(anchor, N, strategy)` → 1 test instance.
+  Lưu trong `data/processed/stress_test/augmented/`.
+  Tổng: 200 × 6 × 2 = **2,400 test instances**.
+
+### Protocol
+
+```
+for N in [3, 10, 50, 100, 500, 1000]:
+    for strategy in [random, same_domain]:
+        for anchor in anchors:
+            distractors = sample(tool_pool, N-1, strategy, exclude=ground_truth)
+            candidate_tools = [ground_truth] + distractors
+            instance = {query, ground_truth, candidate_tools, gold_arguments}
+            result = run_pipeline(instance)  # gồm Bi-Encoder + Cross-Encoder
+            run_baselines(instance)  # OpenAI, Gemini, Qwen/Llama
+            collect_metrics(result, baseline_results)
+```
+
+### Metric
+- `retrieval_recall@1`: Bi-Encoder lấy đúng ground truth top-1 không.
+- `end_to_end_accuracy`: cả retrieval + extraction đều đúng.
+- `latency_p50`, `latency_p95`: tail latency.
+- `tokens_consumed`: số token đưa vào LLM (cho OpenAI/Gemini, đây là chi phí chính).
+- **Đặc biệt**: đo riêng `extraction_acc_given_correct_tool` (khi biết trước tool đúng, Cross-Encoder accuracy bao nhiêu).
+
+### Output
+- **Figure**: Accuracy vs N cho 2 strategies (2 line) + 2 baselines (OpenAI FC, Gemini FC) → tổng 4-5 line.
+- **Table**: Latency tại N=100 và N=1000.
+- File lưu trong `results/tables_figures/stress_test/`.
+- Notebook phân tích: `notebooks/07_stress_test_results.ipynb`.
+
+### So sánh kỳ vọng
+- Pipeline (Bi-Encoder + Cross-Encoder): **giảm chậm** nhờ retrieval lọc trước.
+- OpenAI FC / Gemini FC: **giảm nhanh** khi N tăng vì context dài.
+- Local LLM (Qwen2.5, Llama-3.1): tương tự OpenAI/Gemini.
+- Khoảng cách giữa pipeline và baselines = **bằng chứng thuyết phục** cho đề tài.
 
 ---
 

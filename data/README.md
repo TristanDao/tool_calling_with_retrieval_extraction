@@ -4,12 +4,16 @@ Chỉ lưu data, **không chứa code xử lý** (code ở `src/data/`).
 
 Cấu trúc:
 
-- `raw/` — Dataset gốc EN (Glaive, ToolBench, xLAM, ToolACE). Tải bằng `src/data/collect.py`. Không commit vào git.
+- `raw/` — Dataset gốc EN (**Glaive + xLAM**, chỉ 2 nguồn chính). Tải bằng `src/data/collect.py`. Không commit vào git.
 - `processed/` — Dataset đã chuẩn hóa schema, dedupe. Không commit.
   - `tools/`
   - `queries/`
   - `parameters/`
+  - `stress_test/` — Dữ liệu phục vụ Phase 7 (RAG-MCP inspired stress test).
+    - `anchors.jsonl` — 200 samples từ test.jsonl.
+    - `augmented/` — Instances đã augment với distractor tools (random / same_domain × N).
 - `benchmark_vi/` — Benchmark tiếng Việt cuối cùng. Không commit.
+  - `tool_pool.json` — Tool pool lớn gộp từ Glaive + xLAM (dùng cho stress test).
   - `tool_schema/` — JSON Schema cho mỗi tool.
   - `train.jsonl`, `val.jsonl`, `test.jsonl` — splits.
 - `translations/` — Log/quá trình dịch EN→VI.

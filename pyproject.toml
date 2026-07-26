@@ -16,8 +16,8 @@ keywords = ["tool-calling", "function-calling", "vietnamese", "nlp", "llm", "age
 
 # Runtime dependencies — sẽ bổ sung khi viết code
 dependencies = [
-    # sẽ thêm khi code: torch, transformers, sentence-transformers, hydra-core,
-    # unsloth, vllm, openai, google-generativeai, jsonschema, pydantic, ...
+    # sẽ thêm khi code: torch, transformers, flagembedding, hydra-core,
+    # openai, google-generativeai, jsonschema, pydantic, ...
 ]
 
 [project.optional-dependencies]
@@ -33,15 +33,6 @@ dev = [
 ]
 translate = [
     "dashscope",
-]
-serve = [
-    "vllm",
-]
-unsloth = [
-    "unsloth",
-    "bitsandbytes",
-    "peft",
-    "trl",
 ]
 
 [project.scripts]

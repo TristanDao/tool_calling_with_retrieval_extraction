@@ -17,14 +17,15 @@ User query (VI) ──► [Bi-Encoder: chọn tool] ──► [Cross-Encoder: tr
                   tool_schema (EN)               tool_schema (EN)
 ```
 
-- **Bi-Encoder** (Semantic Tool Retrieval): dùng **BGE-M3** hoặc **multilingual-e5** để retrieve top-k tool phù hợp.
-- **Cross-Encoder** (Schema-aware Parameter Extraction): sinh arguments theo JSON Schema.
-- **Validator**: kiểm tra JSON hợp lệ + khớp schema.
+- **Bi-Encoder** (Semantic Tool Retrieval): dùng **BGE-M3** + **FlagEmbedding** + **MultipleNegativesRankingLoss** để retrieve top-k tool phù hợp.
+- **Cross-Encoder** (Schema-aware Parameter Extraction): dùng **BGE-M3** + **Span Prediction head** (3 loại output: span/enum/null) để trích xuất arguments.
+- **Validator**: kiểm tra arguments hợp lệ + khớp schema.
 
 Baselines so sánh:
 - OpenAI Function Calling (`gpt-4o-mini`)
 - Google Gemini Function Calling (`gemini-1.5-flash`)
-- Qwen2.5 / Llama-3.1 local (Unsloth LoRA + vLLM)
+
+> Local LLM baseline (Qwen2.5/Llama-3.1) ngoài scope khóa luận 3 tháng.
 
 ---
 
@@ -60,7 +61,7 @@ Chi tiết xem `AGENTS.md` section 6 và `docs/architecture.md`.
 
 ```bash
 # 1. Cài dependencies
-pip install -e ".[dev,translate,serve,unsloth]"
+pip install -e ".[dev,translate]"
 
 # 2. Copy & chỉnh env
 cp .env.example .env
@@ -75,10 +76,7 @@ bash scripts/train/train_biencoder.sh
 # 5. Train Cross-Encoder
 bash scripts/train/train_crossencoder.sh
 
-# 6. Serve local LLM baseline
-bash scripts/serve/serve_vllm.sh
-
-# 7. Run pipeline + baselines + comparison
+# 6. Run pipeline + baselines + comparison
 bash scripts/compare_all.sh
 ```
 
@@ -121,10 +119,10 @@ Quy ước: `query` VI, `function_call.name` + `arguments.keys` EN, values có t
 |---|---|
 | Framework | PyTorch + Transformers |
 | Config | Hydra (structured config, Python dataclass) |
-| Bi-Encoder / Cross-Encoder | BGE-M3, multilingual-e5 |
-| Fine-tune LLM | Unsloth (LoRA) |
+| Bi-Encoder | BGE-M3 + FlagEmbedding + MultipleNegativesRankingLoss |
+| Cross-Encoder | BGE-M3 + Span Prediction head (3 output: span/enum/null), format `[CLS] schema [SEP] query [SEP]` |
 | Dịch dataset | Qwen-MT (Alibaba, DashScope API) |
-| LLM baseline | OpenAI FC, Gemini FC, Qwen2.5/Llama-3.1 local |
+| LLM baseline | OpenAI FC, Gemini FC |
 
 ---
 
@@ -147,10 +145,20 @@ Quy ước: `query` VI, `function_call.name` + `arguments.keys` EN, values có t
 - [ ] Phase 3: Cross-Encoder
 - [ ] Phase 4: Pipeline + validator
 - [ ] Phase 5: Baselines
-- [ ] Phase 6: Evaluation & comparison
+- [ ] Phase 6: Evaluation & comparison (test chính)
+- [ ] **Phase 7**: Stress test (RAG-MCP inspired) — vary N candidates, plot degradation curve
 
 ---
 
-## 8. License
+## 8. References chính
+
+- **Ersoy et al. (2025)** — *Tool Calling for Arabic LLMs* (ArabicNLP 2025). Tham khảo chiến lược dịch dataset tool-calling sang ngôn ngữ ít tài nguyên.
+- **RAG-MCP (2025)** — arXiv:2505.03275. Mượn concept stress test (vary N, plot curve).
+- **BGE-M3** (BAAI, 2024) — base encoder cho retrieval.
+- Xem đầy đủ tại `docs/references.md`.
+
+---
+
+## 9. License
 
 MIT

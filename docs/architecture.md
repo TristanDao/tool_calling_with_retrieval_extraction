@@ -34,38 +34,67 @@ Hệ thống Tool Calling tiếng Việt gồm **2 thành phần chuyên biệt*
 ### 2.1 Bi-Encoder — Semantic Tool Retrieval
 
 - **Mục tiêu**: Cho 1 query VI, trả về top-k tool phù hợp nhất.
-- **Base model**: `BAAI/bge-m3` hoặc `intfloat/multilingual-e5-large` (sentence-transformers).
+- **Base model**: `BAAI/bge-m3`.
+- **Framework**: **FlagEmbedding** (BAAI official).
 - **Kiến trúc**: 2 tower (query encoder + tool encoder), chia sẻ trọng số, similarity bằng cosine.
 - **Input**:
   - Query: `query` (VI)
   - Tool: `name (EN) + description (VI)`
 - **Output**: top-k `(tool_name, score)`
-- **Loss**: InfoNCE (contrastive) với in-batch negatives + hard negative mining.
+- **Loss**: **MultipleNegativesRankingLoss** (contrastive) với in-batch negatives + hard negative mining.
 - **Module**: `src/models/biencoder/`
 
-### 2.2 Cross-Encoder — Schema-aware Parameter Extraction
+### 2.2 Cross-Encoder — Schema-aware Parameter Extraction (Hierarchical Span Prediction)
 
-- **Mục tiêu**: Cho (query VI, tool schema), sinh ra arguments đúng schema dưới dạng JSON.
-- **Base model**: BGE-M3 (encoder-only) + classification/seq2seq head, hoặc multilingual generative model.
-- **Input format** (nhiều lựa chọn — sẽ quyết sau khi thử):
-  - **Option A — JSON Schema dump**: `[CLS] query [SEP] {json_schema} [SEP]`
-  - **Option B — Flattened**: `[CLS] query [SEP] name: search_tutors | desc: ... | params: subject (string, ...), location (string, ...) [SEP]`
-  - **Option C — Hybrid**: JSON Schema + thêm natural-language description cho mỗi param
-- **Output**: JSON `{"tool": "...", "arguments": {...}}` (chuỗi rồi parse, hoặc structured head).
-- **Loss**: Token-level cross-entropy trên chuỗi JSON output.
+- **Mục tiêu**: Cho (query VI, tool schema), trích xuất arguments đúng schema.
+- **Base model**: `BAAI/bge-m3` (encoder).
+- **Framework**: HuggingFace Transformers (vì cần custom head, FlagEmbedding không hỗ trợ).
+- **Input format (BERT-QA style)**: `[CLS] <query> [SEP] Param=<name>. Desc=<desc>. Type=<type>[. Enum=<v1>|<v2>|...] [SEP]`
+  - **Query** đóng vai trò "context" (chứa answer span).
+  - **Parameter schema** đóng vai trò "question" (mô tả cần trích gì).
+  - **Per-parameter forward pass**: 1 parameter = 1 forward pass; tool có N params = N passes.
+  - **max_length = 1024**, `truncation="only_first"` (cắt query nếu quá dài, giữ nguyên schema question).
+  - Ví dụ: `[CLS] Tôi muốn tìm gia sư Toán ở Hà Nội. [SEP] Param=subject. Desc=Môn học. Type=string [SEP]`
+- **Architecture**: Shared BGE-M3 encoder + **Hierarchical heads** (schema-driven routing).
+  - **Head 1: `has_value` (binary, BCE)** — phân biệt null (param optional + user không cung cấp) vs có giá trị.
+  - **Sub-head 2a: Span (string/number)** — 2 đầu tuyến tính độc lập `(start, end)` chỉ tính trên query tokens.
+  - **Sub-head 2b: Enum** — N-way classification chọn giá trị từ danh sách enum trong schema.
+  - **Sub-head 2c: Boolean** — 2-way classification (true/false).
+  - **Type head: KHÔNG CÓ** — type lấy từ schema question, không cần model học/predict.
+- **Loss (gated multi-task)**:
+  ```
+  L = BCE(has_value, has_value_label)   # always
+    + 𝟙[has_value=1 AND type=string|number] · (CE(span_start) + CE(span_end))
+    + 𝟙[has_value=1 AND type=enum]      · CE(enum_logits)
+    + 𝟙[has_value=1 AND type=boolean]   · CE(boolean_logits)
+  ```
 - **Module**: `src/models/crossencoder/`
-- **Helper**: `src/models/crossencoder/schema_formatter.py` (chuyển schema thành format A/B/C).
+  - `heads.py` — `CrossEncoderHeads` (has_value + span + enum + boolean)
+  - `losses.py` — `HierarchicalLoss` (gated theo schema type)
+  - `data_collator.py` — tokenize + align span labels theo token positions
+  - `inference.py` — convert logits → JSON arguments
+  - `model.py` — `CrossEncoderForExtraction` (BGE-M3 + heads wrapper)
+  - `label_generator.py` — rule-based label generation cho string/enum/boolean/null
+- **Tại sao Hierarchical heads + BERT-QA format**:
+  - **Schema-driven routing**: type đã có sẵn trong input, model tập trung vào span/enum/boolean → ít confusion hơn.
+  - **Null ≠ type**: has_value head tách "absence" (state) khỏi "value type" (semantic) → training ổn định hơn.
+  - **BERT-QA alignment**: query làm context, schema làm question — khớp pre-train objective của BGE-M3, span head áp dụng tự nhiên.
+  - **1 forward pass / param** (nhanh, low latency).
+  - **Span phải có trong query** → ít hallucination.
+  - **F1/EM evaluation chuẩn** (SQuAD-style cho span, accuracy cho enum/boolean).
 
 ### 2.3 Validator
 
-- **Mục tiêu**: Đảm bảo JSON hợp lệ + khớp schema.
+- **Mục tiêu**: Đảm bảo arguments hợp lệ + khớp schema.
 - **Thư viện**: `jsonschema` (Python) hoặc `pydantic`.
 - **Kiểm tra**:
-  - JSON parse được không
-  - Đúng type (string, number, boolean, array, object)
-  - Required fields đủ không
-  - Enum values hợp lệ không
+  - Span extracted nằm trong query (start, end hợp lệ)
+  - Enum value hợp lệ (có trong danh sách enum)
+  - Required fields đủ (không null nếu required)
+  - Type đúng (string, number, boolean, array, object)
 - **Module**: `src/pipeline/validator.py`
+
+> Cross-Encoder (Span Prediction) đã đảm bảo schema-aware by design → validator chỉ kiểm tra post-processing (consistency, type safety).
 
 ---
 
@@ -73,7 +102,7 @@ Hệ thống Tool Calling tiếng Việt gồm **2 thành phần chuyên biệt*
 
 ```
                     ┌──────────────────────────────────────────────┐
-                    │   data/raw/  (Glaive, ToolBench, xLAM, …)   │
+                    │   data/raw/  (Glaive, xLAM)                  │
                     └──────────────────┬───────────────────────────┘
                                        │
                                        ▼
@@ -154,9 +183,10 @@ def call(query: str) -> FunctionCall:
 |---|---|---|
 | OpenAI FC | API generative LLM | `OPENAI_API_KEY` |
 | Gemini FC | API generative LLM | `GEMINI_API_KEY` |
-| Qwen2.5 / Llama-3.1 local | Local generative LLM (Unsloth LoRA + vLLM) | GPU local |
 
-Cả 3 baseline đều dùng **JSON Schema của tool** làm input (giống Cross-Encoder) nhưng sinh JSON tự do qua autoregressive generation.
+Cả 2 baseline đều dùng **JSON Schema của tool** làm input (giống Cross-Encoder) nhưng sinh JSON tự do qua autoregressive generation.
+
+> **Ngoài scope khóa luận**: Local LLM baseline (Qwen2.5/Llama Unsloth + vLLM) đã bỏ do timeline 3 tháng. Nếu cần mở rộng sau, xem `AGENTS.md` section 10.
 
 ---
 

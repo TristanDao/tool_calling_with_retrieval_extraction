@@ -48,12 +48,17 @@ Xây dựng hệ thống Tool Calling tiếng Việt **tách thành 2 thành ph�
 |---|---|
 | Framework chính | **PyTorch + Transformers** |
 | Config | **Hydra** với **structured config** (Python `@dataclass`) |
-| Fine-tune LLM | **Unsloth** (LoRA) |
-| Base encoder (Bi-Encoder & Cross-Encoder) | **BGE-M3** hoặc **multilingual-e5** (sentence-transformers) |
+| Bi-Encoder (Retrieval) | **BGE-M3** + **FlagEmbedding** + **MultipleNegativesRankingLoss** |
+| Cross-Encoder (Extraction) | **BGE-M3** + **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head: span / enum / boolean), format `[CLS] query [SEP] Param=<name>. Desc=... Type=<type>[. Enum=...] [SEP]` (BERT-QA style) |
 | Dịch dataset | **Qwen-MT (Alibaba, 1M token context)** qua DashScope API |
 | LLM baseline 1 | **OpenAI Function Calling** (gpt-4o-mini) |
 | LLM baseline 2 | **Google Gemini Function Calling** (gemini-1.5-flash) |
-| LLM baseline 3 | **Qwen2.5 / Llama-3.1 local** (Unsloth LoRA + vLLM serve) |
+| ~~LLM baseline 3 (local)~~ | **ĐÃ BỎ** — ngoài scope khóa luận 3 tháng (xem section 10) |
+
+**Lưu ý kiến trúc**:
+- Không dùng Unsloth, vLLM, hay fine-tune LLM local.
+- Bi-Encoder dùng `FlagEmbedding` (BAAI official) + `MultipleNegativesRankingLoss`.
+- Cross-Encoder là **Hierarchical Span Prediction** (BGE-M3 base + custom heads). Schema-driven routing: type lấy từ schema question nên model không cần học/predict type — chỉ activate 1 sub-head phù hợp (span/enum/boolean). 1 binary `has_value` head riêng để phân biệt null (absent) vs có giá trị. Input format BERT-QA: query làm context, param schema làm question.
 
 ---
 
@@ -122,29 +127,54 @@ tool_calling_with_retrieval_extraction/
 │
 ├── data/
 │   ├── raw/                   # EN datasets (Glaive, ToolBench, xLAM, ToolACE)
-│   ├── processed/             # tools/, queries/, parameters/ đã chuẩn hóa
+│   ├── processed/
+│   │   ├── tools/ queries/ parameters/  # đã chuẩn hóa
+│   │   └── stress_test/                # ← MỚI (Phase 7)
+│   │       ├── anchors.jsonl           # 200 anchors từ test.jsonl
+│   │       └── augmented/              # random_N10.jsonl, same_domain_N100.jsonl, ...
 │   ├── benchmark_vi/          # Final Vietnamese benchmark
+│   │   ├── tool_pool.json    # ← MỚI: tool pool lớn gộp từ Glaive + xLAM
 │   │   ├── tool_schema/
 │   │   ├── train/ val/ test/  (jsonl)
 │   ├── translations/          # Qwen-MT logs + QA samples
 │   └── statistics/
 │
 ├── src/
-│   ├── data/                  # collect, normalize, translate, build_benchmark
+│   ├── data/
+│   │   ├── collect.py
+│   │   ├── normalize_schema.py
+│   │   ├── translate.py
+│   │   ├── translate_guidelines.py
+│   │   ├── qa_translation.py
+│   │   ├── build_benchmark.py
+│   │   ├── build_tool_pool.py           # ← MỚI (Phase 7)
+│   │   ├── extract_anchors.py           # ← MỚI (Phase 7)
+│   │   ├── augment_with_distractors.py  # ← MỚI (Phase 7)
+│   │   └── stats.py
 │   ├── models/
-│   │   ├── biencoder/         # Semantic Tool Retrieval
-│   │   ├── crossencoder/      # Schema-aware Parameter Extraction
-│   │   ├── local_baseline/    # Unsloth LoRA + vLLM
+│   │   ├── biencoder/         # Semantic Tool Retrieval (BGE-M3 + FlagEmbedding + MNRL)
+│   │   ├── crossencoder/      # Schema-aware Parameter Extraction (BGE-M3 + Span Prediction head)
 │   │   └── baselines/         # OpenAI FC, Gemini FC
 │   ├── pipeline/              # tool_caller end-to-end
-│   ├── evaluation/            # retrieval, extraction, latency, cost, throughput, compare
+│   ├── evaluation/
+│   │   ├── retrieval_metrics.py
+│   │   ├── extraction_metrics.py
+│   │   ├── latency.py
+│   │   ├── cost.py
+│   │   ├── throughput.py
+│   │   ├── compare.py
+│   │   ├── stress_test.py              # ← MỚI (Phase 7)
+│   │   └── plot_stress_test.py         # ← MỚI (Phase 7)
 │   └── utils/
 │
 ├── scripts/                   # data/, train/, serve/, eval/
-├── notebooks/                 # 01-06 EDA + analysis
+├── notebooks/                 # 01-06 EDA + analysis + 07 stress test
 ├── tests/                     # unit tests
-├── checkpoints/               # biencoder/, crossencoder/, unsloth_lora/
-├── results/                   # retrieval/, extraction/, pipeline/, baselines/, tables_figures/
+├── checkpoints/               # biencoder/, crossencoder/
+├── results/
+│   ├── retrieval/ extraction/ pipeline/ baselines/
+│   └── tables_figures/
+│       └── stress_test/                # ← MỚI (Phase 7)
 ├── docs/                      # architecture, methodology, benchmark, translation_guidelines, references
 └── logs/                      # train/, eval/
 ```
@@ -155,6 +185,7 @@ tool_calling_with_retrieval_extraction/
 - Baselines tách riêng để dễ so sánh
 - `pipeline/tool_caller.py` là orchestrator duy nhất
 - Tất cả config qua Hydra, không hardcode
+- Stress test data tách riêng trong `data/processed/stress_test/`
 
 ---
 
@@ -168,7 +199,26 @@ tool_calling_with_retrieval_extraction/
 | 3 | Cross-Encoder (Schema-aware Parameter Extraction) | ⏳ |
 | 4 | Pipeline + JSON validator | ⏳ |
 | 5 | Baselines (OpenAI, Gemini, local Qwen/Llama) | ⏳ |
-| 6 | Evaluation & comparison | ⏳ |
+| 6 | Evaluation & comparison (test chính) | ⏳ |
+| 7 | **Stress test (RAG-MCP inspired)** | ⏳ |
+
+### Stress Test Plan (Phase 7 — tóm tắt)
+- **Mục đích**: Đo khả năng scale của pipeline khi tool pool tăng (lấy cảm hứng từ RAG-MCP arXiv:2505.03275).
+- **Tool pool**: gộp unique tools từ Glaive + xLAM (sau dịch VI) → `data/benchmark_vi/tool_pool.json`.
+- **Anchors**: 200 samples từ `benchmark_vi/test.jsonl` → `data/processed/stress_test/anchors.jsonl`.
+- **N values**: [3, 10, 50, 100, 500, 1000] (số candidate tools).
+- **Distractor strategies**:
+  - `random`: random từ tool pool (loại trừ ground truth).
+  - `same_domain`: random từ cùng `feature_group` với ground truth.
+- **Tổng instances**: 200 × 6 × 2 = 2,400 augmented test instances.
+- **Metrics**: retrieval_recall@1, end_to_end_accuracy, latency_p50/p95, tokens_consumed.
+- **Output**: plot accuracy vs N cho mỗi strategy, so sánh với OpenAI/Gemini baseline.
+- **Điểm khác biệt với paper 2505.03275**: paper chỉ dùng random + generic MCP, đề tài dùng `random + same_domain` + domain-specific VI tools + tách riêng retrieval vs extraction metric.
+
+### Reference liên quan
+- **Ersoy et al. (2025)** — Arabic tool-calling, dịch 2 dataset open-source sang Arabic. Tham khảo chiến lược dịch + adapt dataset.
+- **RAG-MCP (2025)** — stress test concept với varying N, paper dùng MCP web search, đề tài mượn ý tưởng.
+- **BFCL** — tham khảo categories (Live Simple/Multiple/Parallel, Multi-turn) khi xây benchmark_vi.
 
 ---
 
@@ -217,13 +267,21 @@ tool_calling_with_retrieval_extraction/
 
 Cập nhật mục này khi có câu hỏi chưa giải quyết:
 
-- **[ ] Cross-Encoder input format**: User sẽ quyết sau khi thử nghiệm.
-  Cần `schema_formatter.py` hỗ trợ nhiều format (JSON Schema gốc / flattened / hybrid).
+- **[x] Cross-Encoder architecture**: Đã quyết — **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head). Sub-head active dựa trên `Type` trong schema question. Sub-head gồm: span (start/end) / enum (N-way) / boolean (2-way). Không dùng generation, không dùng type-prediction head (type đã có sẵn trong schema).
+- **[x] Cross-Encoder input format**: Đã quyết — **BERT-QA style**: `[CLS] query [SEP] Param=<name>. Desc=<desc>. Type=<type>[. Enum=...] [SEP]` (query làm context, param schema làm question).
+- **[x] Có nên dùng paper 2505.03275 (RAG-MCP) trực tiếp?**
+  → **KHÔNG.** Mượn concept (vary N, plot degradation curve), tự build distractor generator
+  + VI tool pool + tách riêng retrieval vs extraction metric. Xem Phase 7 ở section 7.
+- **[x] Local LLM baseline (Qwen2.5/Llama Unsloth)**: **ĐÃ BỎ** — ngoài scope 3 tháng.
+  Chỉ so sánh với OpenAI FC + Gemini FC.
+- **[x] Datasets**: Chỉ dùng **2 nguồn chính** — Glaive Function Calling v2 + xLAM.
 - **[ ] Số lượng tool trong benchmark**: Chưa quyết (10? 50? 100?).
 - **[ ] Splits train/val/test ratio**: Chưa quyết.
 - **[ ] Metric chính để so sánh**: Chưa quyết (End-to-end accuracy? F1 từng thành phần?).
-- **[ ] Local LLM baseline chính**: Qwen2.5 hay Llama-3.1 (hay cả hai).
 - **[ ] Qwen-MT context size**: Tận dụng 1M token để dịch whole-file hay per-sample.
+- **[ ] Tool pool size sau khi gộp Glaive + xLAM**: ước tính 500-2000 tools, chưa đo được.
+- **[ ] Số feature_group unique trong tool pool**: chưa rõ.
+- **[ ] Sample size cho train/val**: tạm thời 15-20k samples, sẽ verify khi collect thực tế.
 
 ---
 
@@ -243,3 +301,7 @@ Cập nhật mục này khi có câu hỏi chưa giải quyết:
 | Ngày | Thay đổi |
 |---|---|
 | 2026-07-25 | Khởi tạo repo, chốt tech stack, tạo skeleton + .md files |
+| 2026-07-25 | Thêm Phase 7 (Stress Test RAG-MCP inspired) + folder structure + cập nhật docs. Đóng decision về việc KHÔNG dùng trực tiếp paper 2505.03275. Tham khảo Ersoy et al. (2025) cho chiến lược dịch dataset tool-calling sang ngôn ngữ ít tài nguyên. |
+| 2026-07-26 | Đóng decision: BGE-M3 base cho cả 2 model (FlagEmbedding + MNRL cho Bi-Encoder, custom head cho Cross-Encoder); bỏ Unsloth + local LLM baseline; chỉ dùng 2 nguồn dataset (Glaive + xLAM); Cross-Encoder format = schema first `[CLS] schema [SEP] query [SEP]`. Update AGENTS.md + toàn bộ docs. |
+| 2026-07-26 | Đổi Cross-Encoder architecture: từ generation sang **Span Prediction** (3 output: span/enum/null). Lý do: nhanh hơn, ít hallucination, khớp "Schema-aware", F1/EM evaluation chuẩn. Update docs. |
+| 2026-07-26 | Refactor Cross-Encoder sang **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head: span/enum/boolean). Bỏ `value_type` head vì type đã có sẵn trong schema question. Null coi là "absence of value" (gate qua `has_value`) thay vì "một loại giá trị". Đổi input format sang **BERT-QA style**: `[CLS] query [SEP] Param=... Type=...[. Enum=...] [SEP]`. Per-parameter forward pass (N passes / query), max_length=1024, truncation="only_first" (cắt query nếu quá dài). Tạo skeleton `src/models/crossencoder/` (6 files) + `configs/crossencoder/` (4 files) + `tests/crossencoder/` (4 files). Update architecture.md, methodology.md, references.md, AGENTS.md. |
