@@ -1,0 +1,81 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+pip-wheel-metadata/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+.env
+.env.local
+*.log
+
+# Data — large files
+data/raw/
+data/processed/
+data/benchmark_vi/
+data/translations/qwen_mt_logs/
+data/translations/qa_samples/
+data/statistics/
+
+# Models / checkpoints
+checkpoints/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.gguf
+*.onnx
+
+# Results
+results/
+
+# Logs
+logs/
+*.log
+wandb/
+runs/
+mlruns/
+
+# Cache
+.cache/
+.hydra/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+
+# Notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# OS
+Thumbs.db
+
+# Hydra outputs
+outputs/
+multirun/

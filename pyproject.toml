@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tool-calling-vi"
+version = "0.1.0"
+description = "Vietnamese Tool Calling via Semantic Retrieval + Schema-aware Parameter Extraction"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Thinh" },
+]
+keywords = ["tool-calling", "function-calling", "vietnamese", "nlp", "llm", "agent"]
+
+# Runtime dependencies — sẽ bổ sung khi viết code
+dependencies = [
+    # sẽ thêm khi code: torch, transformers, sentence-transformers, hydra-core,
+    # unsloth, vllm, openai, google-generativeai, jsonschema, pydantic, ...
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+    "black",
+    "isort",
+    "ipython",
+    "jupyter",
+]
+translate = [
+    "dashscope",
+]
+serve = [
+    "vllm",
+]
+unsloth = [
+    "unsloth",
+    "bitsandbytes",
+    "peft",
+    "trl",
+]
+
+[project.scripts]
+# sẽ thêm khi có CLI: tool-calling-vi-train, tool-calling-vi-eval, ...
+
+[tool.setuptools]
+package-dir = { "" = "." }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["src.*"]
+exclude = ["tests*", "notebooks*"]
+
+# ============ Tool config (sẽ bổ sung khi có code) ============
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra -q"
