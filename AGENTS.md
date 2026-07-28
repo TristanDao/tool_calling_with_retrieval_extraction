@@ -66,33 +66,65 @@ Xây dựng hệ thống Tool Calling tiếng Việt **tách thành 2 thành ph�
 
 ```json
 {
-  "query": "Tôi muốn tìm gia sư Toán ở Hà Nội.",
-  "label": {
-    "function_call": {
-      "name": "search_tutors",
-      "arguments": {
-        "subject": "Toán",
-        "location": "Hà Nội"
-      }
-    }
-  },
-  "tools_summary": [
+  "id": "glaive_00042",
+  "source": "glaive",
+  "conversation": [
     {
-      "feature_group": "Tìm kiếm & Kết nối",
-      "tools": [
-        {"name": "search_tutors", "description": "Tìm gia sư theo môn và khu vực."}
+      "role": "user",
+      "content": "Tôi muốn tìm gia sư Toán ở Hà Nội."
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "function_calls": [
+        {
+          "name": "search_tutors",
+          "arguments": {"subject": "Toán", "location": "Hà Nội"}
+        }
       ]
+    },
+    {
+      "role": "function",
+      "name": "search_tutors",
+      "content": "[{...tutor 1...}, {...tutor 2...}]"
+    },
+    {
+      "role": "assistant",
+      "content": "Tôi tìm được 2 gia sư phù hợp..."
+    }
+  ],
+  "tools": [
+    {
+      "name": "search_tutors",
+      "description": "Tìm gia sư theo môn và khu vực.",
+      "feature_group": "Tìm kiếm & Kết nối",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "subject": {"type": "string", "description": "Môn học cần tìm"},
+          "location": {"type": "string", "description": "Thành phố hoặc khu vực"}
+        },
+        "required": ["subject", "location"]
+      }
     }
   ]
 }
 ```
 
-**Quy ước bắt buộc**:
-- `query` luôn tiếng Việt
-- `function_call.name` luôn English identifier (snake_case)
-- `function_call.arguments` keys luôn English, values có thể VI/EN
-- `tools_summary[].tools[].description` tiếng Việt
-- `tools_summary[].tools[].name` English identifier
+**Quy ước bắt buộc** (cập nhật 2026-07-28 — multi-turn + multi-call):
+- `id` unique string (format: `<source>_<index>`)
+- `source` ∈ `{"glaive", "xlam"}`
+- `conversation[]` là list các turn theo thứ tự. Mỗi turn có:
+  - `role` ∈ `{"user", "assistant", "function"}`
+  - `user` / `function` / `assistant.final`: có `content` (string)
+  - `assistant` có tool call: `content: null` + `function_calls[]` (list of `{name, arguments}`)
+  - `function`: có `name` (tool name) + `content` (response text)
+- `tools[]` flat list (KHÔNG group), mỗi tool có `feature_group` (string VI, do LLM classify)
+- `function_calls[].name` luôn English identifier (snake_case)
+- `function_calls[].arguments` keys luôn English, values có thể VI/EN
+- `tools[].description` tiếng Việt
+- `tools[].name` English identifier
+- `tools[].parameters` chuẩn JSON Schema (`string`/`integer`/`number`/`boolean`/`array`/`object`)
 
 ---
 
@@ -281,29 +313,39 @@ Cập nhật mục này khi có câu hỏi chưa giải quyết:
   - [x] Decision: Translation model = `ALIBABA_MODEL` env (qwen3.7-flash)
   - [x] Decision: QA judge model = `qwen3.7-max`
   - [x] Decision: Alibaba OpenAI-compatible API (KHÔNG dùng dashscope)
-  - [ ] Download Glaive Function Calling v2 từ HF
-  - [ ] Download xLAM function-calling-60k từ HF
-  - [ ] EDA format (notebook 01)
-  - [ ] `src/data/normalize_schema.py` → unified format
-  - [ ] `src/data/translate.py` pilot 2k (1k Glaive + 1k xLAM)
-  - [ ] `src/data/qa_translation.py` (qwen3.7-max judge)
-  - [ ] Validate QA pass rate (target > 90%) trước khi scale
-  - [ ] Translate full ~140k (Glaive single ~80k + xLAM ~60k)
-  - [ ] `src/data/build_benchmark.py` (split 80/10/10, seed=42)
+  - [x] Download Glaive Function Calling v2 từ HF
+  - [x] Download xLAM function-calling-60k từ HF
+  - [x] EDA format (notebook 01)
+  - [ ] `src/data/translate.py` (async batch K=50, concurrency=20)
+  - [ ] `src/data/translate_guidelines.py` (protect identifiers)
+  - [ ] `src/data/translation_checkpoint.py` (atomic save/load)
+  - [ ] `src/data/qa_translation.py` (rule + qwen3.7-max judge)
+  - [ ] Mini pilot 100+100 → 1k+1k pilot → full 170k
+  - [ ] `src/data/normalize_schema.py` (type mapping xLAM → JSON Schema chuẩn)
+  - [ ] `src/data/feature_group_classify.py` (LLM classify, cache; có thể pre-label trong translate)
+  - [ ] `src/data/build_benchmark.py` (Bộ 1 → Bộ 2, multi-turn schema)
+  - [ ] `src/data/push_hf.py` (upload dataset)
+  - [ ] Fix Cross-Encoder `normalize_schema_type()` silent bug
 - **[ ] Phase 2/3 deferred** (quay lại sau khi data xong):
   - [ ] 4 configs/crossencoder/ (model, heads, losses, training)
   - [ ] 4 tests/crossencoder/ (heads, losses, label_generator, inference)
-- **[ ] Normalization decisions (PENDING — chờ user hội ý nhóm 2026-07-26)**:
-  - [ ] **xLAM multi-call (53% có 2+ tools)**: first only / expand thành N samples / giữ multi-call?
-  - [ ] **feature_group (cả 2 dataset không có)**: default 'Tools' / LLM classify / cluster rule-based?
-  - [ ] **Pilot translate size**: 2k (1k+1k) / 20k / full ~74k?
-  - [ ] Sau khi user confirm → viết `src/data/normalize_schema.py` rồi tiếp tục
-- **[ ] Số lượng tool trong benchmark**: Chưa quyết (10? 50? 100?).
-- **[ ] Splits train/val/test ratio**: Chưa quyết (đề xuất 80/10/10, seed=42).
-- **[ ] Metric chính để so sánh**: Chưa quyết (End-to-end accuracy? F1 từng thành phần?).
-- **[ ] Tool pool size sau khi gộp Glaive + xLAM**: ước tính 500-2000 tools, chưa đo được.
-- **[ ] Số feature_group unique trong tool pool**: chưa rõ.
-- **[ ] Sample size cho train/val**: pilot 2k trước, sẽ scale tùy QA pass rate.
+- **[x] Normalization decisions** (đã chốt 2026-07-28):
+  - [x] **xLAM multi-call (53% có 2+ tools)**: **GIỮ multi-call** + multi-turn Glaive (giữ nguyên số call/turn).
+  - [x] **feature_group (cả 2 dataset không có)**: **LLM classify 1 lần, cache theo tool name** (cần cho stress test `same_domain`).
+  - [x] **Pilot translate size**: 100+100 mini pilot → 1k+1k pilot → full 170k.
+  - [x] **JSON Schema `type` standard**: chuẩn `string`/`integer`/`number`/`boolean`/`array`/`object` (map xLAM `str`→`string`, `int`→`integer`, `float`→`number`, `bool`→`boolean`, `list/List[T]`→`array`+`items`).
+  - [x] **Architecture**: **2 bộ riêng** — (1) `data/translations/` raw VI để dịch, (2) `data/benchmark_vi/` task format chuẩn cho model.
+- **[x] Translation pipeline design** (chốt 2026-07-28):
+  - K=50 samples/batch, concurrency=20 (asyncio.Semaphore).
+  - 3 retry/sample với exp backoff (1s, 2s, 4s). Fail → `data/translations/failed/<ds>_failed.jsonl`.
+  - Validate per-sample ngay (rule check: identifier snake_case, JSON parse, required keys).
+  - Output: append JSONL + flush per sample + `os.fsync()`.
+  - Resume: atomic checkpoint JSON (`data/translations/.checkpoint/<ds>.json`, ghi tmp + rename).
+  - Memory: O(K) RAM (~250KB peak). Stream I/O.
+  - Pilot: 100 Glaive + 100 xLAM (mini pilot) → 1k+1k → full.
+- **[ ] Số lượng tool trong benchmark**: Chưa quyết (sau khi build tool_pool.json).
+- **[ ] Splits train/val/test ratio**: Đề xuất 80/10/10, seed=42 — confirm khi build benchmark.
+- **[ ] Metric chính để so sánh**: End-to-end accuracy (retrieval@1 + extraction F1) — confirm khi viết evaluation.
 
 ---
 
@@ -331,3 +373,5 @@ Cập nhật mục này khi có câu hỏi chưa giải quyết:
 | 2026-07-26 | Decision data: Glaive CHỈ single-turn; Qwen-MT token không giới hạn (nhiều model free Alibaba); API key chưa có (cần đăng ký); khi quay lại model: Configs → Tests. |
 | 2026-07-26 | Update .env.example theo .env của user: dùng Alibaba OpenAI-compatible API (`ALIBABA_URL` + `ALIBABA_MODEL` + `ALIBABA_QA_MODEL=qwen3.7-max`) thay cho DashScope SDK. Bỏ section vLLM local. Update pyproject.toml: thêm `openai>=1.0`, `datasets>=2.18`, bỏ `dashscope`. Start Phase 1: data pipeline (collect → normalize → translate → QA → benchmark). |
 | 2026-07-26 | Download data thành công: Glaive 112,960 + xLAM 60,000 → `data/raw/`. EDA findings: Glaive 45,593 single-turn usable (40%), xLAM 28,461 single-call (47%). Tool pool: 1,040 + 3,605 unique. 3 decision pending (multi-call, feature_group, pilot size) chờ user hội ý nhóm. |
+| 2026-07-28 | **Pivot lớn**: Đổi từ single-turn/single-call → **full multi-turn + multi-call** (giữ 74% Glaive multi-turn + 53% xLAM multi-call). Schema mới: `conversation[]` (user/assistant/function turns) + `tools[]` flat. Quyết `feature_group` cần dùng LLM classify. Quyết **2 bộ riêng**: (1) translations/ giữ raw, (2) benchmark_vi/ task format. Quyết translation pipeline: async batch K=50, concurrency=20, 3 retry/sample, validate per-sample, append JSONL + atomic checkpoint, resume tự động. Pilot 100+100 → 1k+1k → full 170k. Bắt đầu code Phase A (skeleton) → Phase B (translate). |
+| 2026-07-28 | Translation pipeline cập nhật: pre-label `feature_group` ngay trong batch dịch và ghi cache `data/benchmark_vi/.cache/feature_group.json` để build benchmark/stress test dùng lại. QA được sửa để judge cặp `(original EN, translated VI)` thay vì tự so với chính sample đã dịch. |

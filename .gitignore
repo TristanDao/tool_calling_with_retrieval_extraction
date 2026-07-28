@@ -37,6 +37,7 @@ ENV/
 data/raw/
 data/processed/
 data/benchmark_vi/
+data/translations/
 data/translations/qwen_mt_logs/
 data/translations/qa_samples/
 data/statistics/

@@ -1,0 +1,33 @@
+defaults:
+  - _self_
+
+cache_path: data/benchmark_vi/.cache/feature_group.json
+
+api:
+  base_url: https://ws-v9y2oinbtzzm4ey9.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1
+  api_key: ${ALIBABA_API_KEY}
+  model: qwen3.7-max
+  temperature: 0.0
+  max_tokens: 64
+  concurrency: 10
+
+categories:
+  - Tìm kiếm & Kết nối
+  - Đặt vé & Du lịch
+  - Mua sắm & Thương mại
+  - Tài chính & Ngân hàng
+  - Giáo dục & Học tập
+  - Y tế & Sức khỏe
+  - Giải trí & Truyền thông
+  - Nhà hàng & Ẩm thực
+  - Bản đồ & Địa điểm
+  - Tin tức & Thời sự
+  - Thời tiết
+  - Thể thao
+  - Công nghệ & Lập trình
+  - Mạng xã hội
+  - Năng suất & Công việc
+  - Khác
+
+batch_size: 30
+max_retries: 3

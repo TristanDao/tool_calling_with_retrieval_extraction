@@ -1,0 +1,31 @@
+defaults:
+  - _self_
+
+benchmark_dir: data/benchmark_vi
+
+repo_id: ${oc.env:HF_REPO_ID,thinh/tool-calling-vi}
+repo_type: dataset
+private: ${oc.env:HF_PRIVATE,true}
+
+token: ${oc.env:HF_TOKEN}
+
+commit_message: "Upload Vietnamese tool-calling benchmark"
+
+include:
+  - train.jsonl
+  - val.jsonl
+  - test.jsonl
+  - tool_pool.json
+  - tool_schema/
+  - metadata.json
+  - README.md
+
+license: apache-2.0
+language: vi
+tags:
+  - tool-calling
+  - function-calling
+  - vietnamese
+  - benchmark
+  - retrieval
+  - parameter-extraction

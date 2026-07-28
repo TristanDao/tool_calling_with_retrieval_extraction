@@ -107,9 +107,10 @@ query (VI)
      - KHÔNG dịch: function name (snake_case), argument keys, identifier rõ ràng.
      - CHỈ dịch: user query, tool description, argument values (nếu là natural language).
 4. **QA**: LLM judge tự động kiểm tra:
-   - Function name + argument keys còn nguyên vẹn (string match).
-   - JSON structure không bị phá.
-   - Translation ngữ nghĩa hợp lý.
+    - Function name + argument keys còn nguyên vẹn (string match).
+    - JSON structure không bị phá.
+    - Translation ngữ nghĩa hợp lý.
+    - `feature_group` có thể được pre-label ngay trong translation job và lưu cache riêng.
 5. **Build benchmark**: chia train/val/test, sinh file jsonl.
 
 ### 4.3 Schema chuẩn của benchmark

@@ -1,0 +1,30 @@
+defaults:
+  - _self_
+
+input_glaive: data/translations/glaive_vi.jsonl
+input_xlam: data/translations/xlam_vi.jsonl
+source_glaive: data/raw/glaive_raw.jsonl
+source_xlam: data/raw/xlam_raw.jsonl
+
+output_dir: data/benchmark_vi
+train_path: data/benchmark_vi/train.jsonl
+val_path: data/benchmark_vi/val.jsonl
+test_path: data/benchmark_vi/test.jsonl
+metadata_path: data/benchmark_vi/metadata.json
+tool_pool_path: data/benchmark_vi/tool_pool.json
+tool_schema_dir: data/benchmark_vi/tool_schema
+
+split:
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
+  seed: 42
+  shuffle: true
+
+source_filter: null
+
+filter:
+  require_min_turns: 1
+  require_min_calls: 1
+  require_non_empty_query: true
+  drop_duplicate_ids: true
