@@ -1,48 +1,33 @@
-# Tool Calling tiếng Việt — Semantic Retrieval + Schema-aware Parameter Extraction
+# Tool Calling tiếng Việt — So sánh 2 Phương pháp
 
-> Đồ án / luận văn UIT: Nghiên cứu bài toán **Tool Calling (Function Calling)** cho tiếng Việt
-> theo hướng **tách thành 2 thành phần chuyên biệt** (Bi-Encoder retrieval + Cross-Encoder extraction)
-> nhằm **giảm latency + cost** so với generative LLM, **giữ độ chính xác cạnh tranh**.
-
----
+> Đồ án / luận văn UIT: so sánh SLM End-to-End vs Bi-Encoder + Cross-Encoder cho Tool Calling tiếng Việt.
 
 ## 1. Tổng quan
 
-Hệ thống pipeline gồm 3 bước chính:
+Hệ thống so sánh **2 phương pháp** Tool Calling cho tiếng Việt:
 
-```
-User query (VI) ──► [Bi-Encoder: chọn tool] ──► [Cross-Encoder: trích xuất args] ──► JSON hợp lệ
-                       │                              │
-                       ▼                              ▼
-                  tool_schema (EN)               tool_schema (EN)
-```
-
-- **Bi-Encoder** (Semantic Tool Retrieval): dùng **BGE-M3** + **FlagEmbedding** + **MultipleNegativesRankingLoss** để retrieve top-k tool phù hợp.
-- **Cross-Encoder** (Schema-aware Parameter Extraction): dùng **BGE-M3** + **Span Prediction head** (3 loại output: span/enum/null) để trích xuất arguments.
-- **Validator**: kiểm tra arguments hợp lệ + khớp schema.
+| Phương pháp | Cách làm | Model |
+|---|---|---|
+| **Method 1: SLM End-to-End** | Fine-tune LLM chọn tool + điền tham số (instruction-tuning) | Qwen2.5 0.5B/1.5B + LLaMA-Factory |
+| **Method 2: Bi-Encoder + Cross-Encoder** | Tách retrieval (Bi-Encoder) + extraction (Cross-Encoder) | BGE-M3 + FlagEmbedding + custom heads |
 
 Baselines so sánh:
-- OpenAI Function Calling (`gpt-4o-mini`)
-- Google Gemini Function Calling (`gemini-1.5-flash`)
-
-> Local LLM baseline (Qwen2.5/Llama-3.1) ngoài scope khóa luận 3 tháng.
-
----
+- OpenAI Function Calling (gpt-4o-mini)
+- Google Gemini Function Calling (gemini-1.5-flash)
 
 ## 2. Cấu trúc thư mục
 
 ```
 tool_calling_with_retrieval_extraction/
-├── AGENTS.md             # Cross-session memory (đọc đầu tiên)
-├── README.md             # File này
+├── AGENTS.md
+├── README.md
 ├── pyproject.toml
 ├── .gitignore
 ├── .env.example
-│
 ├── configs/              # Hydra structured config
-├── data/                 # raw / processed / benchmark_vi / translations
-├── src/                  # data/ models/ pipeline/ evaluation/ utils/
-├── scripts/              # CLI scripts (data, train, serve, eval)
+├── data/                 # raw / translations / benchmark_vi
+├── src/                  # data/ + models/ + pipeline/ + evaluation/
+├── scripts/              # CLI wrappers
 ├── notebooks/            # EDA + analysis
 ├── tests/                # unit tests
 ├── checkpoints/          # model weights (gitignored)
@@ -53,11 +38,9 @@ tool_calling_with_retrieval_extraction/
 
 Chi tiết xem `AGENTS.md` section 6 và `docs/architecture.md`.
 
----
+## 3. Quick start
 
-## 3. Quick start (sau khi code sẵn sàng)
-
-> Hiện tại repo đang ở **Phase 0 — Skeleton**. Các command dưới đây sẽ hoạt động khi code được implement.
+> Hiện tại repo đang ở Phase 1 (data pipeline). Train/eval scripts sẽ thêm ở phase sau.
 
 ```bash
 # 1. Cài dependencies
@@ -65,53 +48,44 @@ pip install -e ".[dev,translate]"
 
 # 2. Copy & chỉnh env
 cp .env.example .env
-# điền OPENAI_API_KEY, GEMINI_API_KEY, DASHSCOPE_API_KEY, ...
+# điền OPENAI_API_KEY, GEMINI_API_KEY, ALIBABA_API_KEY, ...
 
-# 3. Build benchmark
-bash scripts/data/05_build_benchmark.sh
+# 3. Collect dữ liệu
+bash scripts/data/run_collect.sh
 
-# 4. Train Bi-Encoder
-bash scripts/train/train_biencoder.sh
+# 4. Translate Glaive + xLAM
+bash scripts/data/run_translate_glaive.sh
+bash scripts/data/run_translate_xlam.sh
 
-# 5. Train Cross-Encoder
-bash scripts/train/train_crossencoder.sh
+# 5. QA translation
+bash scripts/data/run_qa.sh
 
-# 6. Run pipeline + baselines + comparison
-bash scripts/compare_all.sh
+# 6. Build benchmark
+bash scripts/data/run_benchmark.sh
 ```
-
----
 
 ## 4. Data Schema
 
-Mỗi sample trong benchmark tiếng Việt:
+Schema master single-turn + multi-call (dùng chung cho cả 2 method):
 
 ```json
 {
+  "id": "glaive_00042",
+  "source": "glaive",
   "query": "Tôi muốn tìm gia sư Toán ở Hà Nội.",
-  "label": {
-    "function_call": {
-      "name": "search_tutors",
-      "arguments": {
-        "subject": "Toán",
-        "location": "Hà Nội"
-      }
-    }
-  },
-  "tools_summary": [
-    {
-      "feature_group": "Tìm kiếm & Kết nối",
-      "tools": [
-        {"name": "search_tutors", "description": "Tìm gia sư theo môn và khu vực."}
-      ]
-    }
+  "function_calls": [
+    {"name": "search_tutors", "arguments": {"subject": "Toán", "location": "Hà Nội"}}
+  ],
+  "tools": [
+    {"name": "search_tutors", "description": "Tìm gia sư theo môn và khu vực.", "feature_group": "Tìm kiếm & Kết nối", "parameters": {"type": "object", "properties": {"subject": {"type": "string", "description": "Môn học cần tìm"}, "location": {"type": "string", "description": "Thành phố hoặc khu vực"}}, "required": ["subject", "location"]}}
   ]
 }
 ```
 
-Quy ước: `query` VI, `function_call.name` + `arguments.keys` EN, values có thể VI/EN, `description` VI.
+Quy ước: `query` VI, `function_calls[].name` + `arguments` keys EN, values có thể VI/EN, `tools[].description` VI, `tools[].feature_group` VI.
 
----
+- **Method 1**: convert sang instruction format qua `src/data/convert_to_instruction.py`.
+- **Method 2**: dùng trực tiếp schema master để train Bi-Encoder + Cross-Encoder.
 
 ## 5. Tech stack
 
@@ -119,45 +93,39 @@ Quy ước: `query` VI, `function_call.name` + `arguments.keys` EN, values có t
 |---|---|
 | Framework | PyTorch + Transformers |
 | Config | Hydra (structured config, Python dataclass) |
-| Bi-Encoder | BGE-M3 + FlagEmbedding + MultipleNegativesRankingLoss |
-| Cross-Encoder | BGE-M3 + Span Prediction head (3 output: span/enum/null), format `[CLS] schema [SEP] query [SEP]` |
-| Dịch dataset | Qwen-MT (Alibaba, DashScope API) |
-| LLM baseline | OpenAI FC, Gemini FC |
-
----
+| Method 1: SLM | Qwen2.5 0.5B/1.5B + LLaMA-Factory |
+| Method 2: Bi-Encoder | BGE-M3 + FlagEmbedding + MultipleNegativesRankingLoss |
+| Method 2: Cross-Encoder | BGE-M3 + Hierarchical heads, BERT-QA format |
+| Dịch dataset | Alibaba OpenAI-compatible API (qwen3.7-flash / qwen3.7-max) |
+| Baselines | OpenAI FC (gpt-4o-mini), Gemini FC (gemini-1.5-flash) |
 
 ## 6. Tài liệu chi tiết
 
-- [AGENTS.md](./AGENTS.md) — bộ nhớ cross-session (đọc đầu tiên mỗi phiên).
-- [docs/architecture.md](./docs/architecture.md) — sơ đồ pipeline.
-- [docs/methodology.md](./docs/methodology.md) — phương pháp nghiên cứu.
-- [docs/benchmark.md](./docs/benchmark.md) — cấu trúc benchmark tiếng Việt.
-- [docs/translation_guidelines.md](./docs/translation_guidelines.md) — quy tắc dịch Qwen-MT.
-- [docs/references.md](./docs/references.md) — papers & resources.
-
----
+- `AGENTS.md` — bộ nhớ cross-session.
+- `docs/architecture.md` — sơ đồ 2 pipeline.
+- `docs/methodology.md` — phương pháp nghiên cứu.
+- `docs/benchmark.md` — cấu trúc benchmark tiếng Việt.
+- `docs/translation_guidelines.md` — quy tắc dịch.
+- `docs/references.md` — papers & resources.
 
 ## 7. Trạng thái
 
-- [x] **Phase 0**: Skeleton (folders + .md files)
-- [ ] Phase 1: Data pipeline
-- [ ] Phase 2: Bi-Encoder
-- [ ] Phase 3: Cross-Encoder
-- [ ] Phase 4: Pipeline + validator
-- [ ] Phase 5: Baselines
-- [ ] Phase 6: Evaluation & comparison (test chính)
-- [ ] **Phase 7**: Stress test (RAG-MCP inspired) — vary N candidates, plot degradation curve
-
----
+| Phase | Nội dung | Trạng thái |
+|---|---|---|
+| 0 | Skeleton + docs | ✅ Done |
+| 1 | Data pipeline | ⏳ In progress |
+| 2 | Method 2: Bi-Encoder | ⏳ |
+| 3 | Method 2: Cross-Encoder | ⏳ (skeleton có sẵn) |
+| 4 | Method 1: SLM fine-tune | ⏳ |
+| 5 | Baselines (OpenAI FC, Gemini FC) | ⏳ |
+| 6 | Evaluation & comparison (4 methods) | ⏳ |
+| 7 | Stress test (RAG-MCP inspired) | ⏳ |
 
 ## 8. References chính
 
-- **Ersoy et al. (2025)** — *Tool Calling for Arabic LLMs* (ArabicNLP 2025). Tham khảo chiến lược dịch dataset tool-calling sang ngôn ngữ ít tài nguyên.
-- **RAG-MCP (2025)** — arXiv:2505.03275. Mượn concept stress test (vary N, plot curve).
-- **BGE-M3** (BAAI, 2024) — base encoder cho retrieval.
-- Xem đầy đủ tại `docs/references.md`.
-
----
+- Ersoy et al. (2025) — Tool Calling for Arabic LLMs: Data Strategies and Instruction Tuning.
+- RAG-MCP (2025) — arXiv:2505.03275.
+- BGE-M3 (BAAI, 2024).
 
 ## 9. License
 

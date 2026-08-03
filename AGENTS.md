@@ -9,11 +9,11 @@
 
 ## 1. Project Identity
 
-- **Tên dự án**: Tool Calling tiếng Việt theo hướng **Semantic Retrieval + Schema-aware Parameter Extraction**
+- **Tên dự án**: Tool Calling tiếng Việt — So sánh 2 phương pháp: SLM End-to-End vs Bi-Encoder + Cross-Encoder
 - **Repo path**: `/home/thinh/project/UIT/tool_calling_with_retrieval_extraction`
 - **Loại**: Đồ án / luận văn UIT (nghiên cứu thực nghiệm + xây dựng hệ thống)
 - **Tác giả**: Thinh
-- **Trạng thái**: Phase 0.5 — Skeleton + Cross-Encoder code (6 files done) + chờ Phase 1 (data pipeline)
+- **Trạng thái**: Phase 0 — Skeleton + chờ Phase 1 (data pipeline)
 
 ---
 
@@ -29,16 +29,24 @@ ToolLLM, ToolACE, xLAM, AutoTool) chủ yếu dựa trên **generative LLM**:
 - **Ít nghiên cứu / benchmark cho tiếng Việt**
 
 ### Mục tiêu
-Xây dựng hệ thống Tool Calling tiếng Việt **tách thành 2 thành phần chuyên biệt**:
-1. **Semantic Tool Retrieval** (Bi-Encoder) — chọn tool phù hợp
-2. **Schema-aware Parameter Extraction** (Cross-Encoder) — sinh arguments theo schema
+**So sánh 2 phương pháp Tool Calling cho tiếng Việt**:
 
-→ Mục tiêu: **giảm latency + cost** so với generative LLM, **giữ độ chính xác cạnh tranh**.
+| Phương pháp | Mô tả | Tham khảo |
+|---|---|---|
+| **Method 1: SLM End-to-End** | Fine-tune Qwen2.5 (0.5B/1.5B) làm tool selection + parameter extraction trong 1 model | Ersoy et al. (2025) |
+| **Method 2: Bi-Encoder + Cross-Encoder** | Tách thành 2 thành phần chuyên biệt: Bi-Encoder chọn tool, Cross-Encoder trích xuất tham số | Thiết kế ban đầu |
+
+Cả 2 được so sánh với:
+- **OpenAI Function Calling** (gpt-4o-mini)
+- **Google Gemini Function Calling** (gemini-1.5-flash)
+
+→ Mục tiêu: **Method 2 cạnh tranh về accuracy, thắng về latency/cost. Method 1 là baseline fine-tune local.** So sánh cả 4 trên benchmark VI.
 
 ### Phạm vi
 - ✅ Tool Retrieval, Parameter Extraction, JSON validation
 - ✅ Benchmark tiếng Việt
-- ❌ Tool execution, multi-tool planning, multi-agent orchestration, dynamic tool creation, real-time integration
+- ✅ Single-turn + multi-call (1 query có thể gọi 1+ tool)
+- ❌ Multi-turn conversation, tool execution, multi-agent orchestration, dynamic tool creation, real-time integration
 
 ---
 
@@ -48,55 +56,39 @@ Xây dựng hệ thống Tool Calling tiếng Việt **tách thành 2 thành ph�
 |---|---|
 | Framework chính | **PyTorch + Transformers** |
 | Config | **Hydra** với **structured config** (Python `@dataclass`) |
-| Bi-Encoder (Retrieval) | **BGE-M3** + **FlagEmbedding** + **MultipleNegativesRankingLoss** |
-| Cross-Encoder (Extraction) | **BGE-M3** + **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head: span / enum / boolean), format `[CLS] query [SEP] Param=<name>. Desc=... Type=<type>[. Enum=...] [SEP]` (BERT-QA style) |
-| Dịch dataset | **Qwen-MT (Alibaba, 1M token context)** qua DashScope API |
-| LLM baseline 1 | **OpenAI Function Calling** (gpt-4o-mini) |
-| LLM baseline 2 | **Google Gemini Function Calling** (gemini-1.5-flash) |
-| ~~LLM baseline 3 (local)~~ | **ĐÃ BỎ** — ngoài scope khóa luận 3 tháng (xem section 10) |
+| **Method 1: SLM End-to-End** | **Qwen2.5 0.5B/1.5B** + **LLaMA-Factory** (instruction tuning) |
+| Method 2: Bi-Encoder (Retrieval) | **BGE-M3** + **FlagEmbedding** + **MultipleNegativesRankingLoss** |
+| Method 2: Cross-Encoder (Extraction) | **BGE-M3** + **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head: span / enum / boolean), format `[CLS] query [SEP] Param=<name>. Desc=... Type=<type>[. Enum=...] [SEP]` (BERT-QA style) |
+| Dịch dataset | **Alibaba OpenAI-compatible API** (qwen3.7-flash / qwen3.7-max) |
+| Baseline 1 | **OpenAI Function Calling** (gpt-4o-mini) |
+| Baseline 2 | **Google Gemini Function Calling** (gemini-1.5-flash) |
 
 **Lưu ý kiến trúc**:
-- Không dùng Unsloth, vLLM, hay fine-tune LLM local.
-- Bi-Encoder dùng `FlagEmbedding` (BAAI official) + `MultipleNegativesRankingLoss`.
-- Cross-Encoder là **Hierarchical Span Prediction** (BGE-M3 base + custom heads). Schema-driven routing: type lấy từ schema question nên model không cần học/predict type — chỉ activate 1 sub-head phù hợp (span/enum/boolean). 1 binary `has_value` head riêng để phân biệt null (absent) vs có giá trị. Input format BERT-QA: query làm context, param schema làm question.
+- Method 1 SLM: dùng instruction-tuning format (system prompt chứa tool list, user query, assistant sinh `<tool_call>...</tool_call>`). Giống Ersoy et al. (2025).
+- Method 2 Bi-Encoder: dùng `FlagEmbedding` (BAAI official) + `MultipleNegativesRankingLoss`.
+- Method 2 Cross-Encoder: **Hierarchical Span Prediction** (BGE-M3 base + custom heads). Schema-driven routing: type lấy từ schema question nên model không cần học/predict type — chỉ activate 1 sub-head phù hợp (span/enum/boolean). 1 binary `has_value` head riêng để phân biệt null (absent) vs có giá trị. Input format BERT-QA: query làm context, param schema làm question.
 
 ---
 
-## 4. Data Schema (chuẩn — theo mẫu user cung cấp)
+## 4. Data Schema (master canonical — single-turn + multi-call)
+
+Schema master dùng chung cho toàn bộ hệ thống. Cả Method 1 và Method 2 đều dùng cùng 1 nguồn data, khác cách convert khi train.
 
 ```json
 {
   "id": "glaive_00042",
   "source": "glaive",
-  "conversation": [
+  "query": "Tôi muốn tìm gia sư Toán ở Hà Nội.",
+  "function_calls": [
     {
-      "role": "user",
-      "content": "Tôi muốn tìm gia sư Toán ở Hà Nội."
-    },
-    {
-      "role": "assistant",
-      "content": null,
-      "function_calls": [
-        {
-          "name": "search_tutors",
-          "arguments": {"subject": "Toán", "location": "Hà Nội"}
-        }
-      ]
-    },
-    {
-      "role": "function",
       "name": "search_tutors",
-      "content": "[{...tutor 1...}, {...tutor 2...}]"
-    },
-    {
-      "role": "assistant",
-      "content": "Tôi tìm được 2 gia sư phù hợp..."
+      "arguments": {"subject": "Toán", "location": "Hà Nội"}
     }
   ],
   "tools": [
     {
       "name": "search_tutors",
-      "description": "Tìm gia sư theo môn và khu vực.",
+      "description": "Tìm gia sư theo môn học và khu vực.",
       "feature_group": "Tìm kiếm & Kết nối",
       "parameters": {
         "type": "object",
@@ -111,20 +103,57 @@ Xây dựng hệ thống Tool Calling tiếng Việt **tách thành 2 thành ph�
 }
 ```
 
-**Quy ước bắt buộc** (cập nhật 2026-07-28 — multi-turn + multi-call):
-- `id` unique string (format: `<source>_<index>`)
-- `source` ∈ `{"glaive", "xlam"}`
-- `conversation[]` là list các turn theo thứ tự. Mỗi turn có:
-  - `role` ∈ `{"user", "assistant", "function"}`
-  - `user` / `function` / `assistant.final`: có `content` (string)
-  - `assistant` có tool call: `content: null` + `function_calls[]` (list of `{name, arguments}`)
-  - `function`: có `name` (tool name) + `content` (response text)
-- `tools[]` flat list (KHÔNG group), mỗi tool có `feature_group` (string VI, do LLM classify)
-- `function_calls[].name` luôn English identifier (snake_case)
-- `function_calls[].arguments` keys luôn English, values có thể VI/EN
-- `tools[].description` tiếng Việt
-- `tools[].name` English identifier
-- `tools[].parameters` chuẩn JSON Schema (`string`/`integer`/`number`/`boolean`/`array`/`object`)
+### Quy ước bắt buộc
+
+| Trường | Ngôn ngữ | Quy tắc |
+|---|---|---|
+| `id` | — | Unique string, format `<source>_<index>` (VD: `glaive_00042`, `xlam_00123`) |
+| `source` | — | `glaive` hoặc `xlam` |
+| `query` | **VI** | User query tiếng Việt |
+| `function_calls[].name` | **EN** | snake_case identifier, không dấu |
+| `function_calls[].arguments` keys | **EN** | snake_case |
+| `function_calls[].arguments` values | VI/EN | tùy natural language hay identifier |
+| `tools[].name` | **EN** | snake_case identifier |
+| `tools[].description` | **VI** | Mô tả tự nhiên tiếng Việt |
+| `tools[].feature_group` | **VI** | Tên nhóm chức năng (do LLM classify, cache theo tool name) |
+| `tools[].parameters` | — | JSON Schema chuẩn (`string`/`integer`/`number`/`boolean`/`array`/`object`) |
+
+**Lưu ý**: `function_calls[]` là list (multi-call) — 1 query có thể gọi 1+ tool.
+
+### JSON Schema `type` chuẩn
+
+| Schema chuẩn | xLAM raw mapping | Ghi chú |
+|---|---|---|
+| `"string"` | `"str"`, `"str, optional"` | |
+| `"integer"` | `"int"`, `"int, optional"` | |
+| `"number"` | `"float"`, `"float, optional"` | |
+| `"boolean"` | `"bool"`, `"bool, optional"` | |
+| `"array"` | `"list"`, `"List[int]"`, ... | Phải có `items: {type: T}` |
+| `"object"` | — | Nested object hiếm gặp |
+
+### Sample count sau filter single-turn
+
+| Dataset | Raw | Sau filter | Mất |
+|---|---|---|---|
+| Glaive | 112,960 | **45,593** (40%) | 67,367 multi-turn bị bỏ |
+| xLAM | 60,000 | **60,000** (100%) | 0 (đã flat) |
+| **Total** | 172,960 | **~105,593** | ~39% |
+
+### Data flow: từ master schema → 2 format train
+
+```
+Schema master (data/benchmark_vi/*.jsonl)
+   │
+   ├──► Method 1 (SLM):
+   │    src/data/convert_to_instruction.py
+   │    → data/benchmark_vi/instruction/
+   │      train_chat.jsonl (LLaMA-Factory format)
+   │
+   └──► Method 2 (Bi+Cross):
+        Dùng trực tiếp schema master
+        → Bi-Encoder: (query, tool_description) pairs
+        → Cross-Encoder: (query, param_schema, label) per-param
+```
 
 ---
 
@@ -143,7 +172,7 @@ File đầy đủ: `docs/translation_guidelines.md`.
 
 ---
 
-## 6. Folder Structure (đã tạo)
+## 6. Folder Structure
 
 ```
 tool_calling_with_retrieval_extraction/
@@ -158,16 +187,17 @@ tool_calling_with_retrieval_extraction/
 │   ├── data/ model/ pipeline/ baseline/ eval/
 │
 ├── data/
-│   ├── raw/                   # EN datasets (Glaive, ToolBench, xLAM, ToolACE)
+│   ├── raw/                   # EN datasets (Glaive, xLAM)
 │   ├── processed/
-│   │   ├── tools/ queries/ parameters/  # đã chuẩn hóa
-│   │   └── stress_test/                # ← MỚI (Phase 7)
-│   │       ├── anchors.jsonl           # 200 anchors từ test.jsonl
-│   │       └── augmented/              # random_N10.jsonl, same_domain_N100.jsonl, ...
+│   │   └── stress_test/       # ← Phase 7
+│   │       ├── anchors.jsonl
+│   │       └── augmented/
 │   ├── benchmark_vi/          # Final Vietnamese benchmark
-│   │   ├── tool_pool.json    # ← MỚI: tool pool lớn gộp từ Glaive + xLAM
+│   │   ├── tool_pool.json     # Gộp unique tools từ Glaive + xLAM
 │   │   ├── tool_schema/
-│   │   ├── train/ val/ test/  (jsonl)
+│   │   ├── train.jsonl / val.jsonl / test.jsonl
+│   │   └── instruction/       # ← Method 1: convert sang chat format
+│   │       ├── train_chat.jsonl / val_chat.jsonl / test_chat.jsonl
 │   ├── translations/          # Qwen-MT logs + QA samples
 │   └── statistics/
 │
@@ -179,45 +209,39 @@ tool_calling_with_retrieval_extraction/
 │   │   ├── translate_guidelines.py
 │   │   ├── qa_translation.py
 │   │   ├── build_benchmark.py
-│   │   ├── build_tool_pool.py           # ← MỚI (Phase 7)
-│   │   ├── extract_anchors.py           # ← MỚI (Phase 7)
-│   │   ├── augment_with_distractors.py  # ← MỚI (Phase 7)
+│   │   ├── convert_to_instruction.py  # ← Method 1: master → chat format
+│   │   ├── build_tool_pool.py
+│   │   ├── extract_anchors.py
+│   │   ├── augment_with_distractors.py
 │   │   └── stats.py
 │   ├── models/
-│   │   ├── biencoder/         # Semantic Tool Retrieval (BGE-M3 + FlagEmbedding + MNRL)
-│   │   ├── crossencoder/      # Schema-aware Parameter Extraction (BGE-M3 + Span Prediction head)
+│   │   ├── slm/               # ← Method 1: Qwen2.5 fine-tune (LLaMA-Factory)
+│   │   ├── biencoder/         # Method 2: Semantic Tool Retrieval
+│   │   ├── crossencoder/      # Method 2: Schema-aware Parameter Extraction
 │   │   └── baselines/         # OpenAI FC, Gemini FC
-│   ├── pipeline/              # tool_caller end-to-end
+│   ├── pipeline/
 │   ├── evaluation/
 │   │   ├── retrieval_metrics.py
 │   │   ├── extraction_metrics.py
 │   │   ├── latency.py
 │   │   ├── cost.py
 │   │   ├── throughput.py
-│   │   ├── compare.py
-│   │   ├── stress_test.py              # ← MỚI (Phase 7)
-│   │   └── plot_stress_test.py         # ← MỚI (Phase 7)
+│   │   ├── compare.py         # So sánh 4 methods
+│   │   ├── stress_test.py
+│   │   └── plot_stress_test.py
 │   └── utils/
 │
 ├── scripts/                   # data/, train/, serve/, eval/
-├── notebooks/                 # 01-06 EDA + analysis + 07 stress test
+├── notebooks/                 # 01 EDA + analysis
 ├── tests/                     # unit tests
-├── checkpoints/               # biencoder/, crossencoder/
+├── checkpoints/               # slm/, biencoder/, crossencoder/
 ├── results/
-│   ├── retrieval/ extraction/ pipeline/ baselines/
+│   ├── slm/ retrieval/ extraction/ baselines/
 │   └── tables_figures/
-│       └── stress_test/                # ← MỚI (Phase 7)
+│       └── stress_test/
 ├── docs/                      # architecture, methodology, benchmark, translation_guidelines, references
 └── logs/                      # train/, eval/
 ```
-
-**Nguyên tắc**:
-- `data/` chỉ lưu data, `src/data/` chỉ chứa code xử lý data
-- 2 model tách biệt hoàn toàn
-- Baselines tách riêng để dễ so sánh
-- `pipeline/tool_caller.py` là orchestrator duy nhất
-- Tất cả config qua Hydra, không hardcode
-- Stress test data tách riêng trong `data/processed/stress_test/`
 
 ---
 
@@ -225,44 +249,64 @@ tool_calling_with_retrieval_extraction/
 
 | Phase | Nội dung | Trạng thái |
 |---|---|---|
-| 0 | Skeleton (folders + .md files) | ✅ **Đang ở đây** |
-| 1 | Data pipeline (collect, normalize, translate, build benchmark) | ⏳ |
-| 2 | Bi-Encoder (Semantic Tool Retrieval) | ⏳ |
-| 3 | Cross-Encoder (Schema-aware Parameter Extraction) | ⏳ |
-| 4 | Pipeline + JSON validator | ⏳ |
-| 5 | Baselines (OpenAI, Gemini, local Qwen/Llama) | ⏳ |
-| 6 | Evaluation & comparison (test chính) | ⏳ |
-| 7 | **Stress test (RAG-MCP inspired)** | ⏳ |
+| 0 | Skeleton (folders + .md files) | ✅ Done |
+| 1 | Data pipeline (collect, normalize, translate, build benchmark) | ⏳ In progress |
+| 2 | Method 2: Bi-Encoder | ⏳ |
+| 3 | Method 2: Cross-Encoder | ⏳ (skeleton có sẵn) |
+| 4 | Method 1: SLM fine-tune + instruction data | ⏳ |
+| 5 | Baselines (OpenAI FC, Gemini FC) | ⏳ |
+| 6 | Evaluation & comparison (4 methods) | ⏳ |
+| 7 | Stress test (RAG-MCP inspired, so sánh cả 4) | ⏳ |
 
-### Stress Test Plan (Phase 7 — tóm tắt)
-- **Mục đích**: Đo khả năng scale của pipeline khi tool pool tăng (lấy cảm hứng từ RAG-MCP arXiv:2505.03275).
-- **Tool pool**: gộp unique tools từ Glaive + xLAM (sau dịch VI) → `data/benchmark_vi/tool_pool.json`.
-- **Anchors**: 200 samples từ `benchmark_vi/test.jsonl` → `data/processed/stress_test/anchors.jsonl`.
-- **N values**: [3, 10, 50, 100, 500, 1000] (số candidate tools).
-- **Distractor strategies**:
-  - `random`: random từ tool pool (loại trừ ground truth).
-  - `same_domain`: random từ cùng `feature_group` với ground truth.
-- **Tổng instances**: 200 × 6 × 2 = 2,400 augmented test instances.
-- **Metrics**: retrieval_recall@1, end_to_end_accuracy, latency_p50/p95, tokens_consumed.
-- **Output**: plot accuracy vs N cho mỗi strategy, so sánh với OpenAI/Gemini baseline.
-- **Điểm khác biệt với paper 2505.03275**: paper chỉ dùng random + generic MCP, đề tài dùng `random + same_domain` + domain-specific VI tools + tách riêng retrieval vs extraction metric.
+### Phase detail
+
+**Phase 1 — Data pipeline**:
+- Collect → normalize → translate (Bộ 1) → QA → build benchmark (Bộ 2/master) → convert instruction format
+- Output: `data/benchmark_vi/` + `data/benchmark_vi/instruction/`
+
+**Phase 2 — Bi-Encoder** (Method 2):
+- Train BGE-M3 + MNRL cho tool retrieval
+- Metric: Recall@1, Recall@5, MRR
+
+**Phase 3 — Cross-Encoder** (Method 2):
+- Train BGE-M3 + hierarchical heads cho parameter extraction
+- Metric: Span F1, Enum accuracy, End-to-end F1
+
+**Phase 4 — SLM** (Method 1):
+- Fine-tune Qwen2.5 0.5B/1.5B với LLaMA-Factory trên instruction data
+- Format: system (tool list) + user (query) → assistant (`<tool_call>...</tool_call>`)
+- Metric: End-to-end accuracy (giống Ersoy et al. ArgA)
+
+**Phase 5 — Baselines**:
+- OpenAI FC (gpt-4o-mini), Gemini FC (gemini-1.5-flash)
+- Đo latency, cost, accuracy
+
+**Phase 6 — Evaluation**:
+- Bảng so sánh 4 methods: Tool Acc, Arg F1, Latency, Cost/1k
+- Cả Method 1 + Method 2 + 2 baselines
+
+**Phase 7 — Stress test**:
+- So sánh cả 4 methods khi N tools tăng [3, 10, 50, 100, 500, 1000]
+- 2 distractor strategies: random + same_domain
+- Tổng: 200 × 6 × 2 = 2,400 instances
+- Output: accuracy vs N plot, latency table
 
 ### Reference liên quan
-- **Ersoy et al. (2025)** — Arabic tool-calling, dịch 2 dataset open-source sang Arabic. Tham khảo chiến lược dịch + adapt dataset.
-- **RAG-MCP (2025)** — stress test concept với varying N, paper dùng MCP web search, đề tài mượn ý tưởng.
-- **BFCL** — tham khảo categories (Live Simple/Multiple/Parallel, Multi-turn) khi xây benchmark_vi.
+- **Ersoy et al. (2025)** — Tool Calling for Arabic LLMs. Phương pháp chính cho Method 1 (SLM fine-tune). Cùng dùng Glaive + xLAM, dịch sang ngôn ngữ đích, fine-tune LLM end-to-end. Đề tài mở rộng thêm Method 2 để so sánh.
+- **RAG-MCP (2025)** — Stress test concept với varying N.
+- **BFCL** — Tham khảo categories khi xây benchmark.
 
 ---
 
 ## 8. Conventions (cho AI agents)
 
 ### Khi viết code
-1. **Không thêm comment trừ khi user yêu cầu** (xem rule project).
+1. **Không thêm comment trừ khi user yêu cầu**.
 2. **Luôn đọc** `docs/translation_guidelines.md` trước khi viết code dịch.
 3. **Luôn đọc** `docs/architecture.md` + `docs/methodology.md` trước khi implement model/pipeline.
 4. **Hydra config dùng structured config** (Python `@dataclass`), không dùng YAML composing.
 5. **Type hints đầy đủ** cho mọi public function.
-6. **Mỗi thay đổi kiến trúc phải cập nhật file .md tương ứng** (cùng commit).
+6. **Mỗi thay đổi kiến trúc phải cập nhật file .md tương ứng**.
 7. **Tên file .py đặt theo snake_case**, tên class PascalCase.
 8. **Mỗi module Python có docstring mô tả ngắn** ở đầu file.
 9. **Reproducibility**: set seed qua `utils/seed.py`.
@@ -285,10 +329,10 @@ tool_calling_with_retrieval_extraction/
 |---|---|
 | `AGENTS.md` | File này — bộ nhớ cross-session |
 | `README.md` | Project overview, quick start |
-| `docs/architecture.md` | Sơ đồ pipeline end-to-end |
+| `docs/architecture.md` | Sơ đồ 2 pipeline (Method 1 + Method 2) |
 | `docs/methodology.md` | Phương pháp nghiên cứu chi tiết |
 | `docs/benchmark.md` | Cấu trúc benchmark tiếng Việt |
-| `docs/translation_guidelines.md` | Quy tắc dịch Qwen-MT |
+| `docs/translation_guidelines.md` | Quy tắc dịch |
 | `docs/references.md` | Papers & resources |
 | `.env.example` | Template biến môi trường |
 | `pyproject.toml` | Project metadata + tool config |
@@ -297,55 +341,39 @@ tool_calling_with_retrieval_extraction/
 
 ## 10. Open Questions / Decisions Pending
 
-Cập nhật mục này khi có câu hỏi chưa giải quyết:
-
-- **[x] Cross-Encoder architecture**: Đã quyết — **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head). Sub-head active dựa trên `Type` trong schema question. Sub-head gồm: span (start/end) / enum (N-way) / boolean (2-way). Không dùng generation, không dùng type-prediction head (type đã có sẵn trong schema).
-- **[x] Cross-Encoder input format**: Đã quyết — **BERT-QA style**: `[CLS] query [SEP] Param=<name>. Desc=<desc>. Type=<type>[. Enum=...] [SEP]` (query làm context, param schema làm question).
-- **[x] Có nên dùng paper 2505.03275 (RAG-MCP) trực tiếp?**
-  → **KHÔNG.** Mượn concept (vary N, plot degradation curve), tự build distractor generator
-  + VI tool pool + tách riêng retrieval vs extraction metric. Xem Phase 7 ở section 7.
-- **[x] Local LLM baseline (Qwen2.5/Llama Unsloth)**: **ĐÃ BỎ** — ngoài scope 3 tháng.
-  Chỉ so sánh với OpenAI FC + Gemini FC.
-- **[x] Datasets**: Chỉ dùng **2 nguồn chính** — Glaive Function Calling v2 + xLAM.
-- **[x] Phase 0 done**: Cross-Encoder code skeleton 6/6 files (heads, losses, data_collator, label_generator, inference, model).
-- **[ ] Phase 1 in progress** (data pipeline):
-  - [x] Decision: Glaive CHỈ single-turn
-  - [x] Decision: Translation model = `ALIBABA_MODEL` env (qwen3.7-flash)
-  - [x] Decision: QA judge model = `qwen3.7-max`
-  - [x] Decision: Alibaba OpenAI-compatible API (KHÔNG dùng dashscope)
-  - [x] Download Glaive Function Calling v2 từ HF
-  - [x] Download xLAM function-calling-60k từ HF
-  - [x] EDA format (notebook 01)
-  - [ ] `src/data/translate.py` (async batch K=50, concurrency=20)
-  - [ ] `src/data/translate_guidelines.py` (protect identifiers)
-  - [ ] `src/data/translation_checkpoint.py` (atomic save/load)
-  - [ ] `src/data/qa_translation.py` (rule + qwen3.7-max judge)
-  - [ ] Mini pilot 100+100 → 1k+1k pilot → full 170k
-  - [ ] `src/data/normalize_schema.py` (type mapping xLAM → JSON Schema chuẩn)
-  - [ ] `src/data/feature_group_classify.py` (LLM classify, cache; có thể pre-label trong translate)
-  - [ ] `src/data/build_benchmark.py` (Bộ 1 → Bộ 2, multi-turn schema)
-  - [ ] `src/data/push_hf.py` (upload dataset)
-  - [ ] Fix Cross-Encoder `normalize_schema_type()` silent bug
-- **[ ] Phase 2/3 deferred** (quay lại sau khi data xong):
+- **[x] Single-turn + multi-call**: Đã chốt — chỉ lấy first turn từ Glaive, giữ multi-call từ xLAM. ~105k samples.
+- **[x] Schema master**: Đã chốt — `{id, source, query, function_calls[], tools[]}`. Dùng chung cho cả 2 method.
+- **[x] Method 1 model**: Đã chốt — Qwen2.5 0.5B/1.5B (Small LM, đúng tinh thần "SLM"), fine-tune với LLaMA-Factory.
+- **[x] Method 1 data format**: Đã chốt — instruction-tuning (system prompt + user + assistant), convert từ schema master qua `convert_to_instruction.py`.
+- **[x] Comparison table**: Đã chốt — 4 methods (Method 1 SLM + Method 2 Bi+Cross + OpenAI FC + Gemini FC).
+- **[x] Stress test**: Đã chốt — giữ, so sánh cả 4 methods.
+- **[ ] Số lượng tool trong benchmark**: Chưa quyết (sau khi build tool_pool.json).
+- **[ ] Splits train/val/test ratio**: Đề xuất 80/10/10, seed=42.
+- **[ ] Metric chính Method 1**: ArgA (Ersoy et al.) hay dùng metric chung với Method 2?
+- **[ ] Fine-tune Method 1 pipeline**: Dùng LLaMA-Factory CLI hay tích hợp training script trong repo?
+- **[x] Phase 1 in progress** (data pipeline):
+  - [x] Download Glaive + xLAM
+  - [x] EDA (notebook 01)
+  - [x] Decision: single-turn + multi-call
+  - [ ] `src/data/translate.py`
+  - [ ] `src/data/translate_guidelines.py`
+  - [ ] `src/data/translation_checkpoint.py`
+  - [ ] `src/data/qa_translation.py`
+  - [ ] `src/data/normalize_schema.py`
+  - [ ] `src/data/feature_group_classify.py`
+  - [ ] `src/data/build_benchmark.py`
+  - [ ] `src/data/convert_to_instruction.py`
+  - [ ] `src/data/stats.py`
+  - [ ] `src/data/push_hf.py`
+- **[x] Translation pipeline design** (chốt 2026-07-28):
+  - K=25 samples/batch, concurrency=8.
+  - 3 retry/sample với exp backoff. Fail → `failed/`.
+  - Validate per-sample. Output: append JSONL + flush + fsync.
+  - Resume: atomic checkpoint JSON.
+  - Pilot: 100+100 → 1k+1k → full ~105k.
+- **[x] Phase 2/3 deferred** (quay lại sau khi data xong):
   - [ ] 4 configs/crossencoder/ (model, heads, losses, training)
   - [ ] 4 tests/crossencoder/ (heads, losses, label_generator, inference)
-- **[x] Normalization decisions** (đã chốt 2026-07-28):
-  - [x] **xLAM multi-call (53% có 2+ tools)**: **GIỮ multi-call** + multi-turn Glaive (giữ nguyên số call/turn).
-  - [x] **feature_group (cả 2 dataset không có)**: **LLM classify 1 lần, cache theo tool name** (cần cho stress test `same_domain`).
-  - [x] **Pilot translate size**: 100+100 mini pilot → 1k+1k pilot → full 170k.
-  - [x] **JSON Schema `type` standard**: chuẩn `string`/`integer`/`number`/`boolean`/`array`/`object` (map xLAM `str`→`string`, `int`→`integer`, `float`→`number`, `bool`→`boolean`, `list/List[T]`→`array`+`items`).
-  - [x] **Architecture**: **2 bộ riêng** — (1) `data/translations/` raw VI để dịch, (2) `data/benchmark_vi/` task format chuẩn cho model.
-- **[x] Translation pipeline design** (chốt 2026-07-28):
-  - K=50 samples/batch, concurrency=20 (asyncio.Semaphore).
-  - 3 retry/sample với exp backoff (1s, 2s, 4s). Fail → `data/translations/failed/<ds>_failed.jsonl`.
-  - Validate per-sample ngay (rule check: identifier snake_case, JSON parse, required keys).
-  - Output: append JSONL + flush per sample + `os.fsync()`.
-  - Resume: atomic checkpoint JSON (`data/translations/.checkpoint/<ds>.json`, ghi tmp + rename).
-  - Memory: O(K) RAM (~250KB peak). Stream I/O.
-  - Pilot: 100 Glaive + 100 xLAM (mini pilot) → 1k+1k → full.
-- **[ ] Số lượng tool trong benchmark**: Chưa quyết (sau khi build tool_pool.json).
-- **[ ] Splits train/val/test ratio**: Đề xuất 80/10/10, seed=42 — confirm khi build benchmark.
-- **[ ] Metric chính để so sánh**: End-to-end accuracy (retrieval@1 + extraction F1) — confirm khi viết evaluation.
 
 ---
 
@@ -360,18 +388,14 @@ Cập nhật mục này khi có câu hỏi chưa giải quyết:
 
 ---
 
-## 12. Change Log (cập nhật khi có thay đổi lớn)
+## 12. Change Log
 
 | Ngày | Thay đổi |
 |---|---|
 | 2026-07-25 | Khởi tạo repo, chốt tech stack, tạo skeleton + .md files |
-| 2026-07-25 | Thêm Phase 7 (Stress Test RAG-MCP inspired) + folder structure + cập nhật docs. Đóng decision về việc KHÔNG dùng trực tiếp paper 2505.03275. Tham khảo Ersoy et al. (2025) cho chiến lược dịch dataset tool-calling sang ngôn ngữ ít tài nguyên. |
-| 2026-07-26 | Đóng decision: BGE-M3 base cho cả 2 model (FlagEmbedding + MNRL cho Bi-Encoder, custom head cho Cross-Encoder); bỏ Unsloth + local LLM baseline; chỉ dùng 2 nguồn dataset (Glaive + xLAM); Cross-Encoder format = schema first `[CLS] schema [SEP] query [SEP]`. Update AGENTS.md + toàn bộ docs. |
-| 2026-07-26 | Đổi Cross-Encoder architecture: từ generation sang **Span Prediction** (3 output: span/enum/null). Lý do: nhanh hơn, ít hallucination, khớp "Schema-aware", F1/EM evaluation chuẩn. Update docs. |
-| 2026-07-26 | Refactor Cross-Encoder sang **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head: span/enum/boolean). Bỏ `value_type` head vì type đã có sẵn trong schema question. Null coi là "absence of value" (gate qua `has_value`) thay vì "một loại giá trị". Đổi input format sang **BERT-QA style**: `[CLS] query [SEP] Param=... Type=...[. Enum=...] [SEP]`. Per-parameter forward pass (N passes / query), max_length=1024, truncation="only_first" (cắt query nếu quá dài). Tạo skeleton `src/models/crossencoder/` (6 files) + `configs/crossencoder/` (4 files) + `tests/crossencoder/` (4 files). Update architecture.md, methodology.md, references.md, AGENTS.md. |
-| 2026-07-26 | Cross-Encoder skeleton code 6/6 files done (heads.py, losses.py, data_collator.py, label_generator.py, inference.py, model.py). CHƯA tạo configs/crossencoder/ (0/4) + tests/crossencoder/ (0/4). Tạm dừng model work để làm data trước (Phase 1). |
-| 2026-07-26 | Decision data: Glaive CHỈ single-turn; Qwen-MT token không giới hạn (nhiều model free Alibaba); API key chưa có (cần đăng ký); khi quay lại model: Configs → Tests. |
-| 2026-07-26 | Update .env.example theo .env của user: dùng Alibaba OpenAI-compatible API (`ALIBABA_URL` + `ALIBABA_MODEL` + `ALIBABA_QA_MODEL=qwen3.7-max`) thay cho DashScope SDK. Bỏ section vLLM local. Update pyproject.toml: thêm `openai>=1.0`, `datasets>=2.18`, bỏ `dashscope`. Start Phase 1: data pipeline (collect → normalize → translate → QA → benchmark). |
-| 2026-07-26 | Download data thành công: Glaive 112,960 + xLAM 60,000 → `data/raw/`. EDA findings: Glaive 45,593 single-turn usable (40%), xLAM 28,461 single-call (47%). Tool pool: 1,040 + 3,605 unique. 3 decision pending (multi-call, feature_group, pilot size) chờ user hội ý nhóm. |
-| 2026-07-28 | **Pivot lớn**: Đổi từ single-turn/single-call → **full multi-turn + multi-call** (giữ 74% Glaive multi-turn + 53% xLAM multi-call). Schema mới: `conversation[]` (user/assistant/function turns) + `tools[]` flat. Quyết `feature_group` cần dùng LLM classify. Quyết **2 bộ riêng**: (1) translations/ giữ raw, (2) benchmark_vi/ task format. Quyết translation pipeline: async batch K=50, concurrency=20, 3 retry/sample, validate per-sample, append JSONL + atomic checkpoint, resume tự động. Pilot 100+100 → 1k+1k → full 170k. Bắt đầu code Phase A (skeleton) → Phase B (translate). |
-| 2026-07-28 | Translation pipeline cập nhật: pre-label `feature_group` ngay trong batch dịch và ghi cache `data/benchmark_vi/.cache/feature_group.json` để build benchmark/stress test dùng lại. QA được sửa để judge cặp `(original EN, translated VI)` thay vì tự so với chính sample đã dịch. |
+| 2026-07-25 | Thêm Phase 7 (Stress Test) + folder structure |
+| 2026-07-26 | Đóng decision: BGE-M3 base cho cả 2 model. Cross-Encoder: Hierarchical heads, BERT-QA input format |
+| 2026-07-26 | Cross-Encoder skeleton code 6/6 files done. Tạm dừng model, làm data trước |
+| 2026-07-26 | Download data thành công. EDA: Glaive 45,593 single-turn, xLAM 28,461 single-call |
+| 2026-07-28 | Pivot sang multi-turn + multi-call (đã revert sau) |
+| 2026-08-03 | **Pivot lớn**: Chuyển sang so sánh 2 phương pháp. Method 1: SLM Qwen2.5 end-to-end (theo Ersoy et al.). Method 2: Bi-Encoder + Cross-Encoder. Schema master single-turn + multi-call. 4-method comparison. Update toàn bộ docs. |

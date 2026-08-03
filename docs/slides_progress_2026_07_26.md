@@ -85,7 +85,6 @@ User Query (VI)
 | Translation | Alibaba OpenAI-compatible API (qwen3.7-flash / qwen3.7-max) |
 | Baseline 1 | OpenAI Function Calling (gpt-4o-mini) |
 | Baseline 2 | Google Gemini Function Calling (gemini-1.5-flash) |
-| ~~Local LLM~~ | ~~Đã bỏ~~ (ngoài scope 3 tháng) |
 
 ---
 

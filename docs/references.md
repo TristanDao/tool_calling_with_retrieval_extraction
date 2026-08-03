@@ -21,12 +21,18 @@
 ## 2. Tool Calling cho ngôn ngữ ít tài nguyên (multilingual / non-English)
 
 - **Ersoy et al. (2025)** — *Tool Calling for Arabic LLMs: Data Strategies and Instruction Tuning*. ArabicNLP 2025 (co-located EMNLP), Suzhou, China. arXiv:2509.20957. ACL Anthology: 2025.arabicnlp-main.28.
-  - **Rất liên quan đến đề tài**: họ **dịch 2 open-source tool-calling dataset sang tiếng Arabic**, nghiên cứu 3 câu hỏi:
-    1. Có cần dữ liệu tool-calling bằng chính ngôn ngữ đó (Arabic) không, hay chỉ cần cross-lingual transfer?
-    2. Hiệu quả của general-purpose instruction tuning lên tool-calling performance?
+  - **Primary reference cho Method 1 (SLM end-to-end)**:
+    - Họ **dịch 2 open-source tool-calling dataset (Glaive + xLAM) sang tiếng Arabic**.
+    - Fine-tune open-weight Arabic LLM (Fanar 9B) với instruction-tuning format.
+    - LLM sinh `<tool_call>{"name": "...", "arguments": {...}}</tool_call>` hoặc `<no_tool_call>`.
+    - Metric chính: **ArgA (Argument Population Accuracy)** — end-to-end accuracy.
+    - Dùng LLaMA-Factory, lr=5e-7 cosine schedule.
+  - **Đề tài làm tương tự cho tiếng Việt** với Qwen2.5 0.5B/1.5B (SLM).
+  - **3 câu hỏi họ nghiên cứu**:
+    1. Cần dữ liệu tool-calling bằng chính ngôn ngữ đó không?
+    2. Hiệu quả của general-purpose instruction tuning?
     3. Giá trị của fine-tune trên specific high-priority tools?
-  - Dùng open-weight Arabic LLM (base + post-trained).
-  - **Bài học rút ra cho đề tài**: chiến lược dịch + adapt dataset, đánh giá tác động của in-language data.
+  - **Kết luận chính**: in-language data quan trọng cho ArgA; paraphrasing variance (50.2%) là nguyên nhân lỗi hàng đầu; tool-specific fine-tune cho kết quả gần perfect.
 
 - **Berkeley Function Calling Leaderboard (BFCL)** — chuẩn benchmark phổ biến nhất cho tool calling (EN).
   - Đề tài tham khảo cấu trúc metric + categories (Live Simple, Live Multiple, Live Parallel, Multi-turn) khi xây benchmark_vi.
@@ -41,28 +47,15 @@
 
 - **BERT-QA (SQuAD)** (Devlin et al., 2019) — *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding*. arXiv:1810.04805.
   - Input format: `[CLS] question [SEP] context [SEP]`, span head `(start, end)` trên context tokens.
-  - Đề tài **mượn ý tưởng**: query làm context, param schema làm question. Span head chỉ tính trên query tokens.
 - **UIE — Universal Information Extraction** (Lu et al., 2022) — *Unified Structure Generation for Universal Information Extraction*. arXiv:2203.12277.
-  - Span-based extraction cho structured information.
-  - Đề tài tham khảo: dùng span prediction thay vì generation.
 - **GLiNER** (Zaratiana et al., 2023) — *GLiNER: Generalist Model for Named Entity Recognition using Bidirectional Transformer*. arXiv:2311.08526.
-  - Span prediction NER, generalize cho nhiều loại entity.
-  - Đề tài tham khảo: kiến trúc span + null classification.
-- **DeepStruct** — span-based structured prediction.
-- **Cross-Encoders for Re-ranking** — blog sentence-transformers (cho Bi-Encoder).
-- **JSONFormer** (2023) — structured JSON generation (đã bỏ, không dùng trong đề tài).
-- **Schema-Guided Reasoning** — tổng quan về schema-conditioned generation.
 
 ## 5. Generative LLM baselines
 
-- **OpenAI Function Calling** — docs tại https://platform.openai.com/docs/guides/function-calling.
-- **Google Gemini Function Calling** — docs tại https://ai.google.dev/gemini-api/docs/function-calling.
-
-> Local LLM baseline (Qwen2.5/Llama-3.1 Unsloth + vLLM) **ngoài scope** khóa luận 3 tháng. Nếu mở rộng sau, tham khảo:
-> - **Qwen2.5** (Alibaba, 2024) — *Qwen2.5 Technical Report*.
-> - **Llama-3.1** (Meta, 2024) — *The Llama 3 Herd of Models*.
-> - **Unsloth** — https://github.com/unslothai/unsloth.
-> - **vLLM** (Kwon et al., 2023) — *Efficient Memory Management for Large Language Model Serving with PagedAttention*. SOSP'23.
+- **OpenAI Function Calling** — https://platform.openai.com/docs/guides/function-calling.
+- **Google Gemini Function Calling** — https://ai.google.dev/gemini-api/docs/function-calling.
+- **Qwen2.5** (Alibaba, 2024) — *Qwen2.5: A Party of Foundation Models*. Dùng làm base model cho Method 1 (SLM fine-tune 0.5B/1.5B).
+- **LLaMA-Factory** (Zheng et al., 2024) — *LLaMAFactory: Unified Efficient Fine-Tuning of 100+ Language Models*. ACL 2024. Dùng cho Method 1 instruction tuning.
 
 ## 6. Translation
 
@@ -96,11 +89,11 @@
 - **RAG-MCP** (Gao et al., 2025) — *RAG-MCP: Mitigating Prompt Bloat in LLM Tool Selection via Retrieval-Augmented Generation*. arXiv:2505.03275.
   - Concept: vary số candidate tools N, đo degradation curve.
   - Setup: 1 ground-truth + (N-1) random distractors, vary N từ 1 → 11100.
-  - **Đề tài mượn concept, tự build**:
+  - **Đề tài mượn concept**:
+    - So sánh cả 4 methods (Method 1 SLM + Method 2 Bi+Cross + OpenAI FC + Gemini FC).
     - Distractor strategies: `random` + `same_domain` (paper chỉ dùng random).
-    - N range: 3 → 1000 (paper: 1 → 11100).
-    - Tool pool: gộp unique tools từ Glaive + xLAM (sau dịch VI), domain-specific thay vì generic MCP.
-    - Đo riêng retrieval vs extraction (paper chỉ test 1 model end-to-end).
+    - N range: 3 → 1000.
+    - Tool pool: gộp unique tools từ Glaive + xLAM (sau dịch VI).
 - **Needle-in-a-Haystack (NIAH)** — gốc concept stress test với N varying.
 
 ---

@@ -12,11 +12,12 @@ dataset: glaive
 start_index: 0
 end_index: null
 
-batch_size: 50
-concurrency: 20
+batch_size: 25
+concurrency: 8
 max_retries: 3
 retry_initial_delay: 1.0
 retry_backoff: 2.0
+stop_after_consecutive_failures: 5
 
 api:
   base_url: https://ws-v9y2oinbtzzm4ey9.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1

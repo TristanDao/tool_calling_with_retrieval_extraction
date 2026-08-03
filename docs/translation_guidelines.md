@@ -3,14 +3,14 @@
 > Quy tắc dịch **EN → VI** cho dataset Tool Calling, dùng với **Qwen-MT (Alibaba)** qua OpenAI-compatible API.
 > Mục tiêu: bảo toàn cấu trúc JSON, bảo vệ identifier kỹ thuật, chỉ dịch phần natural language.
 
-## 1. Kiến trúc 2 bộ (cập nhật 2026-07-28)
+## 1. Kiến trúc 2 bộ (cập nhật 2026-08-03)
 
-> **Quyết định**: Tách thành 2 bộ riêng biệt.
+> **Quyết định**: Tách thành 2 bộ riêng biệt. Schema master là single-turn + multi-call.
 
 | Bộ | Path | Format | Vai trò |
 |---|---|---|---|
-| **Bộ 1 (dịch)** | `data/translations/` | Gần raw (giữ `chat` text, `answers` JSON list); chỉ thay natural language | LLM dịch dễ, ít pre-processing |
-| **Bộ 2 (task)** | `data/benchmark_vi/` | Multi-turn + multi-call chuẩn | Train + eval Bi-Encoder / Cross-Encoder |
+| **Bộ 1 (dịch)** | `data/translations/` | Gần raw (giữ `chat` text cho Glaive, `answers` JSON list cho xLAM); chỉ thay natural language | LLM dịch dễ, ít pre-processing |
+| **Bộ 2 (task)** | `data/benchmark_vi/` | Single-turn schema master: `{id, source, query, function_calls[], tools[]}` | Train + eval Method 1 (SLM) + Method 2 (Bi+Cross) |
 
 **Tại sao tách 2 bộ**:
 - Bộ 1 giữ format gần raw → LLM dịch ít rủi ro corrupt JSON, ít mất ngữ nghĩa.
@@ -114,7 +114,7 @@ Dịch toàn bộ dataset Tool Calling từ tiếng Anh sang tiếng Việt, **b
 | Tham số | Value | Ghi chú |
 |---|---|---|
 | Model | `qwen3.7-flash-2026-07-15` | Translation, qua `ALIBABA_URL` |
-| Batch size K | 50 | Samples per request |
+| Batch size K | 25 | Samples per request |
 | Concurrency | 20 | asyncio.Semaphore |
 | Retry | 3 | Exponential backoff (1s, 2s, 4s) |
 | Validate | Per-sample | Rule check ngay khi response về |
@@ -175,18 +175,17 @@ Sau khi dịch, chạy `src/data/qa_translation.py` để kiểm tra:
 
 ## 7. Từ Bộ 1 → Bộ 2
 
-`src/data/build_benchmark.py` parse Bộ 1 (VI) → Bộ 2 (chuẩn):
+`src/data/build_benchmark.py` parse Bộ 1 (VI) → schema master single-turn:
 
-1. **Glaive Bộ 1** → parse `chat` text:
-   - Extract `USER: ...` → `conversation[].role="user", content="..."`
-   - Extract `A: <functioncall> {...} <|endoftext|>` → `conversation[].role="assistant", function_calls=[...]`
-   - Extract `FUNCTION RESPONSE: ...` → `conversation[].role="function", name=..., content=...`
-   - Extract final `A: ...` → `conversation[].role="assistant", content=...`
-   - Parse `system` JSON → `tools[].parameters`
+1. **Glaive Bộ 1** → parse first turn only:
+   - Extract `USER: ...` → `query`
+   - Extract `A: <functioncall> {...} <|endoftext|>` → parse JSON → `function_calls[]`
+   - Parse `system` JSON → `tools[]` (description, parameters)
+   - Bỏ qua FUNCTION RESPONSE và các turn sau.
 
 2. **xLAM Bộ 1** → parse JSON lists:
-   - `query` → `conversation[].role="user", content=...`
-   - `answers` JSON list → `conversation[].role="assistant", function_calls=[...]`
+   - `query` → `query`
+   - `answers` JSON list → `function_calls[]`
    - `tools` JSON list → `tools[]` (giữ nguyên sau khi normalize type)
 
 3. **Normalize xLAM type**: `src/data/normalize_schema.py`:
@@ -200,6 +199,8 @@ Sau khi dịch, chạy `src/data/qa_translation.py` để kiểm tra:
 4. **Feature group**: `src/data/feature_group_classify.py` LLM classify 1 lần/tool, cache.
 
 5. **Split**: 80/10/10, seed=42.
+
+6. **Convert cho Method 1**: `src/data/convert_to_instruction.py` chuyển schema master → LLaMA-Factory instruction format.
 
 ## 8. Trường hợp đặc biệt
 

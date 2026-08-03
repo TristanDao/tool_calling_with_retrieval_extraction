@@ -3,40 +3,18 @@
 ## 1. Mục tiêu
 
 Xây dựng bộ benchmark tiếng Việt phục vụ:
-- **Huấn luyện** Bi-Encoder (retrieval) và Cross-Encoder (extraction).
+- **Huấn luyện** Method 1 (SLM instruction-tuning) và Method 2 (Bi-Encoder + Cross-Encoder).
 - **Đánh giá** pipeline 2 thành phần.
-- **So sánh** với Generative LLM baseline (OpenAI FC, Gemini FC).
+- **So sánh** 4 methods (SLM, Bi+Cross, OpenAI FC, Gemini FC).
 
-## 2. Nguồn dữ liệu — chỉ dùng 2 nguồn chính
-
-Dữ liệu EN được thu thập từ 2 bộ Function Calling công khai:
+## 2. Nguồn dữ liệu
 
 | Dataset | Số samples | Đặc điểm |
-|---|---:|---|
+|---|---|---:|---|
 | Glaive Function Calling v2 | 112,960 | Multi-turn chat (74%), 1 tool trong `system` |
 | xLAM (Salesforce) | 60,000 | Flat query, multi-call (53%), full tool pool per sample |
 
-**Lý do chỉ dùng 2 nguồn**:
-- Dataset đủ lớn (~170k samples tổng) để train/val/test.
-- Schema rõ ràng, dễ chuẩn hóa.
-- Đa dạng domain (Glaive) + function call chuẩn (xLAM).
-- Tiết kiệm thời gian thu thập + xử lý (3 tháng khóa luận).
-
-## 3. Kiến trúc 2 bộ (cập nhật 2026-07-28)
-
-> **Quyết định**: Tách thành **2 bộ** riêng biệt — 1 bộ để dịch, 1 bộ task format chuẩn.
-
-| Bộ | Path | Format | Mục đích |
-|---|---|---|---|
-| **Bộ 1 (dịch)** | `data/translations/` | Gần raw (giữ `chat` text cho Glaive, `answers` JSON list cho xLAM); chỉ dịch natural language | LLM dịch dễ, ít pre-processing |
-| **Bộ 2 (task)** | `data/benchmark_vi/` | Multi-turn + multi-call chuẩn (xem §4) | Train + eval Bi-Encoder / Cross-Encoder |
-
-**Lý do tách**:
-- Bộ 1 giữ format gần raw → LLM dịch ít rủi ro corrupt JSON / mất ngữ nghĩa.
-- Bộ 2 restructure từ Bộ 1 (parse + normalize) → schema task riêng, độc lập với raw.
-- Khi Bộ 1 hỏng → re-translate; Bộ 2 không bị ảnh hưởng.
-
-## 4. Schema Bộ 2 (chuẩn cho task — multi-turn + multi-call)
+## 3. Schema master (canonical — single-turn + multi-call)
 
 Mỗi sample trong `data/benchmark_vi/{train,val,test}.jsonl`:
 
@@ -44,87 +22,47 @@ Mỗi sample trong `data/benchmark_vi/{train,val,test}.jsonl`:
 {
   "id": "glaive_00042",
   "source": "glaive",
-  "conversation": [
+  "query": "Tôi muốn tìm gia sư Toán ở Hà Nội.",
+  "function_calls": [
     {
-      "role": "user",
-      "content": "Tôi muốn đặt vé máy bay từ Hà Nội đi Tokyo."
-    },
-    {
-      "role": "assistant",
-      "content": null,
-      "function_calls": [
-        {
-          "name": "search_flights",
-          "arguments": {"origin": "Hà Nội", "destination": "Tokyo"}
-        },
-        {
-          "name": "search_hotels",
-          "arguments": {"city": "Tokyo"}
-        }
-      ]
-    },
-    {
-      "role": "function",
-      "name": "search_flights",
-      "content": "[{...flight 1...}, {...flight 2...}]"
-    },
-    {
-      "role": "function",
-      "name": "search_hotels",
-      "content": "[{...hotel 1...}]"
-    },
-    {
-      "role": "assistant",
-      "content": "Tôi tìm được 2 chuyến bay và 1 khách sạn phù hợp..."
+      "name": "search_tutors",
+      "arguments": {"subject": "Toán", "location": "Hà Nội"}
     }
   ],
   "tools": [
     {
-      "name": "search_flights",
-      "description": "Tìm chuyến bay theo điểm đi/đến/ngày.",
-      "feature_group": "Đặt vé & Du lịch",
+      "name": "search_tutors",
+      "description": "Tìm gia sư theo môn học và khu vực.",
+      "feature_group": "Tìm kiếm & Kết nối",
       "parameters": {
         "type": "object",
         "properties": {
-          "origin": {"type": "string", "description": "Thành phố khởi hành"},
-          "destination": {"type": "string", "description": "Thành phố đến"}
+          "subject":  {"type": "string",  "description": "Môn học cần tìm"},
+          "location": {"type": "string",  "description": "Thành phố hoặc khu vực"}
         },
-        "required": ["origin", "destination"]
-      }
-    },
-    {
-      "name": "search_hotels",
-      "description": "Tìm khách sạn theo thành phố.",
-      "feature_group": "Đặt vé & Du lịch",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "city": {"type": "string", "description": "Thành phố"}
-        },
-        "required": ["city"]
+        "required": ["subject", "location"]
       }
     }
   ]
 }
 ```
 
-### 4.1 Quy ước bắt buộc
+### 3.1 Quy ước bắt buộc
 
 | Trường | Ngôn ngữ | Quy tắc |
 |---|---|---|
 | `id` | — | Unique string, format `<source>_<index>` (VD: `glaive_00042`, `xlam_00123`) |
 | `source` | — | `glaive` hoặc `xlam` |
-| `conversation[].role` | — | ∈ `{"user", "assistant", "function"}` |
-| `conversation[].content` | **VI** | Natural language (user / function response / final assistant text) |
-| `conversation[].function_calls[].name` | **EN** | snake_case identifier, không dấu |
-| `conversation[].function_calls[].arguments` keys | **EN** | snake_case |
-| `conversation[].function_calls[].arguments` values | VI/EN | tùy natural language hay identifier |
+| `query` | **VI** | User query tiếng Việt |
+| `function_calls[].name` | **EN** | snake_case identifier, không dấu |
+| `function_calls[].arguments` keys | **EN** | snake_case |
+| `function_calls[].arguments` values | VI/EN | tùy natural language hay identifier |
 | `tools[].name` | **EN** | snake_case identifier |
 | `tools[].description` | **VI** | Mô tả tự nhiên tiếng Việt |
 | `tools[].feature_group` | **VI** | Tên nhóm chức năng (do LLM classify, cache theo tool name) |
-| `tools[].parameters` | — | JSON Schema chuẩn (xem §4.2) |
+| `tools[].parameters` | — | JSON Schema chuẩn (xem §3.2) |
 
-### 4.2 JSON Schema `type` chuẩn
+### 3.2 JSON Schema `type` chuẩn
 
 | Schema chuẩn | xLAM raw mapping | Ghi chú |
 |---|---|---|
@@ -132,22 +70,12 @@ Mỗi sample trong `data/benchmark_vi/{train,val,test}.jsonl`:
 | `"integer"` | `"int"`, `"int, optional"` | |
 | `"number"` | `"float"`, `"float, optional"` | |
 | `"boolean"` | `"bool"`, `"bool, optional"` | |
-| `"array"` | `"list"`, `"List[int]"`, `"List[str]"`, `"List[Union[int, float]]"`, … | Phải có `items: {type: T}` |
+| `"array"` | `"list"`, `"List[int]"`, `"List[str]"`, ... | Phải có `items: {type: T}` |
 | `"object"` | — | Nested object hiếm gặp |
 
 **Optional flag**: Tách `", optional"` suffix thành top-level `required: []` array (không có trong `required` = optional).
 
-**VÍ dụ xLAM normalization**:
-```json
-// xLAM raw
-{"type": "str, optional", "description": "..."}
-
-// → Schema chuẩn
-{"type": "string", "description": "..."}
-// và parameter này KHÔNG có trong `required: [...]`
-```
-
-### 4.3 Tool Schema (file riêng trong `tool_schema/`)
+### 3.3 Tool Schema (file riêng trong `tool_schema/`)
 
 Mỗi tool 1 file `<tool_name>.json`:
 
@@ -159,7 +87,7 @@ Mỗi tool 1 file `<tool_name>.json`:
   "parameters": {
     "type": "object",
     "properties": {
-      "subject": {"type": "string", "description": "Môn học cần tìm"},
+      "subject":  {"type": "string", "description": "Môn học cần tìm"},
       "location": {"type": "string", "description": "Thành phố hoặc khu vực"}
     },
     "required": ["subject", "location"]
@@ -167,7 +95,7 @@ Mỗi tool 1 file `<tool_name>.json`:
 }
 ```
 
-### 4.4 Tool pool gộp — `tool_pool.json`
+### 3.4 Tool pool gộp — `tool_pool.json`
 
 File tổng hợp unique tools từ cả 2 dataset (sau khi dịch + normalize):
 
@@ -178,7 +106,15 @@ File tổng hợp unique tools từ cả 2 dataset (sau khi dịch + normalize):
 ]
 ```
 
-Dùng cho: Bi-Encoder index, stress test haystack, OpenAI/Gemini baseline (cần full tool list).
+Dùng cho: Method 1 system prompt, Method 2 Bi-Encoder index, stress test haystack.
+
+## 4. Sample count sau filter single-turn
+
+| Dataset | Raw | Sau filter | Mất |
+|---|---|---|---|
+| Glaive | 112,960 | **45,593** (40%) | 67,367 multi-turn bị bỏ |
+| xLAM | 60,000 | **60,000** (100%) | 0 (đã flat) |
+| **Total** | 172,960 | **~105,593** | ~39% |
 
 ## 5. Pipeline xây dựng
 
@@ -191,7 +127,7 @@ data/raw/ (downloaded)
    │
    │  ┌─────────────────────────────────────────────────┐
    │  │  BỘ 1: src/data/translate.py                   │
-   │  │  - Async batch K=50, concurrency=20             │
+   │  │  - Async batch K=25, concurrency=8              │
    │  │  - Qwen-MT qua ALIBABA_URL                     │
    │  │  - Append JSONL, flush per sample, atomic cp    │
    │  └─────────────────────────────────────────────────┘
@@ -208,11 +144,10 @@ data/translations/
    ▼
 data/translations/qa_samples/         (QC pass/fail)
    │
-    │  ┌─────────────────────────────────────────────────┐
-    │  │  BỘ 2: src/data/build_benchmark.py             │
-    │  │  - Parse Bộ 1 → multi-turn schema              │
-    │  │  - Pre-label feature_group trong translate     │
-    │  │  - src/data/normalize_schema.py (type mapping) │
+   │  ┌─────────────────────────────────────────────────┐
+   │  │  BỘ 2: src/data/build_benchmark.py             │
+   │  │  - Parse Bộ 1 → schema master (single-turn)    │
+   │  │  - src/data/normalize_schema.py (type mapping) │
    │  │  - src/data/feature_group_classify.py          │
    │  │  - src/data/build_tool_pool.py                 │
    │  │  - Split train/val/test (80/10/10, seed=42)    │
@@ -221,7 +156,16 @@ data/translations/qa_samples/         (QC pass/fail)
 data/benchmark_vi/
    ├── tool_schema/   (mỗi tool 1 file JSON)
    ├── tool_pool.json (gộp unique tools từ 2 dataset)
-   ├── train.jsonl / val.jsonl / test.jsonl
+   ├── train.jsonl / val.jsonl / test.jsonl   (schema master)
+   │
+   │  ┌─────────────────────────────────────────────────┐
+   │  │  Method 1: src/data/convert_to_instruction.py  │
+   │  │  - Convert schema master → LLaMA-Factory format │
+   │  └─────────────────────────────────────────────────┘
+   ▼
+   ├── instruction/
+   │   ├── train_chat.jsonl / val_chat.jsonl / test_chat.jsonl
+   │
    └── metadata.json  (số sample, split ratio, statistics)
 ```
 
@@ -229,9 +173,9 @@ data/benchmark_vi/
 
 | Split | Tỷ lệ (đề xuất) | Mục đích |
 |---|---|---|
-| train | 80% | Huấn luyện Bi-Encoder, Cross-Encoder |
+| train | 80% | Huấn luyện Method 1 + Method 2 |
 | val | 10% | Hyperparameter tuning, model selection |
-| test | 10% | Đánh giá cuối, so sánh baseline |
+| test | 10% | Đánh giá cuối, so sánh 4 methods |
 
 > Seed: `42`. Có thể thay đổi khi build benchmark thực tế.
 
@@ -240,35 +184,28 @@ data/benchmark_vi/
 Output lưu `data/statistics/`:
 
 - Tổng số samples sau QC (mỗi split).
-- Phân bố số turn/conversation (1, 2, 3+).
-- Phân bố số function_calls/turn (1, 2, 3+).
+- Phân bố số function_calls/query (1, 2, 3+).
 - Phân bố số parameters/tool.
 - Phân bố `feature_group` (top 20).
 - Độ dài trung bình user query (token).
 - Số unique tools trong `tool_pool.json`.
 
-## 8. QC tiêu chí (Bộ 2)
+## 8. QC tiêu chí
 
 Mỗi sample qua benchmark phải thỏa:
 
-1. **JSON hợp lệ**: parse được, đủ 3 key `id`, `conversation`, `tools`.
+1. **JSON hợp lệ**: parse được, đủ 4 key `id`, `source`, `query`, `function_calls`, `tools`.
 2. **Identifier integrity**: function name, argument keys đều snake_case EN (regex `^[a-z][a-z0-9_]*$`).
 3. **Schema hợp lệ**: JSON Schema parse được, `type` ∈ chuẩn JSON Schema.
-4. **Multi-turn consistency**:
-   - Nếu `role=assistant` có `function_calls[]` → `content` = null.
-   - Nếu `role=function` → có `name` (tool name) + `content`.
-5. **Tool pool coverage**: Tất cả `function_calls[].name` có trong `tools[]` của sample.
-6. **Feature_group**: 100% tool có `feature_group` non-empty.
-7. **Vietnamese quality** (LLM judge 5%): query/description tự nhiên, không lỗi font.
+4. **Tool pool coverage**: Tất cả `function_calls[].name` có trong `tools[]` của sample.
+5. **Feature_group**: 100% tool có `feature_group` non-empty.
+6. **Vietnamese quality** (LLM judge 5%): query/description tự nhiên, không lỗi font.
 
-## 9. Stress Test Set (RAG-MCP inspired) — Phase 7
-
-> Giữ nguyên từ version trước. Xem chi tiết ở version cũ nếu cần.
+## 9. Stress Test Set (Phase 7)
 
 ### 9.1 Tool pool — `data/benchmark_vi/tool_pool.json`
 - Gộp unique tools từ Glaive + xLAM (sau dịch VI, dedupe theo `name`).
 - Mỗi tool: `{name, description_VI, feature_group, parameters}`.
-- Ước tính: 500-2000 tools (sẽ xác nhận khi build).
 
 ### 9.2 Anchors — `data/processed/stress_test/anchors.jsonl`
 - 200 samples từ `benchmark_vi/test.jsonl`.
@@ -277,6 +214,7 @@ Mỗi sample qua benchmark phải thỏa:
 
 ### 9.3 Augmented instances — `data/processed/stress_test/augmented/`
 - 200 × 6 × 2 = 2,400 instances.
+- N values: [3, 10, 50, 100, 500, 1000].
 - Strategies: `random` + `same_domain`.
 
 ## 10. Files output
@@ -285,7 +223,10 @@ Mỗi sample qua benchmark phải thỏa:
 |---|---|---|
 | `tool_pool.json` | JSON | All unique tools |
 | `tool_schema/<name>.json` | JSON | 1 file/tool |
-| `train.jsonl` | JSONL | 80% samples |
-| `val.jsonl` | JSONL | 10% samples |
-| `test.jsonl` | JSONL | 10% samples |
+| `train.jsonl` | JSONL | 80% samples (schema master) |
+| `val.jsonl` | JSONL | 10% samples (schema master) |
+| `test.jsonl` | JSONL | 10% samples (schema master) |
+| `instruction/train_chat.jsonl` | JSONL | Method 1: instruction format |
+| `instruction/val_chat.jsonl` | JSONL | Method 1: instruction format |
+| `instruction/test_chat.jsonl` | JSONL | Method 1: instruction format |
 | `metadata.json` | JSON | Stats, split info, dataset card |

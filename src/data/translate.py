@@ -2,8 +2,8 @@
 
 Thiết kế:
 - Đọc raw JSONL theo stream (generator), không load full dataset vào RAM.
-- Gửi K=50 samples/batch qua Alibaba OpenAI-compatible API.
-- 20 concurrent requests (asyncio.Semaphore).
+- Gửi K=25 samples/batch qua Alibaba OpenAI-compatible API.
+ - Concurrency điều chỉnh qua config (mặc định thấp hơn để dễ debug).
 - 3 retry/sample với exponential backoff.
 - Validate per-sample ngay khi response về.
 - Append JSONL output, flush + fsync mỗi sample.
@@ -59,6 +59,7 @@ class TranslationConfig:
     api_timeout: float
     api_max_tokens: int
     progress_log_every_n_batches: int
+    stop_after_consecutive_failures: int = 5
     feature_group_enabled: bool = True
     feature_group_config_path: Path = Path("configs/data/feature_group.yaml")
 
@@ -81,12 +82,13 @@ class TranslationConfig:
             retry_backoff=float(d.get("retry_backoff", 2.0)),
             api_base_url=d["api"]["base_url"],
             api_key=d["api"]["api_key"],
-            api_model=d["api"].get("model") or "qwen3.7-flash-2026-07-15",
+            api_model=d["api"].get("model") or os.getenv("ALIBABA_MODEL", ""),
             api_backup_model=d["api"].get("backup_model") or None,
             api_temperature=float(d["api"].get("temperature", 0.1)),
             api_timeout=float(d["api"].get("timeout", 60.0)),
             api_max_tokens=int(d["api"].get("max_tokens", 8192)),
             progress_log_every_n_batches=int(d.get("progress_log_every_n_batches", 5)),
+            stop_after_consecutive_failures=int(d.get("stop_after_consecutive_failures", 5)),
             feature_group_enabled=bool(d.get("feature_group", {}).get("enabled", True)),
             feature_group_config_path=Path(d.get("feature_group", {}).get("config_path", "configs/data/feature_group.yaml")),
         )
@@ -308,7 +310,7 @@ async def process_batch(
     fg_cfg: dict[str, Any] | None = None,
     fg_cache: dict[str, str] | None = None,
     logger=None,
-) -> tuple[int, int]:
+) -> tuple[int, int, bool]:
     def log_cb(msg: str) -> None:
         if logger is not None:
             logger.warning(msg)
@@ -321,10 +323,13 @@ async def process_batch(
 
     n_success = 0
     n_failed = 0
+    consecutive_failures = 0
+    should_stop = False
     for source_index, translated, error in results:
         if translated is not None:
             fout_success.write(json.dumps(translated, ensure_ascii=False) + "\n")
             n_success += 1
+            consecutive_failures = 0
         else:
             failed_record = {
                 "source_index": source_index,
@@ -332,6 +337,18 @@ async def process_batch(
             }
             fout_failed.write(json.dumps(failed_record, ensure_ascii=False) + "\n")
             n_failed += 1
+            consecutive_failures += 1
+            if logger is not None:
+                logger.warning("[idx=%d] translate failed: %s (streak=%d)", source_index, error, consecutive_failures)
+            if consecutive_failures >= cfg.stop_after_consecutive_failures:
+                should_stop = True
+                if logger is not None:
+                    logger.warning(
+                        "stopping early after %d consecutive failures at idx=%d",
+                        consecutive_failures,
+                        source_index,
+                    )
+                break
 
     fout_success.flush()
     os.fsync(fout_success.fileno())
@@ -352,7 +369,7 @@ async def process_batch(
             await classify_tools(tools_to_classify, fg_cfg, fg_cache)
             save_cache(fg_cache, Path(fg_cfg["cache_path"]))
 
-    return n_success, n_failed
+    return n_success, n_failed, should_stop
 
 
 async def run_translation(cfg: TranslationConfig) -> dict[str, Any]:
@@ -362,6 +379,8 @@ async def run_translation(cfg: TranslationConfig) -> dict[str, Any]:
 
     if not cfg.api_key:
         raise ValueError("ALIBABA_API_KEY is empty; check .env")
+    if not cfg.api_model:
+        raise ValueError("ALIBABA_MODEL is empty; check .env or configs/data/translate.yaml")
 
     client = AsyncOpenAI(
         api_key=cfg.api_key,
@@ -416,7 +435,8 @@ async def run_translation(cfg: TranslationConfig) -> dict[str, Any]:
         ):
             batch.append((source_index, sample))
             if len(batch) >= cfg.batch_size:
-                n_s, n_f = await process_batch(
+                logger.info("processing batch ending at idx=%d size=%d", source_index, len(batch))
+                n_s, n_f, should_stop = await process_batch(
                     client, batch, cfg, semaphore, fout_success, fout_failed,
                     fg_cfg=fg_cfg, fg_cache=fg_cache, logger=logger,
                 )
@@ -435,9 +455,13 @@ async def run_translation(cfg: TranslationConfig) -> dict[str, Any]:
                         checkpoint.last_processed_index, total_success, total_failed,
                         rate, peak / 1024 / 1024,
                     )
+                if should_stop:
+                    logger.warning("early stop requested; checkpoint saved at idx=%d", checkpoint.last_processed_index)
+                    break
 
         if batch:
-            n_s, n_f = await process_batch(
+            logger.info("processing final batch size=%d", len(batch))
+            n_s, n_f, should_stop = await process_batch(
                 client, batch, cfg, semaphore, fout_success, fout_failed,
                 fg_cfg=fg_cfg, fg_cache=fg_cache, logger=logger,
             )
@@ -446,6 +470,8 @@ async def run_translation(cfg: TranslationConfig) -> dict[str, Any]:
             total_success += n_s
             total_failed += n_f
             n_batches += 1
+            if should_stop:
+                logger.warning("early stop requested; checkpoint saved at idx=%d", checkpoint.last_processed_index)
 
     elapsed = time.time() - start_time
     current, peak = tracemalloc.get_traced_memory()

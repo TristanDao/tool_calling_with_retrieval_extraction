@@ -4,6 +4,7 @@ Each sample = 1 (query, parameter) pair. Tokenize theo BERT-QA format:
 [CLS] <query> [SEP] Param=... Type=...[. Enum=...] [SEP]
 """
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -15,6 +16,17 @@ SCHEMA_TYPE_STRING = "string"
 SCHEMA_TYPE_NUMBER = "number"
 SCHEMA_TYPE_BOOLEAN = "boolean"
 SCHEMA_TYPE_ENUM = "enum"
+SCHEMA_TYPE_ARRAY = "array"
+SCHEMA_TYPE_OBJECT = "object"
+
+_VALID_TYPES = (
+    SCHEMA_TYPE_STRING,
+    SCHEMA_TYPE_NUMBER,
+    SCHEMA_TYPE_BOOLEAN,
+    SCHEMA_TYPE_ENUM,
+    SCHEMA_TYPE_ARRAY,
+    SCHEMA_TYPE_OBJECT,
+)
 
 
 def build_schema_question(param: dict[str, Any]) -> str:
@@ -28,20 +40,35 @@ def build_schema_question(param: dict[str, Any]) -> str:
     return f"Param={name}. Desc={desc}. Type={ptype}"
 
 
+_TYPE_MAP: dict[str, str] = {
+    "str": SCHEMA_TYPE_STRING,
+    "string": SCHEMA_TYPE_STRING,
+    "int": SCHEMA_TYPE_NUMBER,
+    "integer": SCHEMA_TYPE_NUMBER,
+    "float": SCHEMA_TYPE_NUMBER,
+    "number": SCHEMA_TYPE_NUMBER,
+    "bool": SCHEMA_TYPE_BOOLEAN,
+    "boolean": SCHEMA_TYPE_BOOLEAN,
+    "enum": SCHEMA_TYPE_ENUM,
+    "list": SCHEMA_TYPE_ARRAY,
+    "array": SCHEMA_TYPE_ARRAY,
+    "object": SCHEMA_TYPE_OBJECT,
+    "dict": SCHEMA_TYPE_OBJECT,
+}
+
+_OPTIONAL_SUFFIX_RE = re.compile(r",\s*optional\s*$", re.IGNORECASE)
+_LIST_GENERIC_RE = re.compile(r"^list(\[.*\])?$", re.IGNORECASE)
+
+
 def normalize_schema_type(raw: str) -> str:
-    raw = (raw or "").strip().lower()
-    if raw == "integer":
-        return SCHEMA_TYPE_NUMBER
-    if raw == "bool":
-        return SCHEMA_TYPE_BOOLEAN
-    if raw == "enum":
-        return SCHEMA_TYPE_ENUM
-    return raw if raw in (
-        SCHEMA_TYPE_STRING,
-        SCHEMA_TYPE_NUMBER,
-        SCHEMA_TYPE_BOOLEAN,
-        SCHEMA_TYPE_ENUM,
-    ) else SCHEMA_TYPE_STRING
+    if not raw:
+        return SCHEMA_TYPE_STRING
+    cleaned = _OPTIONAL_SUFFIX_RE.sub("", str(raw).strip()).lower()
+    if cleaned in _TYPE_MAP:
+        return _TYPE_MAP[cleaned]
+    if _LIST_GENERIC_RE.match(cleaned):
+        return SCHEMA_TYPE_ARRAY
+    return SCHEMA_TYPE_STRING
 
 
 @dataclass
