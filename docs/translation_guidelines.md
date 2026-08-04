@@ -113,17 +113,22 @@ Dịch toàn bộ dataset Tool Calling từ tiếng Anh sang tiếng Việt, **b
 
 | Tham số | Value | Ghi chú |
 |---|---|---|
-| Model | `qwen3.7-flash-2026-07-15` | Translation, qua `ALIBABA_URL` |
-| Batch size K | 25 | Samples per request |
-| Concurrency | 20 | asyncio.Semaphore |
+| Model | `${ALIBABA_MODEL}` | Translation, qua `ALIBABA_URL` |
+| Batch size K | 10 | Samples per request |
+| Concurrency | 8 | asyncio.Semaphore |
 | Retry | 3 | Exponential backoff (1s, 2s, 4s) |
 | Validate | Per-sample | Rule check ngay khi response về |
 | Output | Append JSONL | Flush per sample + `os.fsync()` |
 | Resume | Atomic checkpoint | `data/translations/.checkpoint/<ds>.json` |
 
-### 5.1.1 Feature group side-output
+### 5.1.1 Input filtering and feature-group side-output
 
-- `translate.py` có thể pre-label `feature_group` ngay trong cùng job dịch.
+- Glaive: lọc trước từ `data/raw/glaive_raw.jsonl` thành `data/processed/glaive_single_turn_raw.jsonl`, giữ nguyên format `system/chat` và chỉ giữ positive first-turn samples.
+- xLAM: giữ toàn bộ samples vì đã flat single-turn; giữ nguyên multi-call.
+- Translation chạy với `feature_group.enabled: false`; feature group được classify một lần trên unique tool pool sau khi build Bộ 2.
+- Lý do: không để classifier làm tăng token và không để lỗi classifier ảnh hưởng translation checkpoint.
+
+- `translate.py` trước đây có thể pre-label `feature_group` ngay trong cùng job dịch.
 - Nhãn này không nằm trong JSON dịch của sample, mà được ghi vào cache riêng `data/benchmark_vi/.cache/feature_group.json`.
 - Mục tiêu: giảm số lần gọi LLM khi build benchmark và stress test.
 - Nếu cache đã có tool name thì không gọi lại.
@@ -143,7 +148,7 @@ USER: Translate the following JSON sample to Vietnamese. Keep all keys, identifi
 ```
 
 Output ONLY the translated JSON. Do NOT add explanation.
-```
+
 
 ### 5.3 Validate rule (per-sample, ngay khi response về)
 

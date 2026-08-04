@@ -2,7 +2,7 @@
 
 Thiết kế:
 - Đọc raw JSONL theo stream (generator), không load full dataset vào RAM.
-- Gửi K=25 samples/batch qua Alibaba OpenAI-compatible API.
+ - Gửi K=10 samples/batch qua Alibaba OpenAI-compatible API.
  - Concurrency điều chỉnh qua config (mặc định thấp hơn để dễ debug).
 - 3 retry/sample với exponential backoff.
 - Validate per-sample ngay khi response về.
@@ -20,7 +20,7 @@ import os
 import sys
 import time
 import tracemalloc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +59,7 @@ class TranslationConfig:
     api_timeout: float
     api_max_tokens: int
     progress_log_every_n_batches: int
+    api_backup_models: list[str] = field(default_factory=list)
     stop_after_consecutive_failures: int = 5
     feature_group_enabled: bool = True
     feature_group_config_path: Path = Path("configs/data/feature_group.yaml")
@@ -66,6 +67,14 @@ class TranslationConfig:
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "TranslationConfig":
         end = d.get("end_index")
+        configured_backups = d["api"].get("backup_models", [])
+        if isinstance(configured_backups, str):
+            configured_backups = [m.strip() for m in configured_backups.split(",") if m.strip()]
+        backup_models = [str(model) for model in configured_backups if model]
+        legacy_backup = d["api"].get("backup_model")
+        if legacy_backup and legacy_backup not in backup_models:
+            backup_models.insert(0, str(legacy_backup))
+
         return cls(
             input_path=Path(d["input"]),
             output_path=Path(d["output"]),
@@ -75,7 +84,7 @@ class TranslationConfig:
             dataset=d["dataset"],
             start_index=int(d.get("start_index", 0)),
             end_index=None if end is None else int(end),
-            batch_size=int(d.get("batch_size", 50)),
+            batch_size=int(d.get("batch_size", 10)),
             concurrency=int(d.get("concurrency", 20)),
             max_retries=int(d.get("max_retries", 3)),
             retry_initial_delay=float(d.get("retry_initial_delay", 1.0)),
@@ -83,11 +92,12 @@ class TranslationConfig:
             api_base_url=d["api"]["base_url"],
             api_key=d["api"]["api_key"],
             api_model=d["api"].get("model") or os.getenv("ALIBABA_MODEL", ""),
-            api_backup_model=d["api"].get("backup_model") or None,
+            api_backup_model=backup_models[0] if backup_models else None,
             api_temperature=float(d["api"].get("temperature", 0.1)),
             api_timeout=float(d["api"].get("timeout", 60.0)),
             api_max_tokens=int(d["api"].get("max_tokens", 8192)),
             progress_log_every_n_batches=int(d.get("progress_log_every_n_batches", 5)),
+            api_backup_models=backup_models,
             stop_after_consecutive_failures=int(d.get("stop_after_consecutive_failures", 5)),
             feature_group_enabled=bool(d.get("feature_group", {}).get("enabled", True)),
             feature_group_config_path=Path(d.get("feature_group", {}).get("config_path", "configs/data/feature_group.yaml")),
@@ -234,6 +244,20 @@ def _is_fallback_worthy(exc: BaseException) -> bool:
     return False
 
 
+def _models_to_try(cfg: TranslationConfig) -> list[str]:
+    models = [cfg.api_model]
+    backups = list(cfg.api_backup_models)
+    if cfg.api_backup_model and cfg.api_backup_model not in backups:
+        backups.insert(0, cfg.api_backup_model)
+    for model in backups:
+        if model and model not in models:
+            models.append(model)
+    return models
+
+
+_CONSECUTIVE_FAIL_LIMIT = 5
+
+
 async def translate_one(
     client: AsyncOpenAI,
     sample: dict[str, Any],
@@ -241,19 +265,21 @@ async def translate_one(
     cfg: TranslationConfig,
     semaphore: asyncio.Semaphore,
     log_callback=None,
+    dead_models: set[str] | None = None,
+    model_consecutive_failures: dict[str, int] | None = None,
 ) -> tuple[int, dict[str, Any] | None, str | None]:
     async with semaphore:
         prompt = build_translate_prompt(sample, cfg.dataset)
         last_error: str | None = None
-        last_fallback_exc: BaseException | None = None
-        models_tried: set[str] = set()
+        all_models = _models_to_try(cfg)
+        models_to_try = [m for m in all_models if m not in (dead_models or set())]
+        if not models_to_try:
+            return source_index, None, "all models exhausted (dead)"
 
-        models_to_try: list[str] = [cfg.api_model]
-        if cfg.api_backup_model and cfg.api_backup_model != cfg.api_model:
-            models_to_try.append(cfg.api_backup_model)
+        if model_consecutive_failures is None:
+            model_consecutive_failures = {}
 
-        for model_name in models_to_try:
-            models_tried.add(model_name)
+        for model_index, model_name in enumerate(models_to_try):
             for attempt in range(cfg.max_retries):
                 try:
                     response = await client.chat.completions.create(
@@ -276,26 +302,34 @@ async def translate_one(
                     if not ok2:
                         raise ValueError(f"required fields: {reason2}")
 
+                    model_consecutive_failures[model_name] = 0
                     return source_index, translated, None
 
                 except Exception as e:
                     last_error = f"{type(e).__name__}: {e}"
-                    is_fallback = _is_fallback_worthy(e) and model_name == cfg.api_model
-                    if is_fallback and cfg.api_backup_model and cfg.api_backup_model not in models_tried:
-                        last_fallback_exc = e
-                        if log_callback:
-                            log_callback(
-                                f"[idx={source_index}] main model '{cfg.api_model}' failed with "
-                                f"{type(e).__name__}; falling back to '{cfg.api_backup_model}'"
-                            )
+                    has_next_model = model_index < len(models_to_try) - 1
+                    if _is_fallback_worthy(e) and has_next_model:
+                        model_consecutive_failures[model_name] = model_consecutive_failures.get(model_name, 0) + 1
+                        if model_consecutive_failures[model_name] >= _CONSECUTIVE_FAIL_LIMIT:
+                            if dead_models is not None:
+                                dead_models.add(model_name)
+                            if log_callback:
+                                log_callback(
+                                    f"[idx={source_index}] model '{model_name}' marked dead "
+                                    f"({_CONSECUTIVE_FAIL_LIMIT} consecutive failures); skipping"
+                                )
+                        else:
+                            if log_callback:
+                                log_callback(
+                                    f"[idx={source_index}] model '{model_name}' failed with "
+                                    f"{type(e).__name__}; falling back to '{models_to_try[model_index + 1]}'"
+                                )
                         break
                     if attempt < cfg.max_retries - 1:
                         delay = cfg.retry_initial_delay * (cfg.retry_backoff ** attempt)
                         await asyncio.sleep(delay)
 
-        if last_fallback_exc is None and last_error is not None:
-            return source_index, None, last_error
-        if last_fallback_exc is not None and last_error is not None:
+        if len(models_to_try) > 1 and last_error is not None:
             return source_index, None, f"all models failed; last={last_error}"
         return source_index, None, last_error or "unknown error"
 
@@ -307,19 +341,32 @@ async def process_batch(
     semaphore: asyncio.Semaphore,
     fout_success,
     fout_failed,
-    fg_cfg: dict[str, Any] | None = None,
-    fg_cache: dict[str, str] | None = None,
     logger=None,
+    dead_models: set[str] | None = None,
+    model_consecutive_failures: dict[str, int] | None = None,
 ) -> tuple[int, int, bool]:
     def log_cb(msg: str) -> None:
         if logger is not None:
             logger.warning(msg)
 
     tasks = [
-        translate_one(client, sample, idx, cfg, semaphore, log_callback=log_cb)
+        translate_one(client, sample, idx, cfg, semaphore, log_callback=log_cb,
+                       dead_models=dead_models, model_consecutive_failures=model_consecutive_failures)
         for idx, sample in batch
     ]
-    results = await asyncio.gather(*tasks, return_exceptions=False)
+    raw_results = await asyncio.gather(*tasks, return_exceptions=True)
+    results: list[tuple[int, dict[str, Any] | None, str | None]] = []
+    for (source_index, _sample), result in zip(batch, raw_results):
+        if isinstance(result, BaseException):
+            results.append(
+                (
+                    source_index,
+                    None,
+                    f"{type(result).__name__}: {result}",
+                )
+            )
+        else:
+            results.append(result)
 
     n_success = 0
     n_failed = 0
@@ -355,21 +402,43 @@ async def process_batch(
     fout_failed.flush()
     os.fsync(fout_failed.fileno())
 
-    if fg_cfg is not None and fg_cache is not None:
-        tools_to_classify: list[dict[str, Any]] = []
-        seen_names: set[str] = set()
-        for _, original in batch:
-            for tool in _extract_feature_group_tools(original, cfg.dataset):
-                name = tool.get("name", "")
-                if not name or name in seen_names or name in fg_cache:
-                    continue
-                seen_names.add(name)
-                tools_to_classify.append(tool)
-        if tools_to_classify:
-            await classify_tools(tools_to_classify, fg_cfg, fg_cache)
-            save_cache(fg_cache, Path(fg_cfg["cache_path"]))
-
     return n_success, n_failed, should_stop
+
+
+async def classify_feature_group_batch(
+    batch: list[tuple[int, dict[str, Any]]],
+    cfg: TranslationConfig,
+    fg_cfg: dict[str, Any] | None,
+    fg_cache: dict[str, str] | None,
+    logger=None,
+) -> None:
+    """Classify tools after the translation batch checkpoint is committed."""
+    if fg_cfg is None or fg_cache is None:
+        return
+
+    tools_to_classify: list[dict[str, Any]] = []
+    seen_names: set[str] = set()
+    for _, original in batch:
+        for tool in _extract_feature_group_tools(original, cfg.dataset):
+            name = tool.get("name", "")
+            if not name or name in seen_names or name in fg_cache:
+                continue
+            seen_names.add(name)
+            tools_to_classify.append(tool)
+
+    if not tools_to_classify:
+        return
+
+    try:
+        await classify_tools(tools_to_classify, fg_cfg, fg_cache)
+        save_cache(fg_cache, Path(fg_cfg["cache_path"]))
+    except Exception as exc:
+        if logger is not None:
+            logger.warning(
+                "feature_group classification failed after checkpoint commit: %s: %s",
+                type(exc).__name__,
+                exc,
+            )
 
 
 async def run_translation(cfg: TranslationConfig) -> dict[str, Any]:
@@ -409,10 +478,11 @@ async def run_translation(cfg: TranslationConfig) -> dict[str, Any]:
         cfg.dataset, cfg.input_path, effective_start, cfg.end_index,
         cfg.batch_size, cfg.concurrency,
     )
-    if cfg.api_backup_model and cfg.api_backup_model != cfg.api_model:
+    models_to_try = _models_to_try(cfg)
+    if len(models_to_try) > 1:
         logger.info(
-            "backup model enabled: main=%s backup=%s",
-            cfg.api_model, cfg.api_backup_model,
+            "backup models enabled: main=%s backups=%s",
+            models_to_try[0], models_to_try[1:],
         )
     else:
         logger.info("backup model: (none)")
@@ -425,6 +495,8 @@ async def run_translation(cfg: TranslationConfig) -> dict[str, Any]:
     total_success = 0
     total_failed = 0
     n_batches = 0
+    dead_models: set[str] = set()
+    model_consecutive_failures: dict[str, int] = {}
 
     with cfg.output_path.open("a", encoding="utf-8") as fout_success, \
          cfg.failed_path.open("a", encoding="utf-8") as fout_failed:
@@ -438,10 +510,18 @@ async def run_translation(cfg: TranslationConfig) -> dict[str, Any]:
                 logger.info("processing batch ending at idx=%d size=%d", source_index, len(batch))
                 n_s, n_f, should_stop = await process_batch(
                     client, batch, cfg, semaphore, fout_success, fout_failed,
-                    fg_cfg=fg_cfg, fg_cache=fg_cache, logger=logger,
+                    logger=logger, dead_models=dead_models,
+                    model_consecutive_failures=model_consecutive_failures,
                 )
                 checkpoint.advance(n_s, n_f)
                 save_atomic(checkpoint, cfg.checkpoint_path)
+                logger.info(
+                    "batch committed: checkpoint=%d success=%d failed=%d",
+                    checkpoint.last_processed_index, n_s, n_f,
+                )
+                await classify_feature_group_batch(batch, cfg, fg_cfg, fg_cache, logger)
+                if dead_models:
+                    logger.warning("dead models: %s", sorted(dead_models))
                 total_success += n_s
                 total_failed += n_f
                 n_batches += 1
@@ -463,10 +543,16 @@ async def run_translation(cfg: TranslationConfig) -> dict[str, Any]:
             logger.info("processing final batch size=%d", len(batch))
             n_s, n_f, should_stop = await process_batch(
                 client, batch, cfg, semaphore, fout_success, fout_failed,
-                fg_cfg=fg_cfg, fg_cache=fg_cache, logger=logger,
+                logger=logger, dead_models=dead_models,
+                model_consecutive_failures=model_consecutive_failures,
             )
             checkpoint.advance(n_s, n_f)
             save_atomic(checkpoint, cfg.checkpoint_path)
+            logger.info(
+                "batch committed: checkpoint=%d success=%d failed=%d",
+                checkpoint.last_processed_index, n_s, n_f,
+            )
+            await classify_feature_group_batch(batch, cfg, fg_cfg, fg_cache, logger)
             total_success += n_s
             total_failed += n_f
             n_batches += 1
@@ -492,6 +578,40 @@ async def run_translation(cfg: TranslationConfig) -> dict[str, Any]:
     }
     logger.info("DONE: %s", json.dumps(summary, ensure_ascii=False))
     return summary
+
+
+async def smoke_test_translation_api(
+    cfg: TranslationConfig,
+    source_index: int,
+    sample: dict[str, Any],
+) -> dict[str, Any]:
+    """Translate one sample without writing output, checkpoint, or cache."""
+    if not cfg.api_key:
+        return {
+            "ok": False,
+            "dataset": cfg.dataset,
+            "source_index": source_index,
+            "models": _models_to_try(cfg),
+            "error": "ALIBABA_API_KEY is empty",
+        }
+
+    client = AsyncOpenAI(api_key=cfg.api_key, base_url=cfg.api_base_url, max_retries=0)
+    result = await translate_one(
+        client,
+        sample,
+        source_index,
+        cfg,
+        asyncio.Semaphore(1),
+    )
+    _, translated, error = result
+    return {
+        "ok": translated is not None,
+        "dataset": cfg.dataset,
+        "source_index": source_index,
+        "models": _models_to_try(cfg),
+        "translated": translated,
+        "error": error,
+    }
 
 
 def _resolve_env_placeholders(obj: Any) -> Any:
@@ -533,6 +653,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--end", type=int, default=None)
     p.add_argument("--batch-size", type=int, default=None)
     p.add_argument("--concurrency", type=int, default=None)
+    p.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="Translate one sample without writing output, checkpoint, or cache",
+    )
     return p.parse_args()
 
 
@@ -556,6 +681,19 @@ def main() -> None:
             raw[k] = v
 
     cfg = TranslationConfig.from_dict(raw)
+    if args.smoke_test:
+        source_index = cfg.start_index
+        records = list(read_jsonl_generator(cfg.input_path, source_index, source_index + 1))
+        if not records:
+            print(json.dumps({"ok": False, "error": f"sample index not found: {source_index}"}))
+            sys.exit(1)
+        _, sample = records[0]
+        result = asyncio.run(smoke_test_translation_api(cfg, source_index, sample))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        if not result.get("ok"):
+            sys.exit(1)
+        return
+
     summary = asyncio.run(run_translation(cfg))
     print("\n=== SUMMARY ===")
     print(json.dumps(summary, ensure_ascii=False, indent=2))

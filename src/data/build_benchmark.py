@@ -2,14 +2,20 @@
 
 Input:
   data/translations/glaive_vi.jsonl  (raw VI, multi-turn chat text)
-  data/translations/xlam_vi.jsonl    (raw VI, structured JSON)
+  data/translations/xlam_vi.jsonl    (raw VI, flat JSON)
 
-Output:
+Output (single-turn master schema):
   data/benchmark_vi/
     ├── tool_pool.json       (gộp unique tools)
     ├── tool_schema/         (mỗi tool 1 file)
     ├── train.jsonl / val.jsonl / test.jsonl  (split 80/10/10, seed=42)
     └── metadata.json
+
+Master schema per sample:
+  {"id": "...", "source": "glaive|xlam", "query": "VI text",
+   "function_calls": [{"name": "en_func", "arguments": {"en_key": "value"}}],
+   "tools": [{"name": "en_func", "description": "VI text",
+              "feature_group": "VI category", "parameters": {...}}]}
 """
 
 from __future__ import annotations
@@ -346,18 +352,29 @@ def parse_glaive_sample(raw: dict[str, Any], idx: int) -> dict[str, Any] | None:
     if not any(t["role"] == "user" for t in turns):
         return None
 
+    query = ""
+    function_calls: list[dict[str, Any]] = []
+    past_function_turn = False
+    for t in turns:
+        if t["role"] == "user":
+            if not query:
+                query = t["content"]
+            else:
+                break
+        elif t["role"] == "function":
+            past_function_turn = True
+        elif t["role"] == "assistant" and not past_function_turn:
+            for fc in t.get("function_calls", []):
+                function_calls.append(fc)
+
+    if not query or not function_calls:
+        return None
+
     tools: list[dict[str, Any]] = []
     if tool_schema_raw:
         normalized = normalize_tool(tool_schema_raw, dataset="glaive")
         tools.append(normalized)
-    called_names = set()
-    for t in turns:
-        if t["role"] == "assistant":
-            for fc in t.get("function_calls", []):
-                called_names.add(fc["name"])
-    for t in turns:
-        if t["role"] == "function" and t.get("name"):
-            called_names.add(t["name"])
+    called_names = {fc["name"] for fc in function_calls}
     for cn in called_names:
         if cn and not any(t.get("name") == cn for t in tools):
             tools.append({
@@ -369,7 +386,8 @@ def parse_glaive_sample(raw: dict[str, Any], idx: int) -> dict[str, Any] | None:
     return {
         "id": f"glaive_{idx:05d}",
         "source": "glaive",
-        "conversation": turns,
+        "query": query,
+        "function_calls": function_calls,
         "tools": tools,
     }
 
@@ -402,19 +420,11 @@ def parse_xlam_sample(raw: dict[str, Any], idx: int) -> dict[str, Any] | None:
         normalized = normalize_tool(t, dataset="xlam")
         tools.append(normalized)
 
-    conversation = [
-        {"role": "user", "content": query},
-        {
-            "role": "assistant",
-            "content": None,
-            "function_calls": function_calls,
-        },
-    ]
-
     return {
         "id": f"xlam_{idx:05d}",
         "source": "xlam",
-        "conversation": conversation,
+        "query": query,
+        "function_calls": function_calls,
         "tools": tools,
     }
 
@@ -485,29 +495,24 @@ def _validate_sample(sample: dict[str, Any]) -> tuple[bool, list[str]]:
     errors: list[str] = []
     if "id" not in sample or not sample["id"]:
         errors.append("missing id")
-    if "conversation" not in sample or not isinstance(sample["conversation"], list):
-        errors.append("missing or invalid conversation")
+    if "query" not in sample or not isinstance(sample["query"], str) or not sample["query"].strip():
+        errors.append("missing or invalid query")
+    if "function_calls" not in sample or not isinstance(sample["function_calls"], list) or not sample["function_calls"]:
+        errors.append("missing or invalid function_calls")
     if "tools" not in sample or not isinstance(sample["tools"], list):
         errors.append("missing or invalid tools")
     if errors:
         return False, errors
 
-    for t in sample["conversation"]:
-        if t.get("role") not in {"user", "assistant", "function"}:
-            errors.append(f"invalid role: {t.get('role')}")
-        if t.get("role") == "assistant" and t.get("content") is None and not t.get("function_calls"):
-            errors.append("assistant turn with no content and no function_calls")
-        if t.get("role") == "function" and (not t.get("name") or t.get("content") is None):
-            errors.append("function turn missing name or content")
-
     tool_names = {t.get("name") for t in sample["tools"]}
-    for t in sample["conversation"]:
-        if t.get("role") == "assistant":
-            for fc in t.get("function_calls", []):
-                if fc.get("name") not in tool_names:
-                    errors.append(f"function_call name not in tools: {fc.get('name')}")
-        if t.get("role") == "function" and t.get("name") not in tool_names:
-            errors.append(f"function name not in tools: {t.get('name')}")
+    for fc in sample["function_calls"]:
+        if not isinstance(fc, dict):
+            errors.append("function_call not dict")
+            continue
+        if fc.get("name") not in tool_names:
+            errors.append(f"function_call name not in tools: {fc.get('name')}")
+        if not isinstance(fc.get("arguments"), dict):
+            errors.append(f"function_call arguments not dict: {fc.get('name')}")
 
     for t in sample["tools"]:
         if not is_snake_case(t.get("name", "")):
@@ -707,11 +712,7 @@ def build_benchmark(cfg: BuildConfig) -> dict[str, Any]:
 
     source_counter = Counter(s["source"] for s in valid_samples)
     fg_counter = Counter(t.get("feature_group", "Khác") for t in pool)
-    n_turns = [len(s["conversation"]) for s in valid_samples]
-    n_calls = [
-        sum(len(t.get("function_calls", [])) for t in s["conversation"] if t["role"] == "assistant")
-        for s in valid_samples
-    ]
+    n_calls = [len(s["function_calls"]) for s in valid_samples]
     metadata = {
         "total_samples": len(valid_samples),
         "train": len(train),
@@ -726,11 +727,6 @@ def build_benchmark(cfg: BuildConfig) -> dict[str, Any]:
         "source_distribution": dict(source_counter),
         "feature_group_distribution": dict(fg_counter.most_common()),
         "n_unique_tools": len(pool),
-        "turns_per_sample": {
-            "min": min(n_turns) if n_turns else 0,
-            "max": max(n_turns) if n_turns else 0,
-            "mean": round(sum(n_turns) / max(len(n_turns), 1), 2),
-        },
         "calls_per_sample": {
             "min": min(n_calls) if n_calls else 0,
             "max": max(n_calls) if n_calls else 0,

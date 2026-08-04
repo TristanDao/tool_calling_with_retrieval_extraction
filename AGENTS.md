@@ -13,7 +13,7 @@
 - **Repo path**: `/home/thinh/project/UIT/tool_calling_with_retrieval_extraction`
 - **Loại**: Đồ án / luận văn UIT (nghiên cứu thực nghiệm + xây dựng hệ thống)
 - **Tác giả**: Thinh
-- **Trạng thái**: Phase 0 — Skeleton + chờ Phase 1 (data pipeline)
+- **Trạng thái**: Phase 1 — Data pipeline (pilot translation + master benchmark rebuild; full translation pending)
 
 ---
 
@@ -366,11 +366,32 @@ tool_calling_with_retrieval_extraction/
   - [ ] `src/data/stats.py`
   - [ ] `src/data/push_hf.py`
 - **[x] Translation pipeline design** (chốt 2026-07-28):
-  - K=25 samples/batch, concurrency=8.
+  - K=10 samples/batch, concurrency=8.
   - 3 retry/sample với exp backoff. Fail → `failed/`.
   - Validate per-sample. Output: append JSONL + flush + fsync.
   - Resume: atomic checkpoint JSON.
   - Pilot: 100+100 → 1k+1k → full ~105k.
+- **[x] Schema clarification + pilot rebuild** (2026-08-04):
+  - `data/translations/` là Bộ 1, giữ format gần raw (`system/chat` cho Glaive; `id/query/answers/tools` cho xLAM) theo thiết kế.
+  - `data/benchmark_vi/` là Bộ 2, output schema master `{id, source, query, function_calls[], tools[]}`.
+  - Rebuild pilot hiện có: 209 samples, 395 unique tools, split 167/20/22; instruction output đã tạo đủ 3 split.
+  - Full translation vẫn pending: pilot sạch hiện có 10 Glaive + 10 xLAM samples thành công.
+- **[x] Feature-group API smoke test** (2026-08-04):
+  - Chạy một request không ghi cache bằng `bash scripts/data/run_feature_group.sh data/benchmark_vi/tool_pool.json --smoke-test`.
+  - `feature_group` dùng `${ALIBABA_MODEL}`; smoke test hiện thành công với `qwen3.7-flash` và trả category hợp lệ.
+  - `ALIBABA_BACKUP_MODEL*` chỉ dùng cho translation pipeline, chưa dùng cho feature-group classifier.
+- **[x] Translation backup chain + API smoke test** (2026-08-04):
+  - Translation retry chain: `ALIBABA_MODEL` → `ALIBABA_BACKUP_MODELS` (74 models, comma-separated, ordered by quality tier).
+  - Smoke test 1 sample không ghi output/checkpoint bằng `bash scripts/data/run_translate_glaive.sh 175 176 --smoke-test`.
+  - Smoke test đã thử đủ 4 model và translation trả JSON hợp lệ sau khi config dùng `${ALIBABA_URL}`.
+- **[x] Translation input filtering + clean pilot** (2026-08-04):
+  - Glaive filter giữ format raw: 112,960 → 45,593 positive first-turn records.
+  - Xóa translation/benchmark pilot cũ; tắt feature_group trong translation.
+  - Pilot mới: Glaive 10/10 và xLAM 10/10; QA rule pass toàn bộ.
+- **[x] Translation API pilot resume** (2026-08-04):
+  - Chạy thêm 25 mẫu/dataset với `qwen3.7-flash` và backup `deepseek-v4-flash-0731`.
+  - Glaive: 24/25 thành công; xLAM: 25/25 thành công.
+  - Checkpoint hiện tại: Glaive index 175, xLAM index 230.
 - **[x] Phase 2/3 deferred** (quay lại sau khi data xong):
   - [ ] 4 configs/crossencoder/ (model, heads, losses, training)
   - [ ] 4 tests/crossencoder/ (heads, losses, label_generator, inference)
@@ -399,3 +420,13 @@ tool_calling_with_retrieval_extraction/
 | 2026-07-26 | Download data thành công. EDA: Glaive 45,593 single-turn, xLAM 28,461 single-call |
 | 2026-07-28 | Pivot sang multi-turn + multi-call (đã revert sau) |
 | 2026-08-03 | **Pivot lớn**: Chuyển sang so sánh 2 phương pháp. Method 1: SLM Qwen2.5 end-to-end (theo Ersoy et al.). Method 2: Bi-Encoder + Cross-Encoder. Schema master single-turn + multi-call. 4-method comparison. Update toàn bộ docs. |
+| 2026-08-04 | Xác nhận Bộ 1 dịch gần raw là chủ đích; xóa benchmark pilot schema cũ và rebuild theo schema master: 209 samples, 395 tools; tạo instruction format cho cả 3 split. |
+| 2026-08-04 | Thêm smoke test feature_group không ghi cache; xác nhận endpoint đang hết free quota (`403 insufficient_quota`). |
+| 2026-08-04 | Sửa feature_group config dùng `ALIBABA_MODEL` thay vì hardcode; smoke test thành công với `qwen3.7-flash`. |
+| 2026-08-04 | Chạy pilot translation thêm 25 mẫu/dataset: Glaive 24/25, xLAM 25/25; QA rule pass toàn bộ output hiện có. |
+| 2026-08-04 | Đổi translation batch từ 25 xuống 10; commit output + checkpoint trước feature_group để lỗi classifier không làm mất batch đã dịch. |
+| 2026-08-04 | Thêm backup chain 3 tầng và smoke test dịch 1 sample không ghi output/checkpoint. |
+| 2026-08-04 | Smoke test translation thử đủ 4 model sau khi đổi API key; endpoint hiện trả `403 access_denied`, không ghi output/checkpoint. |
+| 2026-08-04 | Sửa các data config dùng `${ALIBABA_URL}` thay vì hardcode endpoint cũ; translation và feature_group smoke test đều thành công. |
+| 2026-08-04 | Tạo filtered raw Glaive 45,593 mẫu, reset output dịch/benchmark cũ, tắt feature_group trong translation và chạy pilot sạch 10+10 pass. |
+| 2026-08-04 | **Multi-model fallback chain**: Curate 74 models (loại 19: thinking/OCR/video/persona) xếp theo tier chất lượng. Primary: `qwen-mt-plus`. Backup: comma-separated `ALIBABA_BACKUP_MODELS`. concurrency 8→12. Thêm MODEL override trong shell scripts. Daily budget: ~74M tokens → ~4.5 ngày cho 105k samples. |

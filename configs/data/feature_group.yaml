@@ -4,9 +4,9 @@ defaults:
 cache_path: data/benchmark_vi/.cache/feature_group.json
 
 api:
-  base_url: https://ws-v9y2oinbtzzm4ey9.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1
+  base_url: ${ALIBABA_URL}
   api_key: ${ALIBABA_API_KEY}
-  model: qwen3.7-max
+  model: ${ALIBABA_MODEL}
   temperature: 0.0
   max_tokens: 64
   concurrency: 10

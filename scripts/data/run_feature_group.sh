@@ -9,6 +9,9 @@ if [ -f .env ]; then
 fi
 
 TOOLS=${1:-data/benchmark_vi/tool_pool.json}
+if [ "$#" -gt 0 ]; then
+    shift
+fi
 
 if [ ! -f "$TOOLS" ]; then
     echo "ERROR: tools file not found: $TOOLS"
@@ -18,4 +21,4 @@ fi
 
 python -m src.data.feature_group_classify \
     --config configs/data/feature_group.yaml \
-    --tools "$TOOLS"
+    --tools "$TOOLS" "$@"

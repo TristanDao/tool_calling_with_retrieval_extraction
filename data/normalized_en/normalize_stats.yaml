@@ -1,0 +1,22 @@
+glaive:
+  calls_per_sample:
+    max: 1
+    mean: 1.0
+    min: 1
+  parsed_negative: 15141
+  parsed_positive: 45593
+  skipped_no_fc: 52226
+  skipped_parse_error: 0
+  source: glaive
+  total_raw: 112960
+xlam:
+  calls_per_sample:
+    max: 52
+    mean: 1.67
+    min: 1
+  parsed_negative: 0
+  parsed_positive: 60000
+  skipped_no_fc: 0
+  skipped_parse_error: 0
+  source: xlam
+  total_raw: 60000

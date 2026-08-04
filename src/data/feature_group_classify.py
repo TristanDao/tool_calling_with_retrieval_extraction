@@ -179,6 +179,54 @@ async def classify_tools(
     return cache
 
 
+async def smoke_test_feature_group_api(
+    tool: dict[str, Any],
+    cfg: dict[str, Any],
+) -> dict[str, Any]:
+    """Call the feature-group API once without reading or changing the cache."""
+    api_cfg = cfg.get("api", {})
+    api_key = api_cfg.get("api_key", "")
+    model = api_cfg.get("model", "")
+    if not api_key:
+        return {"ok": False, "model": model, "error": "api_key missing in config"}
+
+    categories = cfg.get("categories", DEFAULT_CATEGORIES)
+    try:
+        client = AsyncOpenAI(
+            api_key=api_key,
+            base_url=api_cfg.get("base_url", ""),
+            max_retries=0,
+        )
+        response = await client.chat.completions.create(
+            model=api_cfg.get("model", ""),
+            messages=[
+                {
+                    "role": "user",
+                    "content": build_classify_prompt(tool, categories),
+                }
+            ],
+            temperature=float(api_cfg.get("temperature", 0.0)),
+            max_tokens=int(api_cfg.get("max_tokens", 64)),
+        )
+        content = (response.choices[0].message.content or "").strip()
+        matched = next((category for category in categories if category in content), None)
+        return {
+            "ok": matched is not None,
+            "tool": tool.get("name", ""),
+            "model": model,
+            "response": content,
+            "feature_group": matched,
+            "valid_category": matched is not None,
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "tool": tool.get("name", ""),
+            "model": model,
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+
+
 def run_classify(
     tools: list[dict[str, Any]],
     config_path: Path,
@@ -195,6 +243,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Classify feature_group for tools")
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--tools", type=Path, required=True, help="JSON list of tools (name+description+parameters)")
+    parser.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="Call the API once for one tool without reading or changing the cache",
+    )
+    parser.add_argument("--tool-index", type=int, default=0, help="Tool index used by --smoke-test")
     args = parser.parse_args()
 
     with args.tools.open("r", encoding="utf-8") as f:
@@ -202,6 +256,20 @@ def main() -> None:
     if not isinstance(tools, list):
         print("ERROR: --tools must be a JSON list", file=sys.stderr)
         sys.exit(1)
+
+    if args.smoke_test:
+        if not tools:
+            print("ERROR: --tools list is empty", file=sys.stderr)
+            sys.exit(1)
+        if args.tool_index < 0 or args.tool_index >= len(tools):
+            print(f"ERROR: --tool-index must be between 0 and {len(tools) - 1}", file=sys.stderr)
+            sys.exit(1)
+        cfg = load_config(args.config)
+        result = asyncio.run(smoke_test_feature_group_api(tools[args.tool_index], cfg))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        if not result.get("ok"):
+            sys.exit(1)
+        return
 
     cache = run_classify(tools, args.config)
     counter = Counter(cache.values())

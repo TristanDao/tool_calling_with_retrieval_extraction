@@ -315,6 +315,8 @@ def test_translation_config_backup_model():
     })
     assert cfg.api_model == "main"
     assert cfg.api_backup_model == "backup"
+    assert cfg.api_backup_models == ["backup"]
+    assert cfg.batch_size == 10
 
 
 def test_translation_config_no_backup_model():
@@ -351,6 +353,49 @@ def test_translation_config_empty_backup_model():
         },
     })
     assert cfg.api_backup_model is None
+
+
+def test_translation_config_multiple_backup_models():
+    from src.data.translate import TranslationConfig
+
+    cfg = TranslationConfig.from_dict({
+        "input": "in.jsonl",
+        "output": "out.jsonl",
+        "failed_output": "failed.jsonl",
+        "checkpoint": "cp.json",
+        "dataset": "xlam",
+        "api": {
+            "base_url": "http://x",
+            "api_key": "k",
+            "model": "main",
+            "backup_model": "backup1",
+            "backup_models": ["backup2", "backup3"],
+        },
+    })
+
+    assert cfg.api_backup_model == "backup1"
+    assert cfg.api_backup_models == ["backup1", "backup2", "backup3"]
+
+
+def test_translation_config_comma_separated_backup_models():
+    from src.data.translate import TranslationConfig
+
+    cfg = TranslationConfig.from_dict({
+        "input": "in.jsonl",
+        "output": "out.jsonl",
+        "failed_output": "failed.jsonl",
+        "checkpoint": "cp.json",
+        "dataset": "xlam",
+        "api": {
+            "base_url": "http://x",
+            "api_key": "k",
+            "model": "main",
+            "backup_models": "backup1, backup2,backup3",
+        },
+    })
+
+    assert cfg.api_backup_models == ["backup1", "backup2", "backup3"]
+    assert cfg.api_backup_model == "backup1"
 
 
 def test_resolve_env_placeholder():
@@ -525,3 +570,127 @@ def test_translate_one_no_backup_just_retries(monkeypatch):
     assert result[0] == 99
     assert result[1] is not None
     assert call_count["n"] == 2
+
+
+def test_translate_one_uses_all_backup_models():
+    from src.data.translate import TranslationConfig, translate_one
+    from openai import RateLimitError
+    import asyncio
+
+    cfg = TranslationConfig(
+        input_path=Path("/tmp/in"),
+        output_path=Path("/tmp/out"),
+        failed_path=Path("/tmp/failed"),
+        checkpoint_path=Path("/tmp/cp"),
+        log_path=Path("/tmp/log"),
+        dataset="glaive",
+        start_index=0,
+        end_index=None,
+        batch_size=1,
+        concurrency=1,
+        max_retries=2,
+        retry_initial_delay=0.0,
+        retry_backoff=2.0,
+        api_base_url="http://x",
+        api_key="k",
+        api_model="main_model",
+        api_backup_model="backup1",
+        api_backup_models=["backup1", "backup2", "backup3"],
+        api_temperature=0.1,
+        api_timeout=10.0,
+        api_max_tokens=1024,
+        progress_log_every_n_batches=5,
+    )
+
+    call_log: list[str] = []
+
+    class _Msg:
+        content = '{"system": "SYSTEM: {}", "chat": "USER: hi"}'
+
+    class _Choice:
+        message = _Msg()
+
+    class _Resp:
+        choices = [_Choice()]
+
+    async def fake_create(**kwargs):
+        model = kwargs.get("model")
+        call_log.append(model)
+        if model != "backup3":
+            raise RateLimitError.__new__(RateLimitError)
+        return _Resp()
+
+    class _FakeClient:
+        chat = type("Chat", (), {"completions": type("CC", (), {"create": staticmethod(fake_create)})()})()
+
+    result = asyncio.run(
+        translate_one(
+            _FakeClient(),
+            {"system": "SYSTEM: {}", "chat": "USER: hi"},
+            7,
+            cfg,
+            asyncio.Semaphore(1),
+        )
+    )
+
+    assert result[1] is not None
+    assert call_log == ["main_model", "backup1", "backup2", "backup3"]
+
+
+def test_process_batch_flushes_output(tmp_path, monkeypatch):
+    from src.data import translate as module
+    from types import SimpleNamespace
+    import asyncio
+
+    async def fake_translate_one(client, sample, source_index, cfg, semaphore, log_callback=None, **kwargs):
+        return source_index, {"id": source_index}, None
+
+    monkeypatch.setattr(module, "translate_one", fake_translate_one)
+
+    success_path = tmp_path / "success.jsonl"
+    failed_path = tmp_path / "failed.jsonl"
+    cfg = SimpleNamespace(dataset="xlam", stop_after_consecutive_failures=5)
+    batch = [
+        (0, {"tools": json.dumps([{"name": "tool_a"}])}),
+        (1, {"tools": json.dumps([{"name": "tool_b"}])}),
+    ]
+
+    with success_path.open("w+", encoding="utf-8") as success_file, failed_path.open(
+        "w+", encoding="utf-8"
+    ) as failed_file:
+        result = asyncio.run(
+            module.process_batch(
+                client=None,
+                batch=batch,
+                cfg=cfg,
+                semaphore=asyncio.Semaphore(2),
+                fout_success=success_file,
+                fout_failed=failed_file,
+            )
+        )
+
+    assert result == (2, 0, False)
+    assert len(success_path.read_text(encoding="utf-8").strip().splitlines()) == 2
+    assert failed_path.read_text(encoding="utf-8") == ""
+
+
+def test_feature_group_failure_does_not_raise_after_commit(tmp_path, monkeypatch):
+    from src.data import translate as module
+    from types import SimpleNamespace
+    import asyncio
+
+    async def failing_classify_tools(tools, cfg, cache):
+        raise RuntimeError("classifier unavailable")
+
+    monkeypatch.setattr(module, "classify_tools", failing_classify_tools)
+    cfg = SimpleNamespace(dataset="xlam")
+    batch = [(0, {"tools": json.dumps([{"name": "tool_a"}])})]
+
+    asyncio.run(
+        module.classify_feature_group_batch(
+            batch,
+            cfg,
+            {"cache_path": str(tmp_path / "cache.json")},
+            {},
+        )
+    )

@@ -1,29 +1,29 @@
 defaults:
   - _self_
 
-input: data/raw/glaive_raw.jsonl
+input: data/processed/glaive_single_turn_raw.jsonl
 output: data/translations/glaive_vi.jsonl
 failed_output: data/translations/failed/glaive_failed.jsonl
-checkpoint: data/translations/.checkpoint/glaive.json
-log_file: data/translations/logs/translate_glaive.log
+checkpoint: data/translations/.checkpoint/glaive_filtered.json
+log_file: data/translations/logs/translate_glaive_filtered.log
 
 dataset: glaive
 
 start_index: 0
 end_index: null
 
-batch_size: 25
-concurrency: 8
+batch_size: 10
+concurrency: 12
 max_retries: 3
 retry_initial_delay: 1.0
 retry_backoff: 2.0
 stop_after_consecutive_failures: 5
 
 api:
-  base_url: https://ws-v9y2oinbtzzm4ey9.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1
+  base_url: ${ALIBABA_URL}
   api_key: ${ALIBABA_API_KEY}
   model: ${ALIBABA_MODEL}
-  backup_model: ${ALIBABA_BACKUP_MODEL}
+  backup_models: ${ALIBABA_BACKUP_MODELS}
   temperature: 0.1
   timeout: 60.0
   max_tokens: 8192
@@ -31,5 +31,5 @@ api:
 progress_log_every_n_batches: 5
 
 feature_group:
-  enabled: true
+  enabled: false
   config_path: configs/data/feature_group.yaml

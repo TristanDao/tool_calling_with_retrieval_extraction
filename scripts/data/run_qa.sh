@@ -17,10 +17,14 @@ if [ "$DATASET" = "glaive" ]; then
     INPUT=data/translations/glaive_vi.jsonl
     OUTPUT=data/translations/qa_samples/glaive_qa.jsonl
     REPORT=data/translations/qa_samples/glaive_qa_report.json
+    SOURCE_INPUT=data/processed/glaive_single_turn_raw.jsonl
+    FAILED_INPUT=data/translations/failed/glaive_filtered_failed.jsonl
 elif [ "$DATASET" = "xlam" ]; then
     INPUT=data/translations/xlam_vi.jsonl
     OUTPUT=data/translations/qa_samples/xlam_qa.jsonl
     REPORT=data/translations/qa_samples/xlam_qa_report.json
+    SOURCE_INPUT=data/raw/xlam_raw.jsonl
+    FAILED_INPUT=data/translations/failed/xlam_failed.jsonl
 else
     echo "Usage: $0 [glaive|xlam]"
     exit 1
@@ -39,6 +43,8 @@ raw['input'] = '$INPUT'
 raw['output'] = '$OUTPUT'
 raw['report'] = '$REPORT'
 raw['dataset'] = '$DATASET'
+raw['source_input'] = '$SOURCE_INPUT'
+raw['failed_input'] = '$FAILED_INPUT'
 cfg = QAConfig.from_dict(raw)
 asyncio.run(run_qa(cfg))
 "

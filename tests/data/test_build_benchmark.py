@@ -302,11 +302,10 @@ def test_parse_glaive_sample_full():
     assert sample is not None
     assert sample["id"] == "glaive_00000"
     assert sample["source"] == "glaive"
-    assert len(sample["conversation"]) == 4
-    assert sample["conversation"][0]["role"] == "user"
-    assert sample["conversation"][0]["content"] == "Find a Math tutor"
-    assert sample["conversation"][1]["role"] == "assistant"
-    assert sample["conversation"][1]["function_calls"][0]["name"] == "search_tutors"
+    assert sample["query"] == "Find a Math tutor"
+    assert len(sample["function_calls"]) == 1
+    assert sample["function_calls"][0]["name"] == "search_tutors"
+    assert sample["function_calls"][0]["arguments"] == {"subject": "Math"}
     assert len(sample["tools"]) == 1
     assert sample["tools"][0]["name"] == "search_tutors"
 
@@ -331,9 +330,10 @@ def test_parse_xlam_sample_basic():
     sample = parse_xlam_sample(raw, 0)
     assert sample is not None
     assert sample["source"] == "xlam"
-    assert len(sample["conversation"]) == 2
-    assert sample["conversation"][0]["content"] == "Find live giveaways"
-    assert len(sample["conversation"][1]["function_calls"]) == 2
+    assert sample["query"] == "Find live giveaways"
+    assert len(sample["function_calls"]) == 2
+    assert sample["function_calls"][0]["name"] == "live_giveaways_by_type"
+    assert sample["function_calls"][0]["arguments"] == {"type": "beta"}
     assert sample["tools"][0]["parameters"]["properties"]["type"]["type"] == "string"
     assert sample["tools"][0]["parameters"]["required"] == ["type"]
 
@@ -378,14 +378,15 @@ def test_validate_sample_ok():
     sample = {
         "id": "x_0",
         "source": "glaive",
-        "conversation": [
-            {"role": "user", "content": "hi"},
-            {"role": "assistant", "content": None, "function_calls": [{"name": "a", "arguments": {}}]},
-            {"role": "function", "name": "a", "content": "ok"},
-            {"role": "assistant", "content": "done"},
+        "query": "hi",
+        "function_calls": [
+            {"name": "a", "arguments": {"k": "v"}},
+            {"name": "b", "arguments": {}},
         ],
         "tools": [
             {"name": "a", "description": "A", "feature_group": "Khác",
+             "parameters": {"type": "object", "properties": {}}},
+            {"name": "b", "description": "B", "feature_group": "Khác",
              "parameters": {"type": "object", "properties": {}}},
         ],
     }
@@ -395,7 +396,7 @@ def test_validate_sample_ok():
 
 def test_validate_sample_missing_id():
     from src.data.build_benchmark import _validate_sample
-    sample = {"conversation": [], "tools": []}
+    sample = {"query": "", "function_calls": [], "tools": []}
     ok, errs = _validate_sample(sample)
     assert ok is False
     assert "missing id" in errs
@@ -405,9 +406,9 @@ def test_validate_sample_function_call_not_in_tools():
     from src.data.build_benchmark import _validate_sample
     sample = {
         "id": "x_0",
-        "conversation": [
-            {"role": "user", "content": "hi"},
-            {"role": "assistant", "content": None, "function_calls": [{"name": "unknown", "arguments": {}}]},
+        "query": "hi",
+        "function_calls": [
+            {"name": "unknown", "arguments": {}},
         ],
         "tools": [],
     }
@@ -420,9 +421,12 @@ def test_validate_sample_tool_not_snake_case():
     from src.data.build_benchmark import _validate_sample
     sample = {
         "id": "x_0",
-        "conversation": [{"role": "user", "content": "hi"}],
+        "query": "hi",
+        "function_calls": [{"name": "good_name", "arguments": {}}],
         "tools": [
             {"name": "BadName", "description": "x", "feature_group": "Khác",
+             "parameters": {"type": "object", "properties": {}}},
+            {"name": "good_name", "description": "x", "feature_group": "Khác",
              "parameters": {"type": "object", "properties": {}}},
         ],
     }
@@ -435,7 +439,8 @@ def test_validate_sample_tool_missing_feature_group():
     from src.data.build_benchmark import _validate_sample
     sample = {
         "id": "x_0",
-        "conversation": [{"role": "user", "content": "hi"}],
+        "query": "hi",
+        "function_calls": [{"name": "good_name", "arguments": {}}],
         "tools": [
             {"name": "good_name", "description": "x", "parameters": {"type": "object", "properties": {}}},
         ],
@@ -485,3 +490,46 @@ def test_safe_json_loads():
     assert _safe_json_loads({"k": "v"}) == {"k": "v"}
     assert _safe_json_loads("not json") is None
     assert _safe_json_loads(None) is None
+
+
+def test_parse_glaive_sample_multi_call():
+    from src.data.build_benchmark import parse_glaive_sample
+    raw = {
+        "system": 'SYSTEM: {"name": "multi_tool", "description": "Multi", "parameters": {"type": "object", "properties": {}, "required": []}}',
+        "chat": (
+            "USER: Tìm chuyến bay và khách sạn\n\n"
+            "A: <functioncall> {\"name\": \"search_flights\", \"arguments\": '{\"origin\": \"HN\"}'} <|endoftext|>\n\n"
+            "A: <functioncall> {\"name\": \"search_hotels\", \"arguments\": '{\"city\": \"HN\"}'} <|endoftext|>\n\n"
+            "FUNCTION RESPONSE: [...]\n\n"
+            "A: Done <|endoftext|>"
+        ),
+    }
+    sample = parse_glaive_sample(raw, 0)
+    assert sample is not None
+    assert sample["query"] == "Tìm chuyến bay và khách sạn"
+    assert len(sample["function_calls"]) == 2
+    assert sample["function_calls"][0]["name"] == "search_flights"
+    assert sample["function_calls"][1]["name"] == "search_hotels"
+
+
+def test_parse_glaive_sample_no_fc_returns_none():
+    from src.data.build_benchmark import parse_glaive_sample
+    raw = {
+        "system": "",
+        "chat": "USER: Hi\n\nA: Hello! <|endoftext|>",
+    }
+    assert parse_glaive_sample(raw, 0) is None
+
+
+def test_parse_glaive_sample_fc_in_second_turn_only():
+    from src.data.build_benchmark import parse_glaive_sample
+    raw = {
+        "system": 'SYSTEM: {"name": "f", "description": "x", "parameters": {"type": "object", "properties": {}, "required": []}}',
+        "chat": (
+            "USER: Hi\n\n"
+            "A: Hello! <|endoftext|>\n\n"
+            "USER: Call function\n\n"
+            "A: <functioncall> {\"name\": \"f\", \"arguments\": '{}'} <|endoftext|>"
+        ),
+    }
+    assert parse_glaive_sample(raw, 0) is None

@@ -143,16 +143,19 @@ data/raw/glaive_raw.jsonl + data/raw/xlam_raw.jsonl
    ├─ collect.py (đã có)
    │
    ▼
+data/processed/glaive_single_turn_raw.jsonl (lọc Glaive, giữ system/chat)
+    │
+    ▼
 data/translations/ (Bộ 1 — raw VI)
    │
-   ├─ translate.py (async, K=25, concurrency=8)
+   ├─ translate.py (async, K=10, concurrency=8)
    ├─ translate_guidelines.py
    ├─ qa_translation.py
    │
    ▼
 src/data/normalize_schema.py  (xLAM type → JSON Schema chuẩn)
-src/data/feature_group_classify.py  (LLM classify, cache)
 src/data/build_benchmark.py  (Bộ 1 → schema master + split)
+src/data/feature_group_classify.py  (LLM classify unique tools, cache)
    │
    ▼
 data/benchmark_vi/

@@ -4,8 +4,8 @@ defaults:
 input: data/translations/glaive_vi.jsonl
 output: data/translations/qa_samples/glaive_qa.jsonl
 report: data/translations/qa_samples/glaive_qa_report.json
-source_input: data/raw/glaive_raw.jsonl
-failed_input: data/translations/failed/glaive_failed.jsonl
+source_input: data/processed/glaive_single_turn_raw.jsonl
+failed_input: data/translations/failed/glaive_filtered_failed.jsonl
 
 dataset: glaive
 
@@ -19,7 +19,7 @@ rule_check:
 llm_judge:
   enabled: true
   sample_rate: 0.05
-  base_url: https://ws-v9y2oinbtzzm4ey9.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1
+  base_url: ${ALIBABA_URL}
   api_key: ${ALIBABA_API_KEY}
   model: qwen3.7-max
   temperature: 0.0

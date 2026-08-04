@@ -127,7 +127,7 @@ data/raw/ (downloaded)
    │
    │  ┌─────────────────────────────────────────────────┐
    │  │  BỘ 1: src/data/translate.py                   │
-   │  │  - Async batch K=25, concurrency=8              │
+   │  │  - Async batch K=10, concurrency=8              │
    │  │  - Qwen-MT qua ALIBABA_URL                     │
    │  │  - Append JSONL, flush per sample, atomic cp    │
    │  └─────────────────────────────────────────────────┘

@@ -6,6 +6,8 @@ Cấu trúc:
 
 - `raw/` — Dataset gốc EN (**Glaive + xLAM**, chỉ 2 nguồn chính). Tải bằng `src/data/collect.py`. Không commit vào git.
 - `processed/` — Dataset đã chuẩn hóa schema, dedupe. Không commit.
+  - `glaive_single_turn_raw.jsonl` — Glaive positive first-turn records, giữ format raw để dịch Bộ 1.
+  - `glaive_single_turn_index.jsonl` — Mapping filtered index → raw source index.
   - `tools/`
   - `queries/`
   - `parameters/`

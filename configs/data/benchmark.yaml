@@ -3,7 +3,7 @@ defaults:
 
 input_glaive: data/translations/glaive_vi.jsonl
 input_xlam: data/translations/xlam_vi.jsonl
-source_glaive: data/raw/glaive_raw.jsonl
+source_glaive: data/processed/glaive_single_turn_raw.jsonl
 source_xlam: data/raw/xlam_raw.jsonl
 
 output_dir: data/benchmark_vi
