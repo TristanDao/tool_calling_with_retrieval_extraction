@@ -73,6 +73,7 @@
 
 ## 8. Đánh giá
 
+- **AISA-ArabicFC Shared Task (ArabicNLP 2026)** — Track A đánh giá call detection, function selection và argument extraction; Track C phân tầng robustness và đo performance gap. Đề tài kế thừa cách phân rã chức năng và tổng quát hóa ý tưởng Track C sang seen/unseen tool, domain, multi-call và schema complexity. https://huggingface.co/spaces/TuwaiqAcademy/AISA-ArabicFC-Shared-Task
 - **Recall@k, MRR, NDCG** — chuẩn metric cho retrieval.
 - **BLEU, ROUGE** — chuẩn metric cho text generation (ít dùng cho tool calling).
 - **JSON Schema validation** — RFC 8259 + JSON Schema draft-07/2020-12.

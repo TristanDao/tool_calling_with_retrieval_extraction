@@ -255,7 +255,7 @@ tool_calling_with_retrieval_extraction/
 | 3 | Method 2: Cross-Encoder | ⏳ (skeleton có sẵn) |
 | 4 | Method 1: SLM fine-tune + instruction data | ⏳ |
 | 5 | Baselines (OpenAI FC, Gemini FC) | ⏳ |
-| 6 | Evaluation & comparison (4 methods) | ⏳ |
+| 6 | Evaluation & comparison (4 methods) | ⏳ Framework done; chờ predictions/experiments |
 | 7 | Stress test (RAG-MCP inspired, so sánh cả 4) | ⏳ |
 
 ### Phase detail
@@ -282,8 +282,14 @@ tool_calling_with_retrieval_extraction/
 - Đo latency, cost, accuracy
 
 **Phase 6 — Evaluation**:
-- Bảng so sánh 4 methods: Tool Acc, Arg F1, Latency, Cost/1k
-- Cả Method 1 + Method 2 + 2 baselines
+- Component-level: Call F1, Recall@K/MRR, Tool Set Accuracy, Key/Argument Pair F1, Normalized ArgEM, Schema Validity.
+- End-to-end: **N-FCEM-positive** (tool multiset + toàn bộ arguments đúng sau normalization) và Overall Success có no-call.
+- Robustness: breakdown + gap theo source, seen/unseen tool, domain, độ khó, số call, số candidate và độ phức tạp schema; không dùng dialect.
+- Efficiency: p50/p95/p99 latency, throughput, token/cost/query, cost/correct call, GPU memory nếu có.
+- Statistical reliability: bootstrap confidence interval; paired comparison dùng McNemar và paired bootstrap.
+- Input chuẩn: gold master JSONL + prediction JSONL cùng `id`; hỗ trợ native multi-call và adapter cho master dạng `conversation` cũ.
+- Output chuẩn: `report.json`, `per_sample.jsonl`, `summary.md`; compare 4 methods sinh thêm CSV/Markdown và paired tests.
+- Framework code + CLI + tests đã hoàn tất; phần còn lại của Phase 6 là sinh predictions của 4 methods và chạy thí nghiệm.
 
 **Phase 7 — Stress test**:
 - So sánh cả 4 methods khi N tools tăng [3, 10, 50, 100, 500, 1000]
@@ -332,6 +338,7 @@ tool_calling_with_retrieval_extraction/
 | `docs/architecture.md` | Sơ đồ 2 pipeline (Method 1 + Method 2) |
 | `docs/methodology.md` | Phương pháp nghiên cứu chi tiết |
 | `docs/benchmark.md` | Cấu trúc benchmark tiếng Việt |
+| `docs/evaluation_methodology_thesis.md` | Trình bày học thuật về phương pháp, kỹ thuật, vai trò và ý nghĩa của framework đánh giá |
 | `docs/translation_guidelines.md` | Quy tắc dịch |
 | `docs/references.md` | Papers & resources |
 | `.env.example` | Template biến môi trường |
@@ -349,7 +356,7 @@ tool_calling_with_retrieval_extraction/
 - **[x] Stress test**: Đã chốt — giữ, so sánh cả 4 methods.
 - **[ ] Số lượng tool trong benchmark**: Chưa quyết (sau khi build tool_pool.json).
 - **[ ] Splits train/val/test ratio**: Đề xuất 80/10/10, seed=42.
-- **[ ] Metric chính Method 1**: ArgA (Ersoy et al.) hay dùng metric chung với Method 2?
+- **[x] Metric chính Method 1**: dùng metric chung **N-FCEM-positive** (tương đương tinh thần ArgA nhưng schema-aware normalization và hỗ trợ multi-call); ArgEM/Arg-F1 là metric chẩn đoán.
 - **[ ] Fine-tune Method 1 pipeline**: Dùng LLaMA-Factory CLI hay tích hợp training script trong repo?
 - **[x] Phase 1 in progress** (data pipeline):
   - [x] Download Glaive + xLAM
@@ -374,6 +381,12 @@ tool_calling_with_retrieval_extraction/
 - **[x] Phase 2/3 deferred** (quay lại sau khi data xong):
   - [ ] 4 configs/crossencoder/ (model, heads, losses, training)
   - [ ] 4 tests/crossencoder/ (heads, losses, label_generator, inference)
+- **[x] Phase 6 evaluation design** (chốt 2026-08-07):
+  - Không dùng composite score tùy ý làm headline.
+  - Component metrics + N-FCEM + robustness slices + efficiency.
+  - Prediction contract dùng `function_calls[]`, `ranked_tools[]`, `telemetry`.
+  - No-call là `function_calls: []`; multi-call so khớp không phụ thuộc thứ tự.
+  - Oracle-tool extraction được đánh giá bằng file prediction riêng tùy chọn.
 
 ---
 
@@ -399,3 +412,5 @@ tool_calling_with_retrieval_extraction/
 | 2026-07-26 | Download data thành công. EDA: Glaive 45,593 single-turn, xLAM 28,461 single-call |
 | 2026-07-28 | Pivot sang multi-turn + multi-call (đã revert sau) |
 | 2026-08-03 | **Pivot lớn**: Chuyển sang so sánh 2 phương pháp. Method 1: SLM Qwen2.5 end-to-end (theo Ersoy et al.). Method 2: Bi-Encoder + Cross-Encoder. Schema master single-turn + multi-call. 4-method comparison. Update toàn bộ docs. |
+| 2026-08-07 | Chốt và triển khai Phase 6 evaluator: component metrics, N-FCEM, robustness không theo dialect, efficiency, bootstrap/McNemar; native multi-call. |
+| 2026-08-07 | Thêm tài liệu phương pháp đánh giá theo văn phong báo cáo khóa luận, phân biệt 2 phương pháp chính và 2 baseline. |

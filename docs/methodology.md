@@ -148,32 +148,58 @@ Dùng chung cho cả 2 method:
 
 ## 5. Phương pháp đánh giá
 
-### 5.1 Metric chung
+Framework đánh giá dùng cùng một protocol cho Method 1, Method 2 và hai API baseline. Không dùng một composite score có trọng số tùy ý; kết quả được báo cáo theo từng tầng và toàn pipeline.
 
-- **Tool Accuracy**: tỉ lệ chọn đúng tool name.
-- **Arg F1 / EM**: argument-level F1 và Exact Match.
-- **End-to-end accuracy**: tool name + all arguments đúng.
-- **Latency** (ms/query).
-- **Cost** ($/1k queries) — ước lượng cho API baselines.
+### 5.1 Call detection
 
-### 5.2 Metric riêng Method 1
+Một mẫu là positive khi gold có ít nhất một phần tử trong `function_calls[]`. Prediction rỗng là no-call. Báo cáo Call Precision, Recall, F1, Hallucinated Call Rate `FP/N_negative` và Missed Call Rate `FN/N_positive`.
 
-- **ArgA** (Argument Population Accuracy, Ersoy et al.): tỉ lệ function call có cả tên tool và tất cả arguments chính xác, tính trên positive cases (có tool call).
+### 5.2 Tool retrieval và selection
 
-### 5.3 Metric riêng Method 2
+Retriever được đo bằng micro Recall@K, Full Recall@K cho multi-call và MRR của gold tool đầu tiên. Selection được đo bằng exact match của multiset tên tool trên positive samples, tool micro/macro F1 và Selection Conversion@K khi toàn bộ gold tools đã có trong top-K.
 
-- **Recall@k** (k=1,3,5,10): retrieval.
-- **Span F1 (SQuAD-style)**: extraction.
-- **has_value_acc**: % params predict đúng có/không có giá trị.
+### 5.3 Parameter extraction
 
-### 5.4 Bảng so sánh chính
+Arguments được chuẩn hóa đối xứng cho gold/prediction theo schema: Unicode/whitespace/case, numeric/boolean coercion theo type và alias khai báo. Identifier thuộc schema `string` không bị ép kiểu số. Multi-call cùng tên được ghép cặp tối ưu trước khi tính:
 
-| Method | Tool Acc | Arg F1 | Latency (ms) | Cost/1k |
-|---|---|---|---|---|
-| Method 1: SLM (ours) | … | … | … | … |
-| Method 2: Bi+Cross (ours) | … | … | … | … |
-| OpenAI FC (gpt-4o-mini) | … | … | … | … |
-| Gemini FC (gemini-1.5-flash) | … | … | … | … |
+- Normalized Argument Exact Match khi tool set đúng.
+- Argument Key Precision/Recall/F1.
+- Argument Pair Precision/Recall/F1 trên cặp `(parameter_path, normalized_value)`.
+- Value Accuracy trên các parameter cùng key.
+- Breakdown theo parameter type.
+- Oracle-tool ArgEM từ một file prediction dùng gold tool schema riêng.
+
+### 5.4 Structural validity
+
+Schema Validity kiểm tra tên tool thuộc candidate set, arguments là object, required fields, JSON Schema type/enum/constraint và output parse được. Báo cáo validity theo call, theo sample và prediction-format validity.
+
+### 5.5 End-to-end
+
+Metric chính là **Normalized Function Call Exact Match trên positive samples (N-FCEM-positive)**. Một mẫu chỉ đúng khi multiset function calls, tên tool và toàn bộ normalized arguments đều đúng; thứ tự các call không ảnh hưởng kết quả. `Overall Success` mở rộng N-FCEM bằng cách tính đúng cho negative sample khi prediction là no-call.
+
+### 5.6 Robustness theo tinh thần Track C
+
+Không phân tầng theo phương ngữ. Evaluator breakdown N-FCEM, Tool Set Accuracy, ArgEM và Overall Success theo `source`, seen/unseen tool, domain, difficulty, single/multi-call, candidate-set size, feature group và schema complexity. Với mỗi slice, gap là `max(group score) − min(group score)`.
+
+### 5.7 Efficiency
+
+Từ telemetry từng prediction, báo cáo mean/p50/p95/p99 latency, throughput, input/output tokens mỗi query, cost/query, cost/1k queries, cost/correct call và peak GPU memory. p95 latency và cost/correct là hai chỉ số hiệu quả chính.
+
+### 5.8 Statistical reliability
+
+N-FCEM, Overall Success và các binary headline metrics có bootstrap confidence interval với seed cố định. So sánh hai method trên cùng test IDs dùng exact McNemar test và paired bootstrap confidence interval của chênh lệch.
+
+### 5.9 Bảng so sánh chính
+
+| Method | Call F1 | R@5 | Tool Set Acc | Oracle ArgEM | N-FCEM | Schema Valid | p95 ms | Cost/correct |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Method 1: SLM (ours) | … | — | … | … | … | … | … | … |
+| Method 2: Bi+Cross (ours) | … | … | … | … | … | … | … | … |
+| OpenAI FC (gpt-4o-mini) | … | — | … | … | … | … | … | … |
+| Gemini FC (gemini-1.5-flash) | … | — | … | … | … | … | … | … |
+
+Định nghĩa field, input/output và hướng dẫn chạy đầy đủ nằm trong `docs/evaluation.md`.
+Phần trình bày học thuật có thể sử dụng trực tiếp trong báo cáo nằm tại `docs/evaluation_methodology_thesis.md`.
 
 ---
 

@@ -37,8 +37,8 @@ Hệ thống so sánh **2 phương pháp** Tool Calling tiếng Việt + 2 API b
                                                │   EVALUATION        │
                                                │  (compare.py)       │
                                                │                     │
-                                               │  Tool Acc, Arg F1,  │
-                                               │  Latency, Cost/1k   │
+                                               │  Components, N-FCEM │
+                                               │  Robustness, Cost   │
                                                └──────────┬──────────┘
                                                           │
                                                           ▼
@@ -170,14 +170,41 @@ data/benchmark_vi/
 
 ## 5. Comparison Table
 
-So sánh 4 methods trên benchmark VI:
+Mỗi method xuất prediction JSONL cùng `id` với master benchmark. Evaluation layer chuẩn hóa arguments theo JSON Schema, so khớp multi-call không phụ thuộc thứ tự, validate schema và tạo cùng một bộ metric cho cả bốn method.
 
-| Method | Tool Acc | Arg F1 | Latency (ms) | Cost/1k |
-|---|---|---|---|---|
-| Method 1: SLM (ours) | … | … | … | … |
-| Method 2: Bi+Cross (ours) | … | … | … | … |
-| OpenAI FC (gpt-4o-mini) | … | … | … | … |
-| Gemini FC (gemini-1.5-flash) | … | … | … | … |
+```
+gold master JSONL ─┐
+                   ├─► loader/adapters ─► schema-aware normalization
+prediction JSONL ──┘                              │
+                                                 ▼
+                       ┌──────────────────────────────────────────┐
+                       │ component metrics                        │
+                       │ detection → retrieval → selection → args │
+                       └──────────────────┬───────────────────────┘
+                                          ▼
+                       N-FCEM / overall success / schema validity
+                                          │
+                       ┌──────────────────┴───────────────────────┐
+                       ▼                                          ▼
+                 robustness slices                         efficiency
+                       │                                          │
+                       └──────────────────┬───────────────────────┘
+                                          ▼
+                         JSON + JSONL + Markdown reports
+```
+
+| Layer | Headline metric | Diagnostic metrics |
+|---|---|---|
+| Call detection | Call F1 | Precision, Recall, hallucinated/missed-call rate |
+| Retrieval | Recall@K | Full Recall@K, MRR, retrieval coverage |
+| Selection | Tool Set Accuracy | Tool micro/macro F1, Selection Conversion@K |
+| Extraction | Normalized ArgEM | Key F1, Argument Pair F1, value accuracy, per-type |
+| Structure | Schema Validity | Parse validity, call/sample validity |
+| End-to-end | N-FCEM-positive | Overall Success including no-call |
+| Robustness | Slice N-FCEM | max−min gap across groups |
+| Efficiency | p95 latency | p50/p99, throughput, cost/query, cost/correct |
+
+Chi tiết contract và lệnh chạy nằm trong `docs/evaluation.md`.
 
 ## 6. Stress Test (Phase 7)
 

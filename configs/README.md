@@ -8,8 +8,8 @@ Cấu trúc:
 - `model/` — config cho model (biencoder, crossencoder, unsloth_baseline).
 - `pipeline/` — config cho end-to-end pipeline (retrieval k, schema format).
 - `baseline/` — config cho baselines (openai, gemini, local_llm).
-- `eval/` — config cho evaluation (metrics, output paths).
+- `eval/` — alias và unordered-array rules tùy chọn cho schema-aware normalization; structured defaults nằm ở `src/evaluation/config.py`.
 
-Entry point: `configs/config.py` (sẽ thêm ở Phase 1).
+Evaluation entry point: `python -m src.evaluation.cli`; resolved structured config được lưu trong mọi `report.json`.
 
 > **Quy ước**: Mọi hyperparameter và đường dẫn phải qua config, **không hardcode** trong code.

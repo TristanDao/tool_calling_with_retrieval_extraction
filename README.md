@@ -40,7 +40,7 @@ Chi tiết xem `AGENTS.md` section 6 và `docs/architecture.md`.
 
 ## 3. Quick start
 
-> Hiện tại repo đang ở Phase 1 (data pipeline). Train/eval scripts sẽ thêm ở phase sau.
+Phase 1 data pipeline và Phase 6 evaluator framework đang được triển khai song song.
 
 ```bash
 # 1. Cài dependencies
@@ -62,7 +62,15 @@ bash scripts/data/run_qa.sh
 
 # 6. Build benchmark
 bash scripts/data/run_benchmark.sh
+
+# 7. Evaluate một prediction file
+python -m src.evaluation.cli evaluate \
+  --gold data/benchmark_vi/test.jsonl \
+  --predictions results/slm/predictions.jsonl \
+  --output-dir results/evaluation/slm
 ```
+
+Evaluator xuất `report.json`, `per_sample.jsonl`, `summary.md` và hỗ trợ compare nhiều method. Contract prediction, metric definitions và lệnh đầy đủ: `docs/evaluation.md`.
 
 ## 4. Data Schema
 
@@ -105,6 +113,8 @@ Quy ước: `query` VI, `function_calls[].name` + `arguments` keys EN, values c�
 - `docs/architecture.md` — sơ đồ 2 pipeline.
 - `docs/methodology.md` — phương pháp nghiên cứu.
 - `docs/benchmark.md` — cấu trúc benchmark tiếng Việt.
+- `docs/evaluation.md` — contract input/output, metric và hướng dẫn chạy evaluator.
+- `docs/evaluation_methodology_thesis.md` — phương pháp, kỹ thuật, vai trò và ý nghĩa của phần đánh giá theo văn phong khóa luận.
 - `docs/translation_guidelines.md` — quy tắc dịch.
 - `docs/references.md` — papers & resources.
 
@@ -118,7 +128,7 @@ Quy ước: `query` VI, `function_calls[].name` + `arguments` keys EN, values c�
 | 3 | Method 2: Cross-Encoder | ⏳ (skeleton có sẵn) |
 | 4 | Method 1: SLM fine-tune | ⏳ |
 | 5 | Baselines (OpenAI FC, Gemini FC) | ⏳ |
-| 6 | Evaluation & comparison (4 methods) | ⏳ |
+| 6 | Evaluation & comparison (4 methods) | ⏳ Framework done; chờ predictions/experiments |
 | 7 | Stress test (RAG-MCP inspired) | ⏳ |
 
 ## 8. References chính

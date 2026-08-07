@@ -43,7 +43,7 @@ translate = [
 ]
 
 [project.scripts]
-# sẽ thêm khi có CLI: tool-calling-vi-train, tool-calling-vi-eval, ...
+tool-calling-vi-eval = "src.evaluation.cli:main"
 
 [tool.setuptools]
 package-dir = { "" = "." }

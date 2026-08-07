@@ -1,0 +1,14 @@
+{
+  "global": {
+    "đô la mỹ": "USD",
+    "việt nam": "VN"
+  },
+  "by_parameter": {
+    "convert_currency.source_currency": {
+      "đồng việt nam": "VND"
+    }
+  },
+  "unordered_array_paths": [
+    "search_products.categories"
+  ]
+}
