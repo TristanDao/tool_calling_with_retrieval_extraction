@@ -7,10 +7,16 @@
 
 > **Quyết định**: Tách thành 2 bộ riêng biệt. Schema master là single-turn + multi-call.
 
+Pipeline cũng hỗ trợ đường chạy trực tiếp schema master với dataset identifier
+`glaive_normalized`; đường chạy này có output, checkpoint và QA riêng, không ghi đè Bộ 1.
+
 | Bộ | Path | Format | Vai trò |
 |---|---|---|---|
 | **Bộ 1 (dịch)** | `data/translations/` | Gần raw (giữ `chat` text cho Glaive, `answers` JSON list cho xLAM); chỉ thay natural language | LLM dịch dễ, ít pre-processing |
 | **Bộ 2 (task)** | `data/benchmark_vi/` | Single-turn schema master: `{id, source, query, function_calls[], tools[]}` | Train + eval Method 1 (SLM) + Method 2 (Bi+Cross) |
+
+Đường chạy trực tiếp normalized tạo bản dịch schema master tại
+`data/translations/glaive_normalized_vi.jsonl`.
 
 **Tại sao tách 2 bộ**:
 - Bộ 1 giữ format gần raw → LLM dịch ít rủi ro corrupt JSON, ít mất ngữ nghĩa.

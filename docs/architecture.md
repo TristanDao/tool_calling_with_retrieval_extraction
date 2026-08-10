@@ -169,6 +169,16 @@ data/benchmark_vi/
    └──► Method 2: train trực tiếp trên schema master
         → Bi-Encoder: (query, tool_desc) pairs
         → Cross-Encoder: (query, param_schema, label) per-param
+
+Đường chạy thay thế khi cần dịch trực tiếp schema master:
+
+data/normalized_en/glaive_normalized.jsonl
+    │
+    ▼
+scripts/data/run_translate_glaive_normalized.sh
+    │
+    ▼
+data/translations/glaive_normalized_vi.jsonl
 ```
 
 ## 5. Comparison Table

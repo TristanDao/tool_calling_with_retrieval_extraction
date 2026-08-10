@@ -39,11 +39,11 @@ from src.data.translate_guidelines import is_snake_case
 
 
 _GLAIVE_USER_RE = re.compile(
-    r"(?:^|\n)\s*(?:USER|NGƯỜI DÙNG)\s*:\s*",
+    r"(?:^|\n)\s*(?:USER|NGƯỜI DÙNG|KHÁCH HÀNG)\s*:\s*",
     re.IGNORECASE,
 )
 _GLAIVE_ASSISTANT_RE = re.compile(
-    r"(?:^|\n)\s*(?:ASSISTANT|TRỢ LÝ|A)\s*:\s*",
+    r"(?:^|\n)\s*(?:ASSISTANT|TRỢ LÝ|HỖ TRỢ|A)\s*:\s*",
     re.IGNORECASE,
 )
 _GLAIVE_FUNCTION_RESP_RE = re.compile(
@@ -347,6 +347,12 @@ def parse_glaive_sample(raw: dict[str, Any], idx: int) -> dict[str, Any] | None:
     tool_schema_raw = _extract_glaive_tool_from_system(system_text)
 
     turns = _split_glaive_chat_turns(chat_text)
+    if not any(t["role"] == "user" for t in turns):
+        first_assistant = _GLAIVE_ASSISTANT_RE.search(chat_text)
+        if first_assistant is not None:
+            query_prefix = chat_text[:first_assistant.start()].strip()
+            if query_prefix:
+                turns.insert(0, {"role": "user", "content": query_prefix})
     if not turns:
         return None
     if not any(t["role"] == "user" for t in turns):
@@ -544,6 +550,16 @@ def _load_failed_indices(failed_path: Path) -> set[int]:
     return indices
 
 
+def _find_failed_path(input_path: Path) -> Path:
+    candidates = [input_path.parent / "failed" / f"{input_path.stem}_failed.jsonl"]
+    if input_path.stem == "glaive_vi":
+        candidates.insert(0, input_path.parent / "failed" / "glaive_filtered_failed.jsonl")
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
 def _load_source_samples(path: Path) -> list[tuple[int, dict[str, Any]]]:
     samples: list[tuple[int, dict[str, Any]]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -614,8 +630,8 @@ def build_benchmark(cfg: BuildConfig) -> dict[str, Any]:
     cfg.output_dir.mkdir(parents=True, exist_ok=True)
     cfg.tool_schema_dir.mkdir(parents=True, exist_ok=True)
 
-    glaive_failed = _load_failed_indices(cfg.input_glaive.parent / "failed" / "glaive_failed.jsonl")
-    xlam_failed = _load_failed_indices(cfg.input_xlam.parent / "failed" / "xlam_failed.jsonl")
+    glaive_failed = _load_failed_indices(_find_failed_path(cfg.input_glaive))
+    xlam_failed = _load_failed_indices(_find_failed_path(cfg.input_xlam))
     print(f"[build] glaive failed: {len(glaive_failed)}, xlam failed: {len(xlam_failed)}")
 
     glaive_raw = _pair_source_translated(cfg.source_glaive, cfg.input_glaive, glaive_failed)
@@ -798,8 +814,8 @@ def _build_benchmark_no_classify(cfg: BuildConfig) -> dict[str, Any]:
     cfg.output_dir.mkdir(parents=True, exist_ok=True)
     cfg.tool_schema_dir.mkdir(parents=True, exist_ok=True)
 
-    glaive_failed = _load_failed_indices(cfg.input_glaive.parent / "failed" / "glaive_failed.jsonl")
-    xlam_failed = _load_failed_indices(cfg.input_xlam.parent / "failed" / "xlam_failed.jsonl")
+    glaive_failed = _load_failed_indices(_find_failed_path(cfg.input_glaive))
+    xlam_failed = _load_failed_indices(_find_failed_path(cfg.input_xlam))
     glaive_raw = _pair_source_translated(cfg.source_glaive, cfg.input_glaive, glaive_failed)
     xlam_raw = _pair_source_translated(cfg.source_xlam, cfg.input_xlam, xlam_failed)
     print(f"[build] loaded glaive: {len(glaive_raw)}, xlam: {len(xlam_raw)}")

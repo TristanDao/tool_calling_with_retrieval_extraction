@@ -207,6 +207,71 @@ def test_translate_prompt_xlam():
     assert "tools" in prompt
 
 
+def test_translate_prompt_glaive_normalized():
+    from src.data.translate_guidelines import build_translate_prompt
+    sample = {
+        "id": "glaive_00001",
+        "source": "glaive",
+        "query": "Find news",
+        "function_calls": [{"name": "get_news", "arguments": {"country": "US"}}],
+        "tools": [{"name": "get_news", "description": "Get news", "parameters": {}}],
+        "has_tool_call": True,
+    }
+    prompt = build_translate_prompt(sample, "glaive_normalized")
+    assert '"function_calls"' in prompt
+    assert '"tools"' in prompt
+    assert '"query"' in prompt
+
+
+def test_check_identifier_integrity_glaive_normalized_ok():
+    from src.data.translate_guidelines import check_identifier_integrity
+    original = {
+        "id": "glaive_00001",
+        "source": "glaive",
+        "query": "Find news",
+        "function_calls": [{"name": "get_news", "arguments": {"country": "US"}}],
+        "tools": [{
+            "name": "get_news",
+            "description": "Get news",
+            "parameters": {
+                "type": "object",
+                "properties": {"country": {"type": "string", "description": "Country"}},
+                "required": ["country"],
+            },
+        }],
+        "has_tool_call": True,
+    }
+    translated = {
+        **original,
+        "query": "Tìm tin tức",
+        "function_calls": [{"name": "get_news", "arguments": {"country": "Hoa Kỳ"}}],
+        "tools": [{
+            **original["tools"][0],
+            "description": "Lấy tin tức",
+            "parameters": {
+                "type": "object",
+                "properties": {"country": {"type": "string", "description": "Quốc gia"}},
+                "required": ["country"],
+            },
+        }],
+    }
+    ok, reason = check_identifier_integrity(original, translated, "glaive_normalized")
+    assert ok is True, reason
+
+
+def test_check_required_fields_present_glaive_normalized():
+    from src.data.translate_guidelines import check_required_fields_present
+    sample = {
+        "id": "glaive_00001",
+        "source": "glaive",
+        "query": "Tìm tin",
+        "function_calls": [{"name": "get_news", "arguments": {}}],
+        "tools": [{"name": "get_news"}],
+        "has_tool_call": True,
+    }
+    assert check_required_fields_present(sample, "glaive_normalized") == (True, "ok")
+
+
 def test_translate_prompt_unknown_dataset():
     from src.data.translate_guidelines import build_translate_prompt
     with pytest.raises(ValueError):

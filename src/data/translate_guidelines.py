@@ -71,11 +71,17 @@ def build_translate_prompt_xlam(sample: dict[str, Any]) -> str:
     return USER_PROMPT_TEMPLATE.format(sample_json=_indent_json(payload))
 
 
+def build_translate_prompt_normalized(sample: dict[str, Any]) -> str:
+    return USER_PROMPT_TEMPLATE.format(sample_json=_indent_json(sample))
+
+
 def build_translate_prompt(sample: dict[str, Any], dataset: str) -> str:
     if dataset == "glaive":
         return build_translate_prompt_glaive(sample)
     if dataset == "xlam":
         return build_translate_prompt_xlam(sample)
+    if dataset in ("glaive_normalized", "xlam_normalized"):
+        return build_translate_prompt_normalized(sample)
     raise ValueError(f"Unknown dataset: {dataset}")
 
 
@@ -146,11 +152,73 @@ def extract_arg_keys(sample: dict[str, Any], dataset: str) -> list[str]:
     return []
 
 
+def _normalized_function_calls(sample: dict[str, Any]) -> list[dict[str, Any]]:
+    calls = sample.get("function_calls", [])
+    return calls if isinstance(calls, list) else []
+
+
+def _normalized_tools(sample: dict[str, Any]) -> list[dict[str, Any]]:
+    tools = sample.get("tools", [])
+    return tools if isinstance(tools, list) else []
+
+
+def _argument_key_shape(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _argument_key_shape(child) for key, child in value.items()}
+    if isinstance(value, list):
+        return [_argument_key_shape(child) for child in value]
+    return None
+
+
+def _schema_shape(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _schema_shape(child)
+            for key, child in value.items()
+            if key != "description"
+        }
+    if isinstance(value, list):
+        return [_schema_shape(child) for child in value]
+    return value
+
+
+def _normalized_structure(sample: dict[str, Any]) -> dict[str, Any]:
+    calls = []
+    for call in _normalized_function_calls(sample):
+        if not isinstance(call, dict):
+            calls.append(None)
+            continue
+        calls.append({
+            "name": call.get("name"),
+            "arguments": _argument_key_shape(call.get("arguments", {})),
+        })
+
+    tools = []
+    for tool in _normalized_tools(sample):
+        if not isinstance(tool, dict):
+            tools.append(None)
+            continue
+        tools.append({
+            "name": tool.get("name"),
+            "parameters": _schema_shape(tool.get("parameters", {})),
+        })
+
+    return {
+        "id": sample.get("id"),
+        "source": sample.get("source"),
+        "has_tool_call": sample.get("has_tool_call"),
+        "function_calls": calls,
+        "tools": tools,
+    }
+
+
 def extract_top_level_keys(sample: dict[str, Any], dataset: str) -> list[str]:
     if dataset == "glaive":
         return [k for k in ("system", "chat") if k in sample]
     if dataset == "xlam":
         return [k for k in ("id", "query", "answers", "tools") if k in sample]
+    if dataset in ("glaive_normalized", "xlam_normalized"):
+        return list(sample.keys())
     return list(sample.keys())
 
 
@@ -161,6 +229,19 @@ def check_identifier_integrity(
 ) -> tuple[bool, str]:
     if not isinstance(translated, dict):
         return False, "translated is not a dict"
+
+    if dataset in ("glaive_normalized", "xlam_normalized"):
+        if set(original) != set(translated):
+            return False, f"top-level keys changed: missing={set(original) - set(translated)}, added={set(translated) - set(original)}"
+        if _normalized_structure(original) != _normalized_structure(translated):
+            return False, "normalized schema, function names, or argument keys changed"
+        for tool in _normalized_tools(translated):
+            if not isinstance(tool, dict) or not is_snake_case(str(tool.get("name", ""))):
+                return False, f"tool name not snake_case: {tool.get('name') if isinstance(tool, dict) else tool!r}"
+        for call in _normalized_function_calls(translated):
+            if not isinstance(call, dict) or not is_snake_case(str(call.get("name", ""))):
+                return False, f"function name not snake_case: {call.get('name') if isinstance(call, dict) else call!r}"
+        return True, "ok"
 
     orig_top = set(extract_top_level_keys(original, dataset))
     new_top = set(extract_top_level_keys(translated, dataset))
@@ -205,5 +286,15 @@ def check_required_fields_present(
         if not translated.get("answers"):
             return False, "empty answers"
         if not translated.get("tools"):
+            return False, "empty tools"
+    elif dataset in ("glaive_normalized", "xlam_normalized"):
+        for field in ("id", "source", "query", "function_calls", "tools", "has_tool_call"):
+            if field not in translated:
+                return False, f"missing {field}"
+        if not translated.get("query"):
+            return False, "empty query"
+        if not isinstance(translated.get("function_calls"), list) or not translated["function_calls"]:
+            return False, "empty function_calls"
+        if not isinstance(translated.get("tools"), list) or not translated["tools"]:
             return False, "empty tools"
     return True, "ok"

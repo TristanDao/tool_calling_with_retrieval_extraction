@@ -87,7 +87,11 @@ def setup_logger(name: str) -> logging.Logger:
     return logger
 
 
-def rule_check_sample(sample: dict[str, Any], cfg: QAConfig) -> tuple[bool, list[str]]:
+def rule_check_sample(
+    sample: dict[str, Any],
+    cfg: QAConfig,
+    original: dict[str, Any] | None = None,
+) -> tuple[bool, list[str]]:
     errors: list[str] = []
     if not isinstance(sample, dict):
         return False, ["sample is not a dict"]
@@ -134,6 +138,21 @@ def rule_check_sample(sample: dict[str, Any], cfg: QAConfig) -> tuple[bool, list
                     errors.append(f"answer tool name not snake_case: {ans.get('name')!r}")
         except json.JSONDecodeError:
             errors.append("answers field is not valid JSON")
+
+    if cfg.dataset == "glaive_normalized":
+        if original is not None:
+            ok, reason = check_identifier_integrity(original, sample, cfg.dataset)
+            if not ok:
+                errors.append(reason)
+        ok, reason = check_required_fields_present(sample, cfg.dataset)
+        if not ok:
+            errors.append(reason)
+        for call in sample.get("function_calls", []):
+            if not isinstance(call, dict) or not is_snake_case(str(call.get("name", ""))):
+                errors.append(f"function name not snake_case: {call.get('name') if isinstance(call, dict) else call!r}")
+        for tool in sample.get("tools", []):
+            if not isinstance(tool, dict) or not is_snake_case(str(tool.get("name", ""))):
+                errors.append(f"tool name not snake_case: {tool.get('name') if isinstance(tool, dict) else tool!r}")
 
     return len(errors) == 0, errors
 
@@ -265,7 +284,7 @@ async def run_qa(cfg: QAConfig) -> dict[str, Any]:
 
     if cfg.rule_check_enabled:
         for idx, _original, sample in pairs:
-            ok, errors = rule_check_sample(sample, cfg)
+            ok, errors = rule_check_sample(sample, cfg, _original)
             if ok:
                 rule_pass += 1
             else:

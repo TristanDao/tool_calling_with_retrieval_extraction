@@ -1,0 +1,28 @@
+defaults:
+  - _self_
+
+input: data/translations/glaive_normalized_vi.jsonl
+output: data/translations/qa_samples/glaive_normalized_qa.jsonl
+report: data/translations/qa_samples/glaive_normalized_qa_report.json
+source_input: data/normalized_en/glaive_normalized.jsonl
+failed_input: data/translations/failed/glaive_normalized_failed.jsonl
+
+dataset: glaive_normalized
+
+rule_check:
+  enabled: true
+  require_keys:
+    glaive_normalized: [id, source, query, function_calls, tools, has_tool_call]
+  identifier_pattern: "^[a-z][a-z0-9_]*$"
+
+llm_judge:
+  enabled: true
+  sample_rate: 0.05
+  base_url: ${ALIBABA_URL}
+  api_key: ${ALIBABA_API_KEY}
+  model: qwen3.7-max
+  temperature: 0.0
+  max_tokens: 1024
+  concurrency: 10
+
+fail_on_rule_violation: false

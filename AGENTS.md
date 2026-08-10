@@ -430,3 +430,4 @@ tool_calling_with_retrieval_extraction/
 | 2026-08-04 | Sửa các data config dùng `${ALIBABA_URL}` thay vì hardcode endpoint cũ; translation và feature_group smoke test đều thành công. |
 | 2026-08-04 | Tạo filtered raw Glaive 45,593 mẫu, reset output dịch/benchmark cũ, tắt feature_group trong translation và chạy pilot sạch 10+10 pass. |
 | 2026-08-04 | **Multi-model fallback chain**: Curate 74 models (loại 19: thinking/OCR/video/persona) xếp theo tier chất lượng. Primary: `qwen-mt-plus`. Backup: comma-separated `ALIBABA_BACKUP_MODELS`. concurrency 8→12. Thêm MODEL override trong shell scripts. Daily budget: ~74M tokens → ~4.5 ngày cho 105k samples. |
+| 2026-08-10 | Thêm đường chạy dịch trực tiếp `data/normalized_en/glaive_normalized.jsonl` với dataset `glaive_normalized`, output/checkpoint/QA riêng; không ghi đè Bộ 1 raw hiện có. |

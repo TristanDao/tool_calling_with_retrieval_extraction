@@ -29,6 +29,7 @@ from openai import AsyncOpenAI
 from src.data.feature_group_classify import classify_tools, load_cache, load_config, save_cache
 from src.data.translate_guidelines import (
     TRANSLATE_SYSTEM_PROMPT,
+    _normalized_tools,
     build_translate_prompt,
     check_identifier_integrity,
     check_required_fields_present,
@@ -210,6 +211,8 @@ def _extract_feature_group_tools(sample: dict[str, Any], dataset: str) -> list[d
         return _extract_glaive_tools(sample)
     if dataset == "xlam":
         return _extract_xlam_tools(sample)
+    if dataset in ("glaive_normalized", "xlam_normalized"):
+        return _normalized_tools(sample)
     return []
 
 
