@@ -5,18 +5,21 @@
 
 ## 1. Kiến trúc 2 bộ (cập nhật 2026-08-03)
 
-> **Quyết định**: Tách thành 2 bộ riêng biệt. Schema master là single-turn + multi-call.
+> **Quyết định**: Dịch trực tiếp schema master single-turn + multi-call. Bản dịch raw cũ
+> được giữ để audit nhưng không còn là đường chạy chính.
 
-Pipeline cũng hỗ trợ đường chạy trực tiếp schema master với dataset identifier
-`glaive_normalized`; đường chạy này có output, checkpoint và QA riêng, không ghi đè Bộ 1.
+Đường chạy chính dùng dataset identifier `glaive_normalized` hoặc `xlam_normalized`,
+với output, checkpoint và QA riêng.
 
 | Bộ | Path | Format | Vai trò |
 |---|---|---|---|
-| **Bộ 1 (dịch)** | `data/translations/` | Gần raw (giữ `chat` text cho Glaive, `answers` JSON list cho xLAM); chỉ thay natural language | LLM dịch dễ, ít pre-processing |
-| **Bộ 2 (task)** | `data/benchmark_vi/` | Single-turn schema master: `{id, source, query, function_calls[], tools[]}` | Train + eval Method 1 (SLM) + Method 2 (Bi+Cross) |
+| **Bản dịch normalized** | `data/translations/` | Schema master `{id, source, query, function_calls[], tools[]}` | Input chính cho benchmark |
+| **Raw translation legacy** | `data/translations/` | `system/chat` hoặc `answers/tools` | Giữ để audit, không dùng đường chạy chính |
+| **Benchmark task** | `data/benchmark_vi/` | Schema master + `feature_group` | Train + eval Method 1 (SLM) + Method 2 (Bi+Cross) |
 
-Đường chạy trực tiếp normalized tạo bản dịch schema master tại
-`data/translations/glaive_normalized_vi.jsonl`.
+Đường chạy chính tạo bản dịch schema master tại
+`data/translations/glaive_normalized_vi.jsonl` và
+`data/translations/xlam_normalized_vi.jsonl`.
 
 **Tại sao tách 2 bộ**:
 - Bộ 1 giữ format gần raw → LLM dịch ít rủi ro corrupt JSON, ít mất ngữ nghĩa.

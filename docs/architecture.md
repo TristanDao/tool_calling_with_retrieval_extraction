@@ -143,18 +143,17 @@ data/raw/glaive_raw.jsonl + data/raw/xlam_raw.jsonl
    ├─ collect.py (đã có)
    │
    ▼
-data/processed/glaive_single_turn_raw.jsonl (lọc Glaive, giữ system/chat)
+data/normalized_en/{glaive_normalized,xlam_normalized}.jsonl
     │
     ▼
-data/translations/ (Bộ 1 — raw VI)
+data/translations/*_normalized_vi.jsonl (schema master VI)
    │
-   ├─ translate.py (async, K=10, concurrency=8)
+    ├─ translate.py (async, K=10, concurrency=12)
    ├─ translate_guidelines.py
    ├─ qa_translation.py
    │
    ▼
-src/data/normalize_schema.py  (xLAM type → JSON Schema chuẩn)
-src/data/build_benchmark.py  (Bộ 1 → schema master + split)
+src/data/build_benchmark.py  (schema master VI → benchmark + split)
 src/data/feature_group_classify.py  (LLM classify unique tools, cache)
    │
    ▼
@@ -170,15 +169,10 @@ data/benchmark_vi/
         → Bi-Encoder: (query, tool_desc) pairs
         → Cross-Encoder: (query, param_schema, label) per-param
 
-Đường chạy thay thế khi cần dịch trực tiếp schema master:
+Raw translation legacy vẫn được giữ để audit và khôi phục:
 
-data/normalized_en/glaive_normalized.jsonl
-    │
-    ▼
-scripts/data/run_translate_glaive_normalized.sh
-    │
-    ▼
-data/translations/glaive_normalized_vi.jsonl
+data/translations/glaive_vi.jsonl
+data/translations/xlam_vi.jsonl
 ```
 
 ## 5. Comparison Table

@@ -392,6 +392,11 @@ tool_calling_with_retrieval_extraction/
   - Chạy thêm 25 mẫu/dataset với `qwen3.7-flash` và backup `deepseek-v4-flash-0731`.
   - Glaive: 24/25 thành công; xLAM: 25/25 thành công.
   - Checkpoint hiện tại: Glaive index 175, xLAM index 230.
+- **[x] CustomTools-VI dataset strategy** (chốt 2026-08-11):
+  - Tạo 8,000 samples đặc trưng VN (4,800 positive + 3,200 negative) thuộc 40 tools / 10 nhóm chức năng.
+  - Split 70/10/20: 5,600 train + 800 val + 1,600 test.
+  - Train/Val merge vào master benchmark; Test giữ riêng `test_custom_vi.jsonl` làm bộ đánh giá VN-specific.
+  - Plan chi tiết tại `docs/custom_vi_dataset_plan.md`.
 - **[x] Phase 2/3 deferred** (quay lại sau khi data xong):
   - [ ] 4 configs/crossencoder/ (model, heads, losses, training)
   - [ ] 4 tests/crossencoder/ (heads, losses, label_generator, inference)
@@ -431,3 +436,5 @@ tool_calling_with_retrieval_extraction/
 | 2026-08-04 | Tạo filtered raw Glaive 45,593 mẫu, reset output dịch/benchmark cũ, tắt feature_group trong translation và chạy pilot sạch 10+10 pass. |
 | 2026-08-04 | **Multi-model fallback chain**: Curate 74 models (loại 19: thinking/OCR/video/persona) xếp theo tier chất lượng. Primary: `qwen-mt-plus`. Backup: comma-separated `ALIBABA_BACKUP_MODELS`. concurrency 8→12. Thêm MODEL override trong shell scripts. Daily budget: ~74M tokens → ~4.5 ngày cho 105k samples. |
 | 2026-08-10 | Thêm đường chạy dịch trực tiếp `data/normalized_en/glaive_normalized.jsonl` với dataset `glaive_normalized`, output/checkpoint/QA riêng; không ghi đè Bộ 1 raw hiện có. |
+| 2026-08-10 | Chuyển entrypoint dịch Glaive và xLAM sang normalized schema; raw outputs giữ lại để audit, thêm chuyển đổi/resume không gọi API lại cho phần đã dịch. |
+| 2026-08-11 | **CustomTools-VI Strategy**: Thống nhất kế hoạch xây dựng 8,000 samples (40 tools / 10 nhóm) cho ngữ cảnh Việt Nam, split 70/10/20. Tạo `docs/custom_vi_dataset_plan.md` và `implementation_plan.md`. |
