@@ -1,13 +1,13 @@
 defaults:
   - _self_
 
-input: data/processed/glaive_single_turn_raw.jsonl
-output: data/translations/glaive_vi.jsonl
-failed_output: data/translations/failed/glaive_failed.jsonl
-checkpoint: data/translations/.checkpoint/glaive_filtered.json
-log_file: data/translations/logs/translate_glaive_filtered.log
+input: data/normalized_en/glaive_normalized.jsonl
+output: data/translations/glaive_normalized_vi.jsonl
+failed_output: data/translations/failed/glaive_normalized_failed.jsonl
+checkpoint: data/translations/.checkpoint/glaive_normalized.json
+log_file: data/translations/logs/translate_glaive_normalized.log
 
-dataset: glaive
+dataset: glaive_normalized
 
 start_index: 0
 end_index: null

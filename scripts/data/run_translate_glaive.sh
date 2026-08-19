@@ -1,11 +1,4 @@
 #!/bin/bash
-# Run translation pipeline for Glaive (EN -> VI)
-# Usage:
-#   bash scripts/data/run_translate_glaive.sh              # full dataset
-#   bash scripts/data/run_translate_glaive.sh 0 100        # mini pilot 0..100
-#   bash scripts/data/run_translate_glaive.sh 0 1000       # 1k pilot
-#   bash scripts/data/run_translate_glaive.sh 175 176 --smoke-test
-#   MODEL=qwen3.7-max bash scripts/data/run_translate_glaive.sh 0 1000
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
@@ -30,9 +23,10 @@ fi
 
 python -m src.data.translate \
     --config configs/data/translate.yaml \
-    --input data/processed/glaive_single_turn_raw.jsonl \
-    --output data/translations/glaive_vi.jsonl \
-    --failed-output data/translations/failed/glaive_filtered_failed.jsonl \
-    --checkpoint data/translations/.checkpoint/glaive_filtered.json \
-    --log-file data/translations/logs/translate_glaive_filtered.log \
-    --start $START $EXTRA_ARGS "$@"
+    --input data/normalized_en/glaive_normalized.jsonl \
+    --output data/translations/glaive_normalized_vi.jsonl \
+    --failed-output data/translations/failed/glaive_normalized_failed.jsonl \
+    --checkpoint data/translations/.checkpoint/glaive_normalized.json \
+    --log-file data/translations/logs/translate_glaive_normalized.log \
+    --dataset glaive_normalized \
+    --start "$START" $EXTRA_ARGS "$@"

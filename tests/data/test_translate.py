@@ -272,6 +272,42 @@ def test_check_required_fields_present_glaive_normalized():
     assert check_required_fields_present(sample, "glaive_normalized") == (True, "ok")
 
 
+def test_check_normalized_xlam_schema():
+    from src.data.translate_guidelines import check_identifier_integrity, check_required_fields_present
+    original = {
+        "id": "xlam_00001",
+        "source": "xlam",
+        "query": "Find giveaways",
+        "function_calls": [{"name": "find_giveaways", "arguments": {"kind": "game"}}],
+        "tools": [{
+            "name": "find_giveaways",
+            "description": "Find giveaways",
+            "parameters": {
+                "type": "object",
+                "properties": {"kind": {"type": "string", "description": "Giveaway kind"}},
+                "required": ["kind"],
+            },
+        }],
+        "has_tool_call": True,
+    }
+    translated = {
+        **original,
+        "query": "Tìm quà tặng",
+        "function_calls": [{"name": "find_giveaways", "arguments": {"kind": "trò chơi"}}],
+        "tools": [{
+            **original["tools"][0],
+            "description": "Tìm quà tặng",
+            "parameters": {
+                **original["tools"][0]["parameters"],
+                "properties": {"kind": {"type": "string", "description": "Loại quà tặng"}},
+            },
+        }],
+    }
+    ok, reason = check_identifier_integrity(original, translated, "xlam_normalized")
+    assert ok is True, reason
+    assert check_required_fields_present(translated, "xlam_normalized") == (True, "ok")
+
+
 def test_translate_prompt_unknown_dataset():
     from src.data.translate_guidelines import build_translate_prompt
     with pytest.raises(ValueError):

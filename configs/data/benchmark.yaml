@@ -1,10 +1,10 @@
 defaults:
   - _self_
 
-input_glaive: data/translations/glaive_vi.jsonl
-input_xlam: data/translations/xlam_vi.jsonl
-source_glaive: data/processed/glaive_single_turn_raw.jsonl
-source_xlam: data/raw/xlam_raw.jsonl
+input_glaive: data/translations/glaive_normalized_vi.jsonl
+input_xlam: data/translations/xlam_normalized_vi.jsonl
+source_glaive: data/normalized_en/glaive_normalized.jsonl
+source_xlam: data/normalized_en/xlam_normalized.jsonl
 
 output_dir: data/benchmark_vi
 train_path: data/benchmark_vi/train.jsonl

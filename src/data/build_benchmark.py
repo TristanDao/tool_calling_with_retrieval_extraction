@@ -435,6 +435,16 @@ def parse_xlam_sample(raw: dict[str, Any], idx: int) -> dict[str, Any] | None:
     }
 
 
+def _parse_translated_sample(raw: dict[str, Any], idx: int) -> dict[str, Any] | None:
+    if isinstance(raw.get("function_calls"), list) and isinstance(raw.get("tools"), list):
+        return raw
+    if "system" in raw and "chat" in raw:
+        return parse_glaive_sample(raw, idx)
+    if "answers" in raw and "tools" in raw:
+        return parse_xlam_sample(raw, idx)
+    return None
+
+
 def _attach_feature_group(tools: list[dict[str, Any]], cache: dict[str, str]) -> list[dict[str, Any]]:
     for tool in tools:
         name = tool.get("name", "")
@@ -641,13 +651,13 @@ def build_benchmark(cfg: BuildConfig) -> dict[str, Any]:
     samples: list[dict[str, Any]] = []
     parse_errors = Counter()
     for orig_idx, raw in glaive_raw:
-        sample = parse_glaive_sample(raw, orig_idx)
+        sample = _parse_translated_sample(raw, orig_idx)
         if sample is None:
             parse_errors["glaive_parse_fail"] += 1
             continue
         samples.append(sample)
     for orig_idx, raw in xlam_raw:
-        sample = parse_xlam_sample(raw, orig_idx)
+        sample = _parse_translated_sample(raw, orig_idx)
         if sample is None:
             parse_errors["xlam_parse_fail"] += 1
             continue
@@ -822,11 +832,11 @@ def _build_benchmark_no_classify(cfg: BuildConfig) -> dict[str, Any]:
 
     samples: list[dict[str, Any]] = []
     for orig_idx, raw in glaive_raw:
-        sample = parse_glaive_sample(raw, orig_idx)
+        sample = _parse_translated_sample(raw, orig_idx)
         if sample is not None:
             samples.append(sample)
     for orig_idx, raw in xlam_raw:
-        sample = parse_xlam_sample(raw, orig_idx)
+        sample = _parse_translated_sample(raw, orig_idx)
         if sample is not None:
             samples.append(sample)
     print(f"[build] parsed samples: {len(samples)}")
