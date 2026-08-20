@@ -17,7 +17,7 @@ Hệ thống so sánh **2 phương pháp** Tool Calling tiếng Việt + 2 API b
 │   METHOD 1: SLM     │ │  METHOD 2: Bi-Enc   │ │    BASELINES        │
 │   End-to-End        │ │  + Cross-Enc        │ │                     │
 │                     │ │                     │ │  OpenAI FC           │
-│  Qwen2.5 0.5B/1.5B  │ │  Bi-Encoder         │ │  (gpt-4o-mini)       │
+│  Qwen3.5 2B/4B      │ │  Bi-Encoder         │ │  (gpt-4o-mini)       │
 │  + LLaMA-Factory    │ │  (BGE-M3 + MNRL)    │ │                     │
 │                     │ │    │                │ │  Gemini FC           │
 │  ┌───────────────┐  │ │    ▼                │ │  (gemini-1.5-flash)  │
@@ -53,7 +53,7 @@ Hệ thống so sánh **2 phương pháp** Tool Calling tiếng Việt + 2 API b
 
 ## 2. Method 1 — SLM End-to-End
 
-Fine-tune Qwen2.5 nhỏ (0.5B/1.5B) làm tool selection + parameter extraction trong 1 model.
+Fine-tune checkpoint Qwen3.5 post-trained nhỏ (`Qwen/Qwen3.5-2B` hoặc `Qwen/Qwen3.5-4B`) làm tool selection + parameter extraction trong 1 model. Dự án không dùng các checkpoint có hậu tố `-Base`.
 Theo hướng tiếp cận của Ersoy et al. (2025).
 
 ```
@@ -74,7 +74,7 @@ Theo hướng tiếp cận của Ersoy et al. (2025).
 │  │  </tool_call>                               │                  │
 │  └─────────────────────────────────────────────┘                  │
 │                                                                   │
-│  Model: Qwen2.5 0.5B / 1.5B                                      │
+│  Model: Qwen3.5 2B / 4B                                          │
 │  Framework: LLaMA-Factory (SFT)                                   │
 │  Output: <tool_call>JSON</tool_call> hoặc <no_tool_call>          │
 │  Metric chính: ArgA (Ersoy et al.) — end-to-end accuracy          │

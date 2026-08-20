@@ -179,6 +179,20 @@ data/benchmark_vi/
 
 > Seed: `42`. Có thể thay đổi khi build benchmark thực tế.
 
+### 6.1 Trạng thái snapshot hiện tại
+
+`data/benchmark_vi/` là canonical benchmark dùng chung, không phải output riêng cho từng experiment. Không xóa hoặc rebuild thư mục này theo từng model. Khi một experiment thay đổi composition dữ liệu, chỉ cần tạo manifest/snapshot bất biến trong output của experiment và ghi lại input files, split, seed, checkpoint và commit hash.
+
+Snapshot hiện tại được build bằng `src/data/build_benchmark.py` với `80/10/10`, `seed=42`, gồm `51,227` positive samples (`40,981/5,122/5,124`). Không có trùng ID giữa các split, nhưng có `1,099` nhóm query trùng giữa các split; do đó snapshot chưa đạt yêu cầu chống leakage. Đây là pilot/rebuild snapshot, chưa phải full benchmark cuối theo mục tiêu khoảng `105k` samples. Builder hiện chỉ nhận sample có `function_calls` không rỗng; các negative samples của CustomTools-VI vẫn nằm ở `data/custom_vi/` và phải được đánh giá qua các split CustomTools tương ứng.
+
+Trước khi chạy kết quả chính thức cần:
+
+- Hoàn tất translation và QA của full dataset.
+- Kiểm tra duplicate query/scenario giữa các split.
+- Kiểm tra integrity của tool unseen và candidate tools.
+- Freeze snapshot và ghi manifest SHA-256.
+- Không dùng `test_seen.jsonl` hoặc `test_unseen.jsonl` trong training.
+
 ## 7. Thống kê cần sinh (`src/data/stats.py`)
 
 Output lưu `data/statistics/`:

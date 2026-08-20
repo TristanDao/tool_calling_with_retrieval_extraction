@@ -4,9 +4,9 @@ Input:  data/benchmark_vi/{train,val,test}.jsonl  (master schema)
 Output: data/benchmark_vi/instruction/{train,val,test}_chat.jsonl  (sharegpt)
 
 Master schema:
-  {"id": "...", "source": "...", "query": "VI text",
-   "function_calls": [{"name": "...", "arguments": {...}}],
-   "tools": [{"name": "...", "description": "...", "parameters": {...}}]}
+   {"id": "...", "source": "...", "query": "VI text",
+    "function_calls": [{"name": "...", "arguments": {...}}],
+    "tools": [{"name": "...", "description": "...", "parameters": {...}}]}
 
 Sharegpt format (LLaMA-Factory):
   {
@@ -52,7 +52,7 @@ def convert_sample(sample: dict[str, Any]) -> dict[str, Any] | None:
     function_calls = sample.get("function_calls", [])
     tools = sample.get("tools", [])
 
-    if not query or not function_calls:
+    if not query or not tools:
         return None
 
     tools_json = json.dumps(
@@ -64,7 +64,9 @@ def convert_sample(sample: dict[str, Any]) -> dict[str, Any] | None:
     system_content = SYSTEM_PROMPT_VI + tools_json
 
     assistant_content: str
-    if len(function_calls) == 1:
+    if not function_calls:
+        assistant_content = "<no_tool_call>"
+    elif len(function_calls) == 1:
         assistant_content = _format_tool_call_for_prompt(function_calls[0])
     else:
         assistant_content = "\n".join(

@@ -159,7 +159,7 @@ Dùng LLM (như Gemini Flash hoặc Qwen) chạy tự động nhân bản từ 3
 - Chia dữ liệu theo tỉ lệ **70% Train (5,600)** / **10% Val (800)** / **20% Test (1,600)**.
 - Trộn Train & Val vào tập dữ liệu chung.
 - Giữ Test riêng để đánh giá khả năng xử lý tình huống Việt Nam.
-- Chuyển đổi dữ liệu sang định dạng Instruction Chat (System Prompt + User + Assistant `<tool_call>...</tool_call>`) để sẵn sàng fine-tune các model SLM (Qwen2.5).
+- Chuyển đổi dữ liệu sang định dạng Instruction Chat (System Prompt + User + Assistant `<tool_call>...</tool_call>`) để sẵn sàng fine-tune các model SLM (Qwen3.5).
 
 ---
 

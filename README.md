@@ -8,7 +8,7 @@ Hệ thống so sánh **2 phương pháp** Tool Calling cho tiếng Việt:
 
 | Phương pháp | Cách làm | Model |
 |---|---|---|
-| **Method 1: SLM End-to-End** | Fine-tune LLM chọn tool + điền tham số (instruction-tuning) | Qwen2.5 0.5B/1.5B + LLaMA-Factory |
+| **Method 1: SLM End-to-End** | Fine-tune LLM chọn tool + điền tham số (instruction-tuning) | Qwen3.5 2B/4B + LLaMA-Factory |
 | **Method 2: Bi-Encoder + Cross-Encoder** | Tách retrieval (Bi-Encoder) + extraction (Cross-Encoder) | BGE-M3 + FlagEmbedding + custom heads |
 
 Baselines so sánh:
@@ -93,7 +93,7 @@ Quy ước: `query` VI, `function_calls[].name` + `arguments` keys EN, values c�
 |---|---|
 | Framework | PyTorch + Transformers |
 | Config | Hydra (structured config, Python dataclass) |
-| Method 1: SLM | Qwen2.5 0.5B/1.5B + LLaMA-Factory |
+| Method 1: SLM | Qwen3.5 2B/4B + LLaMA-Factory |
 | Method 2: Bi-Encoder | BGE-M3 + FlagEmbedding + MultipleNegativesRankingLoss |
 | Method 2: Cross-Encoder | BGE-M3 + Hierarchical heads, BERT-QA format |
 | Dịch dataset | Alibaba OpenAI-compatible API (qwen3.7-flash / qwen3.7-max) |

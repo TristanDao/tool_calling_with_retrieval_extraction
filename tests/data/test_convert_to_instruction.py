@@ -91,6 +91,21 @@ def test_convert_sample_empty_query():
 
 
 def test_convert_sample_no_function_calls():
+    sample = {
+        "query": "Hôm nay thời tiết thật đẹp.",
+        "function_calls": [],
+        "tools": [{
+            "name": "get_weather",
+            "description": "Xem thời tiết.",
+            "parameters": {"type": "object", "properties": {}},
+        }],
+    }
+    result = convert_sample(sample)
+    assert result is not None
+    assert result["conversations"][2]["value"] == "<no_tool_call>"
+
+
+def test_convert_sample_no_function_calls_without_tools():
     result = convert_sample({"query": "hi", "function_calls": [], "tools": []})
     assert result is None
 

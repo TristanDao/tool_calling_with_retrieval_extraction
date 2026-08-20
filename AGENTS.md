@@ -33,7 +33,7 @@ ToolLLM, ToolACE, xLAM, AutoTool) chủ yếu dựa trên **generative LLM**:
 
 | Phương pháp | Mô tả | Tham khảo |
 |---|---|---|
-| **Method 1: SLM End-to-End** | Fine-tune Qwen2.5 (0.5B/1.5B) làm tool selection + parameter extraction trong 1 model | Ersoy et al. (2025) |
+| **Method 1: SLM End-to-End** | Fine-tune Qwen3.5 (2B/4B) làm tool selection + parameter extraction trong 1 model | Ersoy et al. (2025) |
 | **Method 2: Bi-Encoder + Cross-Encoder** | Tách thành 2 thành phần chuyên biệt: Bi-Encoder chọn tool, Cross-Encoder trích xuất tham số | Thiết kế ban đầu |
 
 Cả 2 được so sánh với:
@@ -56,7 +56,7 @@ Cả 2 được so sánh với:
 |---|---|
 | Framework chính | **PyTorch + Transformers** |
 | Config | **Hydra** với **structured config** (Python `@dataclass`) |
-| **Method 1: SLM End-to-End** | **Qwen2.5 0.5B/1.5B** + **LLaMA-Factory** (instruction tuning) |
+| **Method 1: SLM End-to-End** | **Qwen3.5 2B/4B** + **LLaMA-Factory** (instruction tuning) |
 | Method 2: Bi-Encoder (Retrieval) | **BGE-M3** + **FlagEmbedding** + **MultipleNegativesRankingLoss** |
 | Method 2: Cross-Encoder (Extraction) | **BGE-M3** + **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head: span / enum / boolean), format `[CLS] query [SEP] Param=<name>. Desc=... Type=<type>[. Enum=...] [SEP]` (BERT-QA style) |
 | Dịch dataset | **Alibaba OpenAI-compatible API** (qwen3.7-flash / qwen3.7-max) |
@@ -215,7 +215,7 @@ tool_calling_with_retrieval_extraction/
 │   │   ├── augment_with_distractors.py
 │   │   └── stats.py
 │   ├── models/
-│   │   ├── slm/               # ← Method 1: Qwen2.5 fine-tune (LLaMA-Factory)
+│   │   ├── slm/               # ← Method 1: Qwen3.5 fine-tune (LLaMA-Factory)
 │   │   ├── biencoder/         # Method 2: Semantic Tool Retrieval
 │   │   ├── crossencoder/      # Method 2: Schema-aware Parameter Extraction
 │   │   └── baselines/         # OpenAI FC, Gemini FC
@@ -273,7 +273,7 @@ tool_calling_with_retrieval_extraction/
 - Metric: Span F1, Enum accuracy, End-to-end F1
 
 **Phase 4 — SLM** (Method 1):
-- Fine-tune Qwen2.5 0.5B/1.5B với LLaMA-Factory trên instruction data
+- Fine-tune Qwen3.5 2B/4B với LLaMA-Factory trên instruction data
 - Format: system (tool list) + user (query) → assistant (`<tool_call>...</tool_call>`)
 - Metric: End-to-end accuracy (giống Ersoy et al. ArgA)
 
@@ -343,7 +343,7 @@ tool_calling_with_retrieval_extraction/
 
 - **[x] Single-turn + multi-call**: Đã chốt — chỉ lấy first turn từ Glaive, giữ multi-call từ xLAM. ~105k samples.
 - **[x] Schema master**: Đã chốt — `{id, source, query, function_calls[], tools[]}`. Dùng chung cho cả 2 method.
-- **[x] Method 1 model**: Đã chốt — Qwen2.5 0.5B/1.5B (Small LM, đúng tinh thần "SLM"), fine-tune với LLaMA-Factory.
+- **[x] Method 1 model**: Đã chốt — Qwen3.5 2B/4B (Small LM, đúng tinh thần "SLM"), fine-tune với LLaMA-Factory.
 - **[x] Method 1 data format**: Đã chốt — instruction-tuning (system prompt + user + assistant), convert từ schema master qua `convert_to_instruction.py`.
 - **[x] Comparison table**: Đã chốt — 4 methods (Method 1 SLM + Method 2 Bi+Cross + OpenAI FC + Gemini FC).
 - **[x] Stress test**: Đã chốt — giữ, so sánh cả 4 methods.
@@ -380,6 +380,17 @@ tool_calling_with_retrieval_extraction/
   - Chạy một request không ghi cache bằng `bash scripts/data/run_feature_group.sh data/benchmark_vi/tool_pool.json --smoke-test`.
   - `feature_group` dùng `${ALIBABA_MODEL}`; smoke test hiện thành công với `qwen3.7-flash` và trả category hợp lệ.
   - `ALIBABA_BACKUP_MODEL*` chỉ dùng cho translation pipeline, chưa dùng cho feature-group classifier.
+- **[x] Qwen3.5 checkpoint policy** (2026-08-20):
+  - Method 1 chỉ dùng checkpoint Qwen3.5 post-trained `Qwen/Qwen3.5-2B` và `Qwen/Qwen3.5-4B`.
+  - Không dùng `Qwen/Qwen3.5-2B-Base` hoặc `Qwen/Qwen3.5-4B-Base`; Qwen3.5 mới không đặt hậu tố `Instruct` trên checkpoint post-trained.
+- **[x] Benchmark snapshot policy** (2026-08-20):
+  - `data/benchmark_vi/` là canonical benchmark dùng chung, không rebuild/xóa theo từng experiment.
+  - Mỗi experiment phải ghi benchmark manifest, composition dữ liệu, seed và checkpoint vào output riêng.
+  - Snapshot hiện tại có 51,227 positive samples, split 40,981/5,122/5,124, seed=42; không trùng ID nhưng có 1,099 nhóm query trùng giữa split, chưa phải full benchmark cuối.
+- **[x] Method 1 data budget policy** (2026-08-20):
+  - Main controlled track dùng 60,000 core examples cho E1–E4 và 65,600 cho E5 (thêm toàn bộ `data/custom_vi/train.jsonl`).
+  - Qwen3.5-2B và Qwen3.5-4B phải dùng cùng sample IDs, seed, epoch target và training budget.
+  - Full-data runs là robustness/scale-up track riêng, không thay thế main controlled track.
 - **[x] Translation backup chain + API smoke test** (2026-08-04):
   - Translation retry chain: `ALIBABA_MODEL` → `ALIBABA_BACKUP_MODELS` (74 models, comma-separated, ordered by quality tier).
   - Smoke test 1 sample không ghi output/checkpoint bằng `bash scripts/data/run_translate_glaive.sh 175 176 --smoke-test`.
@@ -438,3 +449,4 @@ tool_calling_with_retrieval_extraction/
 | 2026-08-10 | Thêm đường chạy dịch trực tiếp `data/normalized_en/glaive_normalized.jsonl` với dataset `glaive_normalized`, output/checkpoint/QA riêng; không ghi đè Bộ 1 raw hiện có. |
 | 2026-08-10 | Chuyển entrypoint dịch Glaive và xLAM sang normalized schema; raw outputs giữ lại để audit, thêm chuyển đổi/resume không gọi API lại cho phần đã dịch. |
 | 2026-08-11 | **CustomTools-VI Strategy**: Thống nhất kế hoạch xây dựng 8,000 samples (40 tools / 10 nhóm) cho ngữ cảnh Việt Nam, split 70/10/20. Tạo `docs/custom_vi_dataset_plan.md` và `implementation_plan.md`. |
+| 2026-08-20 | **Cập nhật backbone model Method 1**: Chuyển mô hình SLM từ Qwen2.5 (0.5B/1.5B) sang **Qwen3.5 (2B/4B)** theo định hướng thực nghiệm mới. Đồng bộ toàn bộ tài liệu và kế hoạch thực nghiệm. |

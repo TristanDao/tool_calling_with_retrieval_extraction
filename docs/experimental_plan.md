@@ -15,7 +15,7 @@ Mục tiêu chính:
 
 | Method | Thành phần | Mục tiêu |
 |---|---|---|
-| Method 1 | Qwen2.5-0.5B/1.5B + SFT | Tool selection và argument extraction trong một model sinh |
+| Method 1 | `Qwen/Qwen3.5-2B` hoặc `Qwen/Qwen3.5-4B` + SFT | Tool selection và argument extraction trong một model sinh |
 | Method 2 | BGE-M3 Bi-Encoder + Cross-Encoder | Retrieval tool và extraction parameter chuyên biệt |
 | Baseline 1 | OpenAI Function Calling | Mốc tham chiếu API thương mại |
 | Baseline 2 | Gemini Function Calling | Mốc tham chiếu API thương mại |
@@ -31,23 +31,87 @@ Phạm vi đánh giá gồm tool selection, parameter extraction, JSON/schema va
 | Glaive English | Huấn luyện tool-calling tổng quát bằng tiếng Anh |
 | xLAM English | Huấn luyện single-turn và multi-call bằng tiếng Anh |
 | Glaive/xLAM Vietnamese | Huấn luyện và đánh giá tool-calling tiếng Việt |
-| `data/custom_vi/v1/train.jsonl` | Huấn luyện ngữ cảnh và tool đặc trưng Việt Nam |
-| `data/custom_vi/v1/val_seen.jsonl` | Validation cho tool đã xuất hiện |
-| `data/custom_vi/v1/val_unseen.jsonl` | Validation cho tool unseen |
-| `data/custom_vi/v1/test_seen.jsonl` | Đánh giá CustomTools với tool đã gặp |
-| `data/custom_vi/v1/test_unseen.jsonl` | Đánh giá zero-shot trên tool chưa gặp |
+| `data/custom_vi/train.jsonl` | Huấn luyện ngữ cảnh và tool đặc trưng Việt Nam |
+| `data/custom_vi/val_seen.jsonl` | Validation cho tool đã xuất hiện |
+| `data/custom_vi/val_unseen.jsonl` | Validation cho tool unseen |
+| `data/custom_vi/test_seen.jsonl` | Đánh giá CustomTools với tool đã gặp |
+| `data/custom_vi/test_unseen.jsonl` | Đánh giá zero-shot trên tool chưa gặp |
 
-Các file CustomTools hiện có trong `data/custom_vi/v1/` phải được giữ nguyên. Không đưa bất kỳ sample nào từ `test_seen` hoặc `test_unseen` vào training.
+Các file CustomTools hiện có trong `data/custom_vi/` phải được giữ nguyên. Không đưa bất kỳ sample nào từ `test_seen` hoặc `test_unseen` vào training.
 
-### 3.2 Việc phải hoàn thành trước khi train
+### 3.2 Benchmark canonical và snapshot theo experiment
+
+`data/benchmark_vi/` là benchmark canonical dùng chung cho mọi experiment, không phải thư mục output riêng của từng model. Không xóa hoặc rebuild thư mục này cho mỗi experiment vì sẽ làm mất khả năng so sánh công bằng giữa các phương pháp.
+
+Quy tắc quản lý:
+
+- Freeze một revision benchmark trước khi chạy các kết quả chính.
+- Ghi `metadata.json` và manifest SHA-256 cho các file input, split và tool schema.
+- Mỗi experiment ghi composition dữ liệu, checkpoint, seed và manifest benchmark vào thư mục kết quả riêng.
+- Nếu thay đổi dữ liệu hoặc split, tạo benchmark revision/snapshot mới; không ghi đè revision đã dùng cho kết quả trước đó.
+- `CustomTools-VI` giữ split riêng: chỉ `train.jsonl` và validation được phép đưa vào training; `test_seen.jsonl` và `test_unseen.jsonl` chỉ dùng đánh giá.
+
+Artifact hiện có trong workspace là một pilot/rebuild snapshot gồm 51,227 positive samples, split 40,981/5,122/5,124 theo 80/10/10, seed 42. Snapshot không trùng ID giữa các split, nhưng kiểm tra hiện tại phát hiện 1,099 nhóm query trùng giữa các split. Đây chưa phải full benchmark cuối cùng theo quy mô dự kiến ~105k samples và chưa được dùng cho kết luận cuối trước khi hoàn tất translation, deduplication và QA.
+
+### 3.3 Việc phải hoàn thành trước khi train
 
 - [ ] Freeze phiên bản dataset và ghi manifest SHA-256.
 - [ ] Xác nhận train/validation/test không có duplicate query hoặc duplicate scenario.
 - [ ] Xác nhận tool unseen không xuất hiện trong tool schema của training.
 - [ ] Xác nhận mỗi sample dùng master schema thống nhất.
 - [ ] Xác nhận cách biểu diễn negative là `function_calls=[]` hoặc `<no_tool_call>`.
+- [ ] Bảo đảm mỗi test set dùng để báo cáo negative recall có negative samples.
 - [ ] Xác nhận quy tắc đánh giá multi-call: không phạt thứ tự với các call độc lập.
 - [ ] Tạo snapshot dataset cho từng experiment, không sửa trực tiếp test data.
+
+### 3.4 Quy mô dữ liệu và nguyên tắc sử dụng
+
+Thiết kế của Ersoy et al. dùng toàn bộ training split cho từng cấu hình, giữ test split cố định, sau đó tăng dữ liệu ở bilingual và tool-specific experiments. Dự án này giữ nguyên nguyên tắc đó nhưng bổ sung một main controlled track để tách ảnh hưởng của ngôn ngữ khỏi ảnh hưởng của số lượng mẫu.
+
+Quy mô dữ liệu hiện có trước final deduplication:
+
+| Pool | Số mẫu | Trạng thái | Vai trò |
+|---|---:|---|---|
+| Glaive positive | 45,593 | EN và bản dịch VI tương ứng | Core tool-calling |
+| xLAM positive | 60,000 | EN và bản dịch VI tương ứng | Core single-turn/multi-call |
+| Glaive negative | 15,141 | EN và bản dịch VI tương ứng | No-tool-call training/evaluation |
+| CustomTools-VI train | 5,600 | VI, 3,600 positive + 2,000 negative | Tool-specific SFT của E5 |
+| CustomTools-VI validation | 800 | VI, seen/unseen | Model selection và diagnostic |
+| CustomTools-VI test | 1,600 | VI, seen/unseen | Chỉ đánh giá cuối |
+
+Các con số trên là quy mô input hiện tại, không phải số lượng cuối sau deduplication. Số lượng chính thức phải lấy từ manifest của benchmark revision đã freeze.
+
+#### Main controlled track
+
+- Mỗi experiment E1–E4 dùng tối đa `60,000` core examples trong training: `54,000` positive và `6,000` negative.
+- Với positive examples, giữ tỷ lệ nguồn gần dữ liệu gốc: `23,000` Glaive và `31,000` xLAM.
+- E1 dùng 60,000 mẫu tiếng Anh; E2 dùng đúng các sample IDs tương ứng bằng tiếng Việt.
+- E3 nếu chạy dùng cùng 60,000 mẫu tiếng Anh như E1, sau general SFT.
+- E4 dùng `30,000 EN + 30,000 VI`, gồm cùng một tỷ lệ Glaive/xLAM và positive/negative ở mỗi ngôn ngữ.
+- E5 dùng toàn bộ 60,000 mẫu của E4 cộng toàn bộ `5,600` mẫu `CustomTools-VI/train.jsonl`, tổng `65,600` training examples. Không đưa bất kỳ file CustomTools validation/test nào vào training.
+- Lấy mẫu một lần bằng seed cố định và lưu manifest; không lấy lại subset khác cho Qwen3.5-2B.
+
+Cap 60,000 không phải giới hạn lý thuyết của model 2B/4B. Đây là ngân sách chính để các experiment ngôn ngữ có cùng quy mô. Khoảng 60k tool-calling examples là đủ lớn cho SFT pilot, còn dữ liệu đa dạng hơn sẽ được kiểm tra ở full-data track.
+
+#### Full-data track
+
+Sau khi hoàn tất deduplication và QA, chạy thêm một full-data run cho mỗi kích thước model:
+
+- E1-full: toàn bộ core train tiếng Anh.
+- E2-full: toàn bộ core train tiếng Việt.
+- E4-full: toàn bộ core train song ngữ, giữ tỷ lệ EN/VI `1:1`.
+- E5-full: E4-full cộng `CustomTools-VI/train.jsonl`.
+
+Full-data track không thay thế main controlled track và phải báo cáo riêng số training examples, số token, số step và compute. Nếu tài nguyên hạn chế, ưu tiên main controlled track; không tự ý cắt test hoặc validation để giảm chi phí.
+
+#### Validation và test cố định
+
+- Core dataset được split theo scenario/source ID trước khi tạo bản EN và VI; bản dịch EN/VI của cùng một scenario phải cùng split.
+- Tỷ lệ core split là `80/10/10` theo train/validation/test sau deduplication.
+- Không cap validation hoặc test. Các test rows không được dùng để chọn checkpoint, điều chỉnh prompt hoặc chọn hyperparameter.
+- E1–E4 chọn checkpoint bằng core validation tương ứng; CustomTools validation chỉ là zero-shot diagnostic, không dùng để chọn checkpoint.
+- E5 có thể dùng thêm `val_seen` và `val_unseen` để chọn checkpoint, nhưng phải báo cáo riêng từng kết quả và không dùng bất kỳ test split nào.
+- Test bắt buộc gồm core test EN/VI và `CustomTools-VI/test_seen.jsonl` + `test_unseen.jsonl`, trong đó CustomTools phải tách positive/negative khi báo cáo.
 
 ## 4. Chuẩn Output Chung
 
@@ -90,23 +154,27 @@ Không dùng parser hoặc quy tắc sửa lỗi riêng cho từng model.
 
 ### 5.2 Thí nghiệm bắt buộc
 
-| ID | Model state | Dữ liệu tool-calling | Mục đích |
-|---|---|---|---|
-| E0 | Base/Instruct, chưa fine-tune | Không có | Zero-shot baseline |
-| E1 | Base | Glaive EN + xLAM EN | Đo transfer EN → VI |
-| E2 | Base | Glaive VI + xLAM VI | Đo lợi ích của dữ liệu tiếng Việt |
-| E3 | Instruct hoặc model đã general SFT | Glaive EN + xLAM EN | Đo ảnh hưởng của general instruction tuning |
-| E4 | Instruct hoặc model đã general SFT | Glaive EN/VI + xLAM EN/VI | Đo bilingual training |
-| E5 | Instruct hoặc model đã general SFT | E4 + CustomTools train | Đo tool-specific fine-tuning |
+Main result dùng controlled track 60k; full-data track được báo cáo riêng như robustness/scale-up. Mỗi dòng phải chạy độc lập cho cả `Qwen/Qwen3.5-4B` và `Qwen/Qwen3.5-2B` với cùng manifest sample IDs.
 
-E3 chỉ bắt buộc nếu có general instruction dataset độc lập. Nếu chưa có, đánh dấu E3 là optional và không dùng dữ liệu test để thay thế.
+| ID | Model state | Core train | Custom train | Validation để chọn checkpoint | Test cố định | Mục đích |
+|---|---|---:|---:|---|---|---|
+| E0 | Qwen3.5 post-trained, chưa fine-tune | 0 | 0 | Không fine-tune | Core EN/VI + CustomTools test | Zero-shot baseline |
+| E1 | Qwen3.5 post-trained | 60k EN | 0 | Core EN val | Core EN/VI test + CustomTools test | Đo transfer EN → VI |
+| E2 | Qwen3.5 post-trained | 60k VI | 0 | Core VI val | Core EN/VI test + CustomTools test | Đo lợi ích của dữ liệu tiếng Việt |
+| E3 | Qwen3.5 post-trained + general SFT | 60k EN | 0 | Core EN val | Core EN/VI test + CustomTools test | Đo ảnh hưởng của general instruction tuning |
+| E4 | Qwen3.5 post-trained + general SFT | 30k EN + 30k VI | 0 | Core EN/VI val | Core EN/VI test + CustomTools test | Đo bilingual training ở cùng ngân sách 60k |
+| E5 | Qwen3.5 post-trained + general SFT | 30k EN + 30k VI | 5,600 VI | Core EN/VI val + CustomTools val | Core EN/VI test + CustomTools test | Đo tool-specific fine-tuning |
 
-Mỗi experiment nên chạy cho Qwen2.5-1.5B trước. Qwen2.5-0.5B chạy sau để đo ảnh hưởng kích thước model.
+E3 chỉ bắt buộc nếu có general instruction dataset độc lập. Nếu chưa có, đánh dấu E3 là optional và không dùng dữ liệu test để thay thế. Nếu chạy E3, general SFT phải được thực hiện trước tool-calling SFT và phải ghi riêng checkpoint trung gian.
+
+Mỗi experiment nên chạy cho `Qwen/Qwen3.5-4B` trước. `Qwen/Qwen3.5-2B` chạy sau để đo ảnh hưởng kích thước model. Dự án chỉ dùng các checkpoint Qwen3.5 post-trained không có hậu tố `-Base`; không dùng `Qwen/Qwen3.5-2B-Base` hoặc `Qwen/Qwen3.5-4B-Base`.
 
 ### 5.3 Quy tắc huấn luyện
 
 - Dùng cùng prompt template giữa các experiment.
 - Dùng cùng tokenizer, max sequence length, seed và effective batch size.
+- Dùng cùng sample IDs, số epoch mục tiêu và training budget cho 2B/4B trong cùng một experiment.
+- Main controlled track bắt đầu với 1 epoch; chỉ tăng epoch nếu core validation cải thiện và phải ghi rõ early stopping.
 - Chỉ dùng validation để chọn checkpoint và hyperparameter.
 - Inference dùng deterministic decoding: `temperature=0`, không sampling.
 - Lưu config, checkpoint path, commit hash, seed và log cho từng run.
@@ -318,8 +386,8 @@ Thiết kế đầy đủ:
 
 | Model | Experiment | Test set | Tool P | Tool R | Negative R | ArgA | JSON valid |
 |---|---|---|---:|---:|---:|---:|---:|
-| Qwen2.5-1.5B | E0–E5 | | | | | | |
-| Qwen2.5-0.5B | E0–E5 | | | | | | |
+| `Qwen/Qwen3.5-4B` | E0–E5 | | | | | | |
+| `Qwen/Qwen3.5-2B` | E0–E5 | | | | | | |
 
 ### Bảng C — Method comparison
 
@@ -355,12 +423,12 @@ Thiết kế đầy đủ:
 - [ ] Hoàn thiện JSON Schema validator.
 - [ ] Hoàn thiện weighted P/R, F1, ArgA và multi-call metrics.
 - [ ] Chạy E0 zero-shot.
-- [ ] Chạy Method 1 với Qwen2.5-1.5B.
+- [ ] Chạy Method 1 với `Qwen/Qwen3.5-4B`.
 - [ ] Chạy E1 English-only.
 - [ ] Chạy E2 Vietnamese-only.
 - [ ] Chạy E4 bilingual.
 - [ ] Chạy E5 bilingual + CustomTools.
-- [ ] Lặp lại các experiment chính với Qwen2.5-0.5B.
+- [ ] Lặp lại các experiment chính với `Qwen/Qwen3.5-2B`.
 - [ ] Train và đánh giá Bi-Encoder.
 - [ ] Train và đánh giá Cross-Encoder với oracle retrieval.
 - [ ] Đánh giá full Bi+Cross pipeline.
@@ -406,7 +474,7 @@ Bản kết quả cuối phải trả lời được bốn câu hỏi:
 
 ## 15. Quyết Định Cần Chốt Trước Khi Chạy Chính Thức
 
-- [ ] Chọn Qwen Base hay Qwen Instruct cho E0–E2.
+- [ ] Ghi exact checkpoint ID của Qwen3.5 post-trained cho mỗi experiment; không dùng Base checkpoint.
 - [ ] Có hoặc không có general instruction dataset cho E3.
 - [ ] Chọn LoRA hay full fine-tuning.
 - [ ] Chốt format multi-call duy nhất.

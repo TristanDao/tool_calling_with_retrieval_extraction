@@ -6,7 +6,7 @@
 
 1. **Khảo sát** các phương pháp Tool Calling hiện có (Toolformer, Gorilla, ToolBench, ToolLLM, ToolACE, xLAM, AutoTool, OpenAI FC, Gemini FC).
 2. **Xây dựng dữ liệu** tiếng Việt (thu thập → chuẩn hóa → dịch → QC → benchmark).
-3. **Triển khai Method 1**: Fine-tune Qwen2.5 nhỏ (0.5B/1.5B) end-to-end cho tool calling (theo Ersoy et al. 2025).
+3. **Triển khai Method 1**: Fine-tune Qwen3.5 nhỏ (2B/4B) end-to-end cho tool calling (theo Ersoy et al. 2025).
 4. **Triển khai Method 2**: Bi-Encoder (retrieval) + Cross-Encoder (extraction).
 5. **Đánh giá & so sánh** 4 methods trên benchmark VI: Method 1 (SLM), Method 2 (Bi+Cross), OpenAI FC, Gemini FC.
 
@@ -33,7 +33,7 @@ Phạm vi đề tài: bước 1, 2, 3. (Bước 4 nằm ngoài scope.)
 - **System prompt**: liệt kê các tool có sẵn (name, description, parameters).
 - **User**: query tiếng Việt.
 - **Assistant output**: `<tool_call>{"name": "...", "arguments": {...}}</tool_call>` hoặc `<no_tool_call>`.
-- **Model**: Qwen2.5 0.5B / 1.5B.
+- **Model**: checkpoint Qwen3.5 post-trained `Qwen/Qwen3.5-2B` / `Qwen/Qwen3.5-4B`; không dùng checkpoint `-Base`.
 - **Framework**: LLaMA-Factory (SFT).
 - **Metric chính**: **ArgA (Argument Population Accuracy)** — tỉ lệ function call có cả tên tool và toàn bộ tham số chính xác.
 
@@ -110,7 +110,7 @@ Dùng chung cho cả 2 method:
 
 ### 4.1 Method 1 — SLM Instruction Tuning
 
-- **Model**: Qwen2.5 0.5B / 1.5B.
+- **Model**: checkpoint Qwen3.5 post-trained `Qwen/Qwen3.5-2B` / `Qwen/Qwen3.5-4B`; không dùng checkpoint `-Base`.
 - **Framework**: LLaMA-Factory (SFT).
 - **Learning rate**: ~5e-7, cosine schedule.
 - **Metric**: **ArgA** — end-to-end accuracy (tool name + all arguments đúng).

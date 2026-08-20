@@ -27,7 +27,7 @@
     - LLM sinh `<tool_call>{"name": "...", "arguments": {...}}</tool_call>` hoặc `<no_tool_call>`.
     - Metric chính: **ArgA (Argument Population Accuracy)** — end-to-end accuracy.
     - Dùng LLaMA-Factory, lr=5e-7 cosine schedule.
-  - **Đề tài làm tương tự cho tiếng Việt** với Qwen2.5 0.5B/1.5B (SLM).
+  - **Đề tài làm tương tự cho tiếng Việt** với Qwen3.5 2B/4B (SLM).
   - **3 câu hỏi họ nghiên cứu**:
     1. Cần dữ liệu tool-calling bằng chính ngôn ngữ đó không?
     2. Hiệu quả của general-purpose instruction tuning?
@@ -54,7 +54,7 @@
 
 - **OpenAI Function Calling** — https://platform.openai.com/docs/guides/function-calling.
 - **Google Gemini Function Calling** — https://ai.google.dev/gemini-api/docs/function-calling.
-- **Qwen2.5** (Alibaba, 2024) — *Qwen2.5: A Party of Foundation Models*. Dùng làm base model cho Method 1 (SLM fine-tune 0.5B/1.5B).
+- **Qwen3.5** (Alibaba) — Dùng làm base model cho Method 1 (SLM fine-tune 2B/4B).
 - **LLaMA-Factory** (Zheng et al., 2024) — *LLaMAFactory: Unified Efficient Fine-Tuning of 100+ Language Models*. ACL 2024. Dùng cho Method 1 instruction tuning.
 
 ## 6. Translation
