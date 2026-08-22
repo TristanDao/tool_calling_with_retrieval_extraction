@@ -1,0 +1,51 @@
+{
+  "n_gold_calls": 151059,
+  "n_calls_without_schema": 0,
+  "n_pairs_total": 309484,
+  "n_pairs_kept": 229873,
+  "n_pairs_skipped": 79611,
+  "skip_rate": 0.2572,
+  "skip_by_reason": {
+    "non_verbatim": 58106,
+    "unsupported_type": 17604,
+    "required_without_value": 3885,
+    "type_mismatch": 9,
+    "enum_value_not_in_schema": 7
+  },
+  "skip_by_type_reason": {
+    "string:non_verbatim": 44181,
+    "array:unsupported_type": 15180,
+    "number:non_verbatim": 13925,
+    "string:required_without_value": 2657,
+    "object:unsupported_type": 2424,
+    "number:required_without_value": 1197,
+    "boolean:required_without_value": 31,
+    "string:type_mismatch": 9,
+    "enum:enum_value_not_in_schema": 7
+  },
+  "skip_rate_by_source": {
+    "xlam": 0.2755,
+    "glaive": 0.2301,
+    "custom_vi": 0.1884
+  },
+  "kept_by_routing_type": {
+    "string": 127559,
+    "number": 92964,
+    "boolean": 5916,
+    "enum": 3434
+  },
+  "has_value_distribution": {
+    "positive": 190504,
+    "negative": 39369,
+    "negative_rate": 0.1713
+  },
+  "unsupported_type_coverage": {
+    "n_pairs": 17604,
+    "rate": 0.0569
+  },
+  "rows_per_split": {
+    "train": 183404,
+    "val": 22659,
+    "test": 23810
+  }
+}

@@ -123,19 +123,27 @@ def iter_parameters(tool_schema: dict[str, Any]) -> Iterator[dict[str, Any]]:
     "required": [...]}}`` lẫn dạng phẳng ``{"parameters": {"name": {...}}}``.
     """
     params = tool_schema.get("parameters") or {}
+    if not isinstance(params, dict):
+        return
     properties = params.get("properties")
-    if properties is None:
+    if not isinstance(properties, dict):
         properties = {k: v for k, v in params.items() if isinstance(v, dict)}
-        required: list[str] = []
+        required: Any = []
     else:
-        required = params.get("required") or []
-    required_set = set(required)
+        required = params.get("required")
+    # Glaive có sample ghi `required: true` ở cấp object và gắn cờ `required`
+    # vào từng property. Chỉ dạng list mới là JSON Schema hợp lệ.
+    required_set = set(required) if isinstance(required, list) else None
     for name, spec in properties.items():
         if not isinstance(spec, dict):
             continue
         param = dict(spec)
         param["name"] = name
-        param["required"] = name in required_set
+        param["required"] = (
+            name in required_set
+            if required_set is not None
+            else bool(spec.get("required", False))
+        )
         param["routing_type"] = resolve_param_type(param)
         param["value_type"] = raw_schema_type(param.get("type", "string"))
         yield param

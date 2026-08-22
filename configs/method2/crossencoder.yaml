@@ -1,0 +1,86 @@
+# Cross-Encoder — Schema-aware Parameter Extraction (§Phase 3, method2_plan)
+# Backbone xlm-roberta-base (278M): full fine-tune vừa T4 với batch 32 @ len 256.
+# BGE-M3 (568M) cùng setting → ~17.5GB → OOM, chỉ chạy 1 run so sánh ở §Phase 6.
+
+# ---------------------------------------------------------------- data pairs
+pairs:
+  output_dir: data/method2/crossencoder
+  stats_path: data/method2/label_stats.json
+  skip_rate_gate: 0.30       # §1.5: vượt ngưỡng → xem lại Q2 (fuzzy alignment)
+  require_boolean_cue: false # true = bỏ sample boolean mà query không có manh mối
+  limit_per_source: null
+
+# -------------------------------------------------------------------- model
+model:
+  name: xlm-roberta-base
+  # Fallback: intfloat/multilingual-e5-base | so sánh: BAAI/bge-m3
+  max_enum_size: 20          # enum lớn nhất đo được = 12
+  dropout: 0.1
+
+# ---------------------------------------------------------------- tokenizer
+data:
+  train_path: data/method2/crossencoder/train.jsonl
+  val_path: data/method2/crossencoder/val.jsonl
+  max_length: 256            # KHÔNG dùng 1024 (§2.3b)
+  padding: longest           # KHÔNG dùng max_length
+  num_workers: 2
+
+# ------------------------------------------------------------------ training
+train:
+  output_dir: artifacts/method2/crossencoder/run01
+  batch_size: 32
+  grad_accum: 2              # effective 64
+  eval_batch_size: 16        # eval batch = 1/2 train batch, tránh OOM cuối job
+  epochs: 3
+  lr: 3.0e-5
+  head_lr: 1.0e-4            # head mới, lr cao hơn encoder
+  warmup_ratio: 0.06
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  fp16: true
+  gradient_checkpointing: false
+  logging_steps: 50
+  eval_steps: 500
+  save_steps: 500            # Kaggle có thể ngắt bất ngờ
+  save_total_limit: 2
+  seed: 42
+  resume_from: null
+
+# Curriculum §Phase 3: warm-up trên glaive+xLAM rồi fine-tune trên custom_vi.
+curriculum:
+  enabled: true
+  stages:
+    - name: warmup
+      sources: [glaive, xlam]
+      epochs: 2
+      lr: 3.0e-5
+    - name: finetune
+      sources: [custom_vi]
+      epochs: 2
+      lr: 1.0e-5
+
+loss:
+  has_value_weight: 1.0
+  span_weight: 1.0
+  enum_weight: 1.0
+  boolean_weight: 1.0
+  span_loss_combiner: sum
+
+# ----------------------------------------------------------------- inference
+inference:
+  has_value_threshold: 0.5
+  fallback_has_value_threshold: 0.3   # dùng khi validator thấy thiếu required
+  max_answer_len: 30
+  batch_size: 64
+  use_normalizer: true                # ablation §6.2: false = tắt normalizer
+  normalizer:
+    reference_date: null              # ISO date; null = bỏ qua ngày tương đối
+    century: 2000
+
+# Gate để qua Phase 4 (chế độ oracle retrieval), đo trên custom val.
+gates:
+  has_value_f1: 0.90
+  span_em: 0.80
+  enum_accuracy: 0.90
+  boolean_accuracy: 0.85
+  argument_em: 0.70

@@ -89,10 +89,16 @@ class LabelGenerator:
         config: LabelGeneratorConfig,
         tokenizer: PreTrainedTokenizerBase | None = None,
     ) -> None:
+        """`tokenizer=None` → chỉ sinh char span.
+
+        Nhãn lưu ra đĩa dùng char span để không phụ thuộc backbone; token index
+        được tính lại ở `dataset.py` theo tokenizer thật của lần train đó.
+        Truyền tokenizer vào đây khi cần token index ngay (test, debug).
+        """
         self.config = config
-        self.tokenizer: PreTrainedTokenizerBase = tokenizer or AutoTokenizer.from_pretrained(
-            config.tokenizer_name, use_fast=True
-        )
+        if tokenizer is None and config.tokenizer_name:
+            tokenizer = AutoTokenizer.from_pretrained(config.tokenizer_name, use_fast=True)
+        self.tokenizer: PreTrainedTokenizerBase | None = tokenizer
         self.true_patterns = [re.compile(p, re.IGNORECASE) for p in BOOLEAN_TRUE_CUES]
         self.false_patterns = [re.compile(p, re.IGNORECASE) for p in BOOLEAN_FALSE_CUES]
 
@@ -119,17 +125,17 @@ class LabelGenerator:
             return match.start(), match.end()
         return None
 
-    def _align_span(
+    def align_char_span_to_tokens(
         self,
         query: str,
-        value: str,
-        max_length: int,
-    ) -> tuple[int, int, int, int] | None:
-        """(start_tok, end_tok, char_start, char_end) — token index tính cả [CLS]."""
-        char_span = self.find_char_span(query, value)
-        if char_span is None:
-            return None
-        char_start, char_end_excl = char_span
+        char_start: int,
+        char_end_excl: int,
+        max_length: int | None = None,
+    ) -> tuple[int, int] | None:
+        """Char span → (start_tok, end_tok), token index tính cả [CLS] ở vị trí 0."""
+        if self.tokenizer is None:
+            raise ValueError("Cần tokenizer để tính token index")
+        max_length = max_length or self.config.max_length
         char_end = char_end_excl - 1
         offsets = self.tokenizer(
             _nfc(query),
@@ -151,7 +157,7 @@ class LabelGenerator:
             return None
         if end_tok >= max_length - 1:
             return None
-        return start_tok, end_tok, char_start, char_end_excl
+        return start_tok, end_tok
 
     # ---------------------------------------------------------------- boolean
 
@@ -243,15 +249,18 @@ class LabelGenerator:
         if routing_type in (SCHEMA_TYPE_STRING, SCHEMA_TYPE_NUMBER):
             if isinstance(gold_value, bool):
                 return SkipLabel("type_mismatch")
-            span = self._align_span(query, str(gold_value), self.config.max_length)
-            if span is None:
+            char_span = self.find_char_span(query, str(gold_value))
+            if char_span is None:
                 return SkipLabel("non_verbatim")
-            start_tok, end_tok, char_start, char_end = span
+            char_start, char_end = char_span
             result["has_value"] = 1
-            result["span_start"] = start_tok
-            result["span_end"] = end_tok
             result["char_start"] = char_start
             result["char_end"] = char_end
+            if self.tokenizer is not None:
+                token_span = self.align_char_span_to_tokens(query, char_start, char_end)
+                if token_span is None:
+                    return SkipLabel("span_out_of_window")
+                result["span_start"], result["span_end"] = token_span
             return result
 
         return SkipLabel("unknown_type")

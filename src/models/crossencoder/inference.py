@@ -70,7 +70,9 @@ def decode_span(
     max_answer_len: int,
 ) -> tuple[int, int, float]:
     """(start, end, score) maximize start[i] + end[j] với i <= j <= i+max_answer_len."""
-    neg = torch.finfo(start_logits.dtype).min
+    # Không dùng `finfo.min`: `scores` là tổng hai logit nên min + min sẽ tràn
+    # thành -inf. Một hằng số đủ âm mà cộng đôi vẫn hữu hạn là an toàn hơn.
+    neg = -1e30 if start_logits.dtype == torch.float32 else -1e4
     start = start_logits.masked_fill(~valid_mask, neg)
     end = end_logits.masked_fill(~valid_mask, neg)
     length = start.size(0)

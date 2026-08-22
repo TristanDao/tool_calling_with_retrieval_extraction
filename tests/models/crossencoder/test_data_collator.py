@@ -62,6 +62,31 @@ def test_iter_parameters_reads_json_schema_object() -> None:
     assert params["toppings"]["routing_type"] == "array"
 
 
+def test_iter_parameters_survives_glaive_malformed_required() -> None:
+    # Glaive có sample ghi `required: true` thay vì list tên parameter.
+    tool = {
+        "name": "get_movie_details",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "required": True},
+                "year": {"type": "integer"},
+            },
+            "required": True,
+        },
+    }
+
+    params = {p["name"]: p for p in iter_parameters(tool)}
+
+    assert params["title"]["required"] is True
+    assert params["year"]["required"] is False
+
+
+def test_iter_parameters_ignores_non_dict_parameters() -> None:
+    assert list(iter_parameters({"name": "x", "parameters": None})) == []
+    assert list(iter_parameters({"name": "x", "parameters": "oops"})) == []
+
+
 def test_integer_routes_to_number_but_keeps_raw_type() -> None:
     assert normalize_schema_type("integer") == SCHEMA_TYPE_NUMBER
     assert raw_schema_type("integer") == "integer"

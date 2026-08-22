@@ -1,0 +1,28 @@
+{
+  "n_positive_pairs": 105543,
+  "n_negative_samples": 18339,
+  "gold_not_in_pool": 0,
+  "queries_per_split": {
+    "train": 104232,
+    "val": 11823,
+    "test": 12625
+  },
+  "positives_per_source": {
+    "benchmark_train": 103200,
+    "benchmark_val": 12818,
+    "benchmark_test": 12899,
+    "custom_train": 4140,
+    "custom_val_seen": 230,
+    "custom_val_unseen": 230,
+    "custom_test_seen": 460,
+    "custom_test_unseen": 460
+  },
+  "train_rows_dropped_by_query_dedupe": 28896,
+  "n_leaked_queries": 1685,
+  "negative_sources": {
+    "bm25": 412798,
+    "in_sample_candidate": 124950
+  },
+  "n_unseen_tools_in_pool": 20,
+  "unseen_tools_leaked_into_train_positives": []
+}

@@ -1,0 +1,73 @@
+{
+  "n_tools": 4464,
+  "n_signatures_before_merge": 23374,
+  "n_tools_with_unsupported_param": 224,
+  "param_type_distribution": {
+    "string": 8630,
+    "number": 3526,
+    "array": 330,
+    "boolean": 283,
+    "enum": 80,
+    "object": 73
+  },
+  "feature_group_distribution": {
+    "Khác": 4424,
+    "Y tế & Sức khỏe": 4,
+    "Tài chính & Ngân hàng": 4,
+    "Hành chính công": 4,
+    "Giao thông & Di chuyển": 4,
+    "Thương mại điện tử": 4,
+    "Giải trí & Lịch": 4,
+    "Ẩm thực & Đặc sản": 4,
+    "Nông nghiệp & Thời tiết": 4,
+    "Giáo dục Việt Nam": 4,
+    "Du lịch & Địa danh": 4
+  },
+  "source_distribution": {
+    "xlam": 3604,
+    "glaive": 865,
+    "custom_vi": 40
+  },
+  "top_merged_tools": [
+    {
+      "name": "calculate_area",
+      "n_variants": 1074
+    },
+    {
+      "name": "calculate_tip",
+      "n_variants": 883
+    },
+    {
+      "name": "search_recipes",
+      "n_variants": 861
+    },
+    {
+      "name": "search_books",
+      "n_variants": 823
+    },
+    {
+      "name": "search_movies",
+      "n_variants": 542
+    },
+    {
+      "name": "calculate_discount",
+      "n_variants": 494
+    },
+    {
+      "name": "get_news",
+      "n_variants": 486
+    },
+    {
+      "name": "search_restaurants",
+      "n_variants": 475
+    },
+    {
+      "name": "generate_invoice",
+      "n_variants": 467
+    },
+    {
+      "name": "search_recipe",
+      "n_variants": 453
+    }
+  ]
+}

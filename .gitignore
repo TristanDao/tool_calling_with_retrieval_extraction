@@ -44,6 +44,14 @@ data/translations/qa_samples/
 data/statistics/
 *.csv
 
+# Method 2 — artefact dẫn xuất, sinh lại được từ nguồn + code.
+# Giữ lại file thống kê nhỏ (*_stats.json, label_stats.json, manifest.json)
+# vì đó là số liệu cần trích vào báo cáo.
+data/method2/**/*.jsonl
+data/method2/tool_pool.json
+data/method2/index/
+artifacts/method2/
+
 
 # Models / checkpoints
 checkpoints/

@@ -1,0 +1,97 @@
+{
+  "created_at": "2026-08-22T20:02:47.590336+00:00",
+  "git_commit": "d512b5c8d2fc636d5e9d583ef5796cd9f58a4280",
+  "sources": {
+    "benchmark_train": {
+      "path": "data\\benchmark_vi\\train.jsonl",
+      "present": true,
+      "bytes": 117485528,
+      "sha256": "18da9067bf82eca7c643554cd9da8c3f3825d34a8981a038ab15ae619fc7aa0f"
+    },
+    "benchmark_val": {
+      "path": "data\\benchmark_vi\\val.jsonl",
+      "present": true,
+      "bytes": 14534756,
+      "sha256": "9b98fc3d2ca1a47d0ee4f0517d8a8aac60b823431bc1d70479e66f24333bd59b"
+    },
+    "benchmark_test": {
+      "path": "data\\benchmark_vi\\test.jsonl",
+      "present": true,
+      "bytes": 14864432,
+      "sha256": "e2f1d318e05fe128bcda8a502119c5cd9e50f18be7a2dcdb72b6325af749b5dc"
+    },
+    "custom_train": {
+      "path": "data\\custom_vi\\v1\\train.jsonl",
+      "present": true,
+      "bytes": 37991078,
+      "sha256": "98f55af4e173894b9a97e93ee6475e7070e570e730f0658f28effea8aa411ae6"
+    },
+    "custom_val_seen": {
+      "path": "data\\custom_vi\\v1\\val_seen.jsonl",
+      "present": true,
+      "bytes": 2707039,
+      "sha256": "a82809e40f8a03d6992f9da225a92be198071c0fd332b94b121aa6e0ed87c51b"
+    },
+    "custom_val_unseen": {
+      "path": "data\\custom_vi\\v1\\val_unseen.jsonl",
+      "present": true,
+      "bytes": 2684055,
+      "sha256": "a582f527134dd317b24951767d004876a1b18e9353d662d54377a4ad7bfa1a4d"
+    },
+    "custom_test_seen": {
+      "path": "data\\custom_vi\\v1\\test_seen.jsonl",
+      "present": true,
+      "bytes": 5434108,
+      "sha256": "f3c7f26b2a0a2fc3128494546b0182434e8b6df385c4b93d05b44688b730af35"
+    },
+    "custom_test_unseen": {
+      "path": "data\\custom_vi\\v1\\test_unseen.jsonl",
+      "present": true,
+      "bytes": 5387996,
+      "sha256": "6fc5d8c1b8ce16d153274ab0c02f9e98b2bb4469c917115576858206128587dd"
+    },
+    "glaive_negative": {
+      "path": "data\\translations\\glaive_negative_vi.jsonl",
+      "present": true,
+      "bytes": 7917054,
+      "sha256": "f7c25d3ea5011d82e6775cdcb72457c9847da8f35252e944c69acb8b5e529809"
+    }
+  },
+  "derived": {
+    "data\\method2\\tool_pool.json": {
+      "present": true,
+      "bytes": 5257867,
+      "sha256": "4b3357fa13adbd8cf118948449a7fb1508cfa121e8c60f3a24ef2d91cbd9c1ed"
+    },
+    "data\\method2\\biencoder\\train.jsonl": {
+      "present": true,
+      "bytes": 48452425,
+      "sha256": "1c4fc1a502179a58407495f4444a3609281c0c215ec013cb7df1f374df9b82f6"
+    },
+    "data\\method2\\biencoder\\val.jsonl": {
+      "present": true,
+      "bytes": 7268560,
+      "sha256": "a1b4636449a23fc6760874769fc3ec040214514edf9c1e52d90cf90e019c565c"
+    },
+    "data\\method2\\biencoder\\test.jsonl": {
+      "present": true,
+      "bytes": 7980714,
+      "sha256": "66b219009e98655aa91f43b8c92d9440cc2c43fce5da6d32f2a2eb1849f8d350"
+    },
+    "data\\method2\\crossencoder\\train.jsonl": {
+      "present": true,
+      "bytes": 120268026,
+      "sha256": "0a827ee77862182bd7a65e38e312a3691edfb728523c5418319584322f5fd4a0"
+    },
+    "data\\method2\\crossencoder\\val.jsonl": {
+      "present": true,
+      "bytes": 14745049,
+      "sha256": "70874d9b6dfb2f65e657785ebd4001395e0355e95a2dc1604a059b6bcfa889a1"
+    },
+    "data\\method2\\crossencoder\\test.jsonl": {
+      "present": true,
+      "bytes": 15576119,
+      "sha256": "75898e9460d67d48257ff9fb67f2eba4d505019205fdffacba99136df2a23052"
+    }
+  }
+}
