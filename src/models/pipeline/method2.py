@@ -228,7 +228,12 @@ class Method2Pipeline:
                     "status": result.status,
                     "missing_required": result.missing_required,
                     "dropped_keys": result.dropped_keys,
-                    "unsupported_params": result.unsupported_params,
+                    # Gộp cả param optional kiểu array/object: validator chỉ thấy
+                    # được các param required, nhưng bảng coverage §3.2 cần đủ.
+                    "unsupported_params": sorted(
+                        set(result.unsupported_params)
+                        | {p.name for p in predictions if p.unsupported}
+                    ),
                     "schema_errors": result.schema_errors,
                     "params": [asdict(p) for p in predictions],
                 }

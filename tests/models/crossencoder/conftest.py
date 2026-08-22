@@ -16,11 +16,13 @@ _TOKEN_RE = re.compile(r"\S+")
 
 
 class FakeEncoding(dict):
-    def __init__(self, data: dict, seq_ids: list[int | None]) -> None:
+    def __init__(self, data: dict, seq_ids) -> None:
         super().__init__(data)
         self._seq_ids = seq_ids
 
-    def sequence_ids(self, index: int = 0) -> list[int | None]:
+    def sequence_ids(self, index: int = 0):
+        if self._seq_ids and isinstance(self._seq_ids[0], list):
+            return self._seq_ids[index]
         return self._seq_ids
 
 
@@ -53,7 +55,9 @@ class FakeTokenizer:
         **kwargs,
     ) -> FakeEncoding:
         if isinstance(text, list):
-            raise NotImplementedError("FakeTokenizer chỉ hỗ trợ 1 cặp mỗi lần gọi")
+            return self._encode_batch(
+                text, text_pair, max_length, truncation, return_offsets_mapping, return_tensors
+            )
 
         query_ids, query_offsets = self._tokenize(text)
         if not add_special_tokens and text_pair is None:
@@ -85,6 +89,49 @@ class FakeTokenizer:
             data["offset_mapping"] = (
                 [(0, 0)] + query_offsets + [(0, 0)] + pair_offsets + [(0, 0)]
             )
+        return FakeEncoding(data, seq_ids)
+
+
+    def _encode_batch(
+        self,
+        texts: list[str],
+        text_pairs,
+        max_length: int,
+        truncation,
+        return_offsets_mapping: bool,
+        return_tensors,
+    ) -> FakeEncoding:
+        """Batch encode có pad — `CrossEncoderExtractor` gọi dạng này."""
+        rows = [
+            self(
+                text,
+                text_pairs[i] if text_pairs else None,
+                max_length=max_length,
+                truncation=truncation,
+                return_offsets_mapping=True,
+            )
+            for i, text in enumerate(texts)
+        ]
+        width = max(len(r["input_ids"]) for r in rows)
+
+        def _pad(seq, fill):
+            return list(seq) + [fill] * (width - len(seq))
+
+        data = {
+            "input_ids": [_pad(r["input_ids"], PAD_ID) for r in rows],
+            "attention_mask": [_pad(r["attention_mask"], 0) for r in rows],
+        }
+        if return_offsets_mapping:
+            data["offset_mapping"] = [_pad(r["offset_mapping"], (0, 0)) for r in rows]
+        seq_ids = [_pad(r.sequence_ids(0), None) for r in rows]
+
+        if return_tensors == "pt":
+            import torch
+
+            data["input_ids"] = torch.tensor(data["input_ids"], dtype=torch.long)
+            data["attention_mask"] = torch.tensor(data["attention_mask"], dtype=torch.long)
+            if return_offsets_mapping:
+                data["offset_mapping"] = torch.tensor(data["offset_mapping"], dtype=torch.long)
         return FakeEncoding(data, seq_ids)
 
 
