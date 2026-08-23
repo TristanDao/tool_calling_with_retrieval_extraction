@@ -122,8 +122,10 @@ def verify_against_manifest(data_root: Path) -> list[str]:
     for name, entry in (manifest.get("derived") or {}).items():
         if not entry.get("sha256"):
             continue
+        # Khoá có thể dùng "\\" nếu manifest sinh trên Windows; đổi tường minh
+        # vì Path.as_posix() không xử lý được backslash khi chạy trên Linux.
         # "data/method2/x.jsonl" trong repo → "method2/x.jsonl" trong dataset
-        relative = Path(name).as_posix().replace("data/", "", 1)
+        relative = str(name).replace("\\", "/").replace("data/", "", 1)
         staged = data_root / relative
         if not staged.exists():
             problems.append(f"thiếu {relative}")

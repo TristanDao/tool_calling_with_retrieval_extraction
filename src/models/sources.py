@@ -404,8 +404,9 @@ def _run_manifest(output: Path) -> None:
     except (subprocess.CalledProcessError, FileNotFoundError):
         commit = None
 
+    # Khoá dạng POSIX để manifest sinh trên Windows đọc được trên Linux.
     derived = {
-        str(path): {
+        path.as_posix(): {
             "present": path.exists(),
             "bytes": path.stat().st_size if path.exists() else None,
             "sha256": sha256_file(path) if path.exists() else None,

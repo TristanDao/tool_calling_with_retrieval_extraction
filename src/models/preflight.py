@@ -95,6 +95,17 @@ def _read_json(path: Path) -> Any | None:
         return None
 
 
+def posix_key(path: Any) -> str:
+    """Khoá đường dẫn độc lập hệ điều hành.
+
+    Manifest sinh trên Windows lưu khoá dạng ``data\\method2\\x.json``. Trên
+    Linux, ``Path(...).as_posix()`` **không** đổi được vì backslash không phải
+    ký tự phân cách của POSIX — key không bao giờ khớp và mọi artefact bị báo
+    "không có trong manifest". Thay thế tường minh mới đúng cho cả hai chiều.
+    """
+    return str(path).replace("\\", "/")
+
+
 # ----------------------------------------------------------------- các check
 
 
@@ -121,10 +132,10 @@ def check_artifacts_match_manifest(
     report.add("decontamination.json tồn tại", True, str(decontamination_path))
 
     derived = manifest.get("derived") or {}
-    normalized = {Path(k).as_posix(): v for k, v in derived.items()}
+    normalized = {posix_key(k): v for k, v in derived.items()}
     all_ok = True
     for artifact in REQUIRED_ARTIFACTS:
-        entry = normalized.get(artifact)
+        entry = normalized.get(posix_key(artifact))
         path = Path(artifact)
         if entry is None or not entry.get("sha256"):
             report.add(f"SHA-256 {artifact}", False, "không có trong manifest")
@@ -287,12 +298,25 @@ def check_config(report: PreflightReport, config_path: Path) -> bool:
     return True
 
 
-def check_git(report: PreflightReport, allow_dirty: bool = True) -> bool:
+def check_git(
+    report: PreflightReport,
+    allow_dirty: bool = True,
+    manifest_path: Path = MANIFEST_PATH,
+) -> bool:
     from src.models.run_manifest import git_state
 
     state = git_state()
     if not state["commit"]:
-        report.add("commit SHA", False, "không đọc được git")
+        # Kaggle chạy từ dataset đã copy, không có thư mục .git. Commit của
+        # snapshot đã được ghi vào manifest lúc build ở local — dùng nó, chứ
+        # không phải fail: yêu cầu audit là biết code nào sinh ra dữ liệu này.
+        manifest = _read_json(manifest_path) or {}
+        commit = manifest.get("git_commit")
+        if commit:
+            report.add("commit SHA", True, f"{commit[:12]} (từ manifest, không có .git)")
+            report.add("working tree sạch", True, "không áp dụng — chạy từ snapshot")
+            return True
+        report.add("commit SHA", False, "không đọc được git và manifest cũng không có git_commit")
         return False
     report.add("commit SHA", True, f"{state['commit'][:12]} ({state['branch']})")
     if state["dirty"] and not allow_dirty:
