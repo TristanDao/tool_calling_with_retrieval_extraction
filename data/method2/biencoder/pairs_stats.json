@@ -1,0 +1,72 @@
+{
+  "n_positive_pairs": 102100,
+  "n_negative_samples": 18334,
+  "gold_not_in_pool": 0,
+  "queries_per_split": {
+    "train": 75329,
+    "val": 8386,
+    "test": 12625
+  },
+  "positives_per_source": {
+    "benchmark_train": 74295,
+    "benchmark_val": 9386,
+    "benchmark_test": 12899,
+    "custom_train": 4140,
+    "custom_val_seen": 230,
+    "custom_val_unseen": 230,
+    "custom_test_seen": 460,
+    "custom_test_unseen": 460
+  },
+  "decontamination": {
+    "n_unique_queries": 75979,
+    "unique_queries_per_split_before": {
+      "train": 60517,
+      "val": 8391,
+      "test": 9331
+    },
+    "unique_queries_per_split_after": {
+      "train": 58829,
+      "test": 9331,
+      "val": 7819
+    },
+    "overlapping_queries": {
+      "test∩train": 574,
+      "train∩val": 572,
+      "test∩train∩val": 542,
+      "test∩val": 30
+    },
+    "n_overlapping_queries": 1718,
+    "precedence": [
+      "test",
+      "val",
+      "train"
+    ],
+    "rows_dropped_by_transition": {
+      "train->test": 26778,
+      "val->test": 3437,
+      "train->val": 2125
+    },
+    "rows_dropped_by_source": {
+      "benchmark_train": 28901,
+      "benchmark_val": 3432,
+      "glaive_negative": 7
+    },
+    "rows_dropped_total": 32340
+  },
+  "split_overlap_after": {
+    "test∩train": 0,
+    "test∩val": 0,
+    "train∩val": 0
+  },
+  "unique_queries_per_split": {
+    "test": 9331,
+    "train": 58829,
+    "val": 7819
+  },
+  "negative_sources": {
+    "bm25": 284887,
+    "in_sample_candidate": 123513
+  },
+  "n_unseen_tools_in_pool": 20,
+  "unseen_tools_leaked_into_train_positives": []
+}

@@ -64,14 +64,21 @@ class HierarchicalLoss(nn.Module):
                 "loss_sub": l_sub.detach(),
             }
 
-        schema_type_list: list[str] = labels.get("schema_type", ["string"] * len(present_idx))
-        schema_type_present = [schema_type_list[i] for i in range(len(present_idx))]
+        batch_size = int(labels["has_value"].shape[0])
+        schema_type_list: list[str] = labels.get("schema_type") or ["string"] * batch_size
+        if len(schema_type_list) != batch_size:
+            raise ValueError(
+                f"schema_type has {len(schema_type_list)} entries but batch is {batch_size}"
+            )
+        # Phải index theo vị trí thật trong batch, không phải 0..len(present_idx).
+        schema_type_present = [schema_type_list[i] for i in present_idx]
 
         span_idx = _index_for(present_idx, schema_type_present, SPAN_TYPES, device)
         enum_idx = _index_for(present_idx, schema_type_present, (ENUM_TYPE,), device)
         bool_idx = _index_for(present_idx, schema_type_present, (BOOLEAN_TYPE,), device)
 
         l_sub = torch.zeros((), device=device)
+        parts: dict[str, torch.Tensor] = {}
 
         if span_idx.numel() > 0:
             l_span_start = F.cross_entropy(
@@ -82,22 +89,26 @@ class HierarchicalLoss(nn.Module):
             )
             combined = (l_span_start + l_span_end) / 2.0 if self.config.span_loss_combiner == "mean" else (l_span_start + l_span_end)
             l_sub = l_sub + combined * self.config.span_weight
+            parts["loss_span"] = combined.detach()
 
         if enum_idx.numel() > 0:
             l_enum = F.cross_entropy(
                 outputs["enum_logits"][enum_idx], labels["enum_label"][enum_idx]
             )
             l_sub = l_sub + l_enum * self.config.enum_weight
+            parts["loss_enum"] = l_enum.detach()
 
         if bool_idx.numel() > 0:
             l_bool = F.cross_entropy(
                 outputs["boolean_logits"][bool_idx], labels["boolean_label"][bool_idx]
             )
             l_sub = l_sub + l_bool * self.config.boolean_weight
+            parts["loss_boolean"] = l_bool.detach()
 
         total = l_has + l_sub
         return {
             "loss": total,
             "loss_has_value": l_has.detach(),
             "loss_sub": l_sub.detach(),
+            **parts,
         }

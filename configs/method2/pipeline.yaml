@@ -1,0 +1,44 @@
+# Pipeline Method 2 = Bi-Encoder → Cross-Encoder → Validator (§Phase 5)
+# Xuất predictions.jsonl theo prediction contract của docs/evaluation.md §3.
+
+models:
+  biencoder: artifacts/method2/biencoder/run01/final
+  crossencoder: artifacts/method2/crossencoder/run01/final
+  # Ngưỡng đã hiệu chỉnh trên val và FREEZE — không được tune lại trên test.
+  thresholds: artifacts/method2/biencoder/run01/thresholds.json
+  max_seq_length: 192
+
+index:
+  embeddings_path: data/method2/index/tool_embeddings.npy
+  tool_ids_path: data/method2/index/tool_ids.json
+  tool_pool_path: data/method2/tool_pool.json
+
+# candidates = xếp hạng trong candidate pool của từng sample (thiết lập benchmark)
+# pool       = xếp hạng trên toàn bộ ~4,4k tool (thiết lập stress test)
+retrieval_scope: candidates
+
+extraction:
+  max_length: 256
+  has_value_threshold: 0.5
+  fallback_has_value_threshold: 0.3
+  max_answer_len: 30
+  batch_size: 64
+  use_normalizer: true          # ablation §6.2
+  normalizer:
+    reference_date: null        # ISO date, vd 2026-08-23
+    century: 2000
+
+output:
+  dir: results/method2/predictions
+  # Hai chế độ bắt buộc §6.3 experimental_plan:
+  #   pipeline → predictions.jsonl
+  #   oracle   → oracle_predictions.jsonl
+  modes: [pipeline, oracle]
+
+# Lệnh đánh giá sau khi có predictions (chạy bằng evaluator chung):
+#   python -m src.evaluation.cli evaluate \
+#     --gold data/benchmark_vi/test.jsonl \
+#     --predictions results/method2/predictions/predictions.jsonl \
+#     --oracle-predictions results/method2/predictions/oracle_predictions.jsonl \
+#     --slice metadata.tool_split \
+#     --output-dir results/evaluation/method_2

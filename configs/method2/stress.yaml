@@ -1,0 +1,32 @@
+# Stress test — scaling theo số lượng tool (§Phase 7, §10.2 experimental_plan)
+#
+# Điểm cần chứng minh: latency của Method 2 gần như PHẲNG theo N, trong khi SLM
+# và API tăng tuyến tính (context dài ra). Bi-Encoder chỉ tốn thêm một phép nhân
+# ma trận 1×d · d×N; Cross-Encoder không đổi vì chỉ chạy trên tool đã chọn.
+
+n_values: [3, 10, 50, 100, 500, 1000]
+
+# random      = distractor lấy ngẫu nhiên từ tool pool
+# same_domain = distractor cùng feature_group với gold (khó hơn)
+#
+# TRẠNG THÁI: same_domain = temporarily unavailable — pending feature-group
+# enrichment. Chỉ 40 tool CustomTools-VI có nhãn thật; 4,424 tool glaive/xLAM
+# đang là "Khác" nên slice này sẽ suy biến thành random. Bật lại sau khi chạy
+# feature_group_classify và rebuild tool pool.
+distractor_modes: [random]
+
+n_queries: 200            # 6 N × 1 mode × 200 = 1,200 instance (2,400 khi bật lại same_domain)
+seed: 42
+
+# Distractor lấy từ tool pool ~4,4k tool THẬT, không sinh giả.
+tool_pool_path: data/method2/tool_pool.json
+gold_path: data/custom_vi/v1/test_seen.jsonl
+
+output_dir: results/method2/stress
+
+# Bật lại same_domain:
+#   1. đặt ALIBABA_* vào .env
+#   2. python -m src.data.feature_group_classify   (điền cache)
+#   3. python -m src.models.biencoder.tool_pool     (gắn nhãn vào pool)
+#   4. thêm same_domain vào distractor_modes ở trên
+# Không phải build lại benchmark.

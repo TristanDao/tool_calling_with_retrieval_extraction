@@ -3,6 +3,15 @@
 Input:  data/benchmark_vi/{train,val,test}.jsonl  (master schema)
 Output: data/benchmark_vi/instruction/{train,val,test}_chat.jsonl  (sharegpt)
 
+**Decontamination**: benchmark gốc chia split theo sample chứ không theo query
+nên 1,718 normalized query nằm ở nhiều split. Method 1 phải dùng **cùng một**
+`data/method2/decontamination.json` với Bi-Encoder và Cross-Encoder — nếu không,
+Method 1 có train→test leakage trong khi Method 2 không, và bảng so sánh giữa
+hai method mất hiệu lực. Xem `docs/method2.md` §5.
+
+Tập test không mất sample nào (test có thứ tự ưu tiên cao nhất), nên bốn method
+vẫn được đánh giá trên đúng cùng một tập.
+
 Master schema:
   {"id": "...", "source": "...", "query": "VI text",
    "function_calls": [{"name": "...", "arguments": {...}}],
@@ -80,10 +89,22 @@ def convert_sample(sample: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
-def convert_file(input_path: Path, output_path: Path) -> tuple[int, int]:
+def convert_file(
+    input_path: Path,
+    output_path: Path,
+    decontamination: Any = None,
+    split: str | None = None,
+) -> tuple[int, int, int]:
+    """Trả `(converted, skipped, contaminated)`.
+
+    `contaminated` = số sample bị loại vì query của nó thuộc split cao hơn.
+    """
+    from src.models.sources import normalize_query_key
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     converted = 0
     skipped = 0
+    contaminated = 0
 
     with output_path.open("w", encoding="utf-8") as out:
         with input_path.open("r", encoding="utf-8") as f:
@@ -97,6 +118,14 @@ def convert_file(input_path: Path, output_path: Path) -> tuple[int, int]:
                     skipped += 1
                     continue
 
+                if decontamination is not None and split is not None:
+                    effective = decontamination.effective_split.get(
+                        normalize_query_key(sample.get("query", ""))
+                    )
+                    if effective is not None and effective != split:
+                        contaminated += 1
+                        continue
+
                 result = convert_sample(sample)
                 if result is None:
                     skipped += 1
@@ -105,7 +134,7 @@ def convert_file(input_path: Path, output_path: Path) -> tuple[int, int]:
                 out.write(json.dumps(result, ensure_ascii=False) + "\n")
                 converted += 1
 
-    return converted, skipped
+    return converted, skipped, contaminated
 
 
 def main() -> None:
@@ -128,8 +157,35 @@ def main() -> None:
         "--benchmark-dir", type=Path, default=Path("data/benchmark_vi"),
         help="Benchmark directory (used with --all-splits)",
     )
+    parser.add_argument(
+        "--decontamination", type=Path,
+        default=Path("data/method2/decontamination.json"),
+        help="Index dùng chung với Method 2. Bắt buộc trừ khi --no-decontamination.",
+    )
+    parser.add_argument(
+        "--no-decontamination", action="store_true",
+        help="BỎ QUA decontamination — kết quả sẽ có train/test leakage, "
+             "không dùng được để so với Method 2",
+    )
+    parser.add_argument(
+        "--split", type=str, default=None,
+        help="Split của --input (train/val/test), cần khi có decontamination",
+    )
     args = parser.parse_args()
 
+    decontamination = None
+    if args.no_decontamination:
+        print(
+            "[convert] CẢNH BÁO: bỏ qua decontamination. Method 1 sẽ train trên "
+            "query có mặt ở val/test, kết quả KHÔNG so sánh được với Method 2."
+        )
+    else:
+        from src.models.sources import load_decontamination
+
+        decontamination = load_decontamination(args.decontamination)
+        print(f"[convert] decontamination: {args.decontamination}")
+
+    totals: dict[str, dict[str, int]] = {}
     if args.all_splits:
         for split in ["train", "val", "test"]:
             inp = args.benchmark_dir / f"{split}.jsonl"
@@ -137,13 +193,22 @@ def main() -> None:
             if not inp.exists():
                 print(f"[convert] SKIP {split} — {inp} not found")
                 continue
-            c, s = convert_file(inp, out)
-            print(f"[convert] {split}: {c} converted, {s} skipped → {out}")
+            c, s, contaminated = convert_file(inp, out, decontamination, split)
+            print(
+                f"[convert] {split}: {c} converted, {s} skipped, "
+                f"{contaminated} loại do trùng split khác → {out}"
+            )
+            totals[split] = {"converted": c, "skipped": s, "contaminated": contaminated}
     else:
         if args.input is None or args.output is None:
             parser.error("--input and --output are required unless --all-splits is used")
-        c, s = convert_file(args.input, args.output)
-        print(f"[convert] {c} converted, {s} skipped → {args.output}")
+        c, s, contaminated = convert_file(
+            args.input, args.output, decontamination, args.split
+        )
+        print(
+            f"[convert] {c} converted, {s} skipped, "
+            f"{contaminated} loại do trùng split khác → {args.output}"
+        )
 
 
 if __name__ == "__main__":

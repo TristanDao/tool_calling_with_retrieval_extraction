@@ -1,0 +1,97 @@
+{
+  "n_gold_calls": 118701,
+  "n_calls_without_schema": 0,
+  "n_pairs_total": 251032,
+  "n_pairs_kept": 183900,
+  "n_pairs_skipped": 67132,
+  "skip_rate": 0.2674,
+  "skip_by_reason": {
+    "non_verbatim": 49843,
+    "unsupported_type": 13441,
+    "required_without_value": 3836,
+    "type_mismatch": 9,
+    "enum_value_not_in_schema": 3
+  },
+  "skip_by_type_reason": {
+    "string:non_verbatim": 36871,
+    "number:non_verbatim": 12972,
+    "array:unsupported_type": 12550,
+    "string:required_without_value": 2609,
+    "number:required_without_value": 1196,
+    "object:unsupported_type": 891,
+    "boolean:required_without_value": 31,
+    "string:type_mismatch": 9,
+    "enum:enum_value_not_in_schema": 3
+  },
+  "skip_rate_by_source": {
+    "xlam": 0.2753,
+    "glaive": 0.2677,
+    "custom_vi": 0.1884
+  },
+  "kept_by_routing_type": {
+    "string": 104983,
+    "number": 69839,
+    "boolean": 5881,
+    "enum": 3197
+  },
+  "has_value_distribution": {
+    "positive": 146989,
+    "negative": 36911,
+    "negative_rate": 0.2007
+  },
+  "unsupported_type_coverage": {
+    "n_pairs": 13441,
+    "rate": 0.0535
+  },
+  "rows_per_split": {
+    "train": 142321,
+    "val": 17769,
+    "test": 23810
+  },
+  "decontamination": {
+    "n_unique_queries": 75979,
+    "unique_queries_per_split_before": {
+      "train": 60517,
+      "val": 8391,
+      "test": 9331
+    },
+    "unique_queries_per_split_after": {
+      "train": 58829,
+      "test": 9331,
+      "val": 7819
+    },
+    "overlapping_queries": {
+      "test∩train": 574,
+      "train∩val": 572,
+      "test∩train∩val": 542,
+      "test∩val": 30
+    },
+    "n_overlapping_queries": 1718,
+    "precedence": [
+      "test",
+      "val",
+      "train"
+    ],
+    "rows_dropped_by_transition": {
+      "train->test": 26778,
+      "val->test": 3437,
+      "train->val": 2125
+    },
+    "rows_dropped_by_source": {
+      "benchmark_train": 28901,
+      "benchmark_val": 3432,
+      "glaive_negative": 7
+    },
+    "rows_dropped_total": 32340
+  },
+  "split_overlap_after": {
+    "test∩train": 0,
+    "test∩val": 0,
+    "train∩val": 0
+  },
+  "unique_queries_per_split": {
+    "test": 8512,
+    "train": 56561,
+    "val": 7378
+  }
+}
