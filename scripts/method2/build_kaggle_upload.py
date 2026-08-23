@@ -16,8 +16,10 @@ Hai điểm dễ sai:
    theo `git clone`. Thiếu nó thì Run 0 fail — đúng thiết kế, nhưng phải nhớ
    copy. Script này kiểm tra tường minh.
 2. Cache HuggingFace có layout riêng: `hub/models--BAAI--bge-m3/...`, **không**
-   phải `BAAI/bge-m3/`. Đặt sai thì `HF_HUB_CACHE` không nhận ra và model vẫn bị
-   tải lại. Script dùng `snapshot_download` nên layout luôn đúng.
+   phải `BAAI/bge-m3/`. Tầng `hub/` là bắt buộc để `HF_HOME` nhận ra —
+   `snapshot_download(cache_dir=X)` đặt thẳng `models--*` vào `X` (đó là layout
+   của `HF_HUB_CACHE`), nên script tự thêm `hub/`. Thiếu tầng này thì biến môi
+   trường bị bỏ qua trong im lặng và model vẫn tải lại từ Hub mỗi session.
 
 Sau khi dựng, script verify lại SHA-256 của mọi artefact đã copy với
 `manifest.json` — bảo đảm cái upload lên đúng là cái đã kiểm định ở local.
@@ -48,7 +50,7 @@ UPLOAD_ROOT = Path("kaggle_upload")
 
 SRC_DATASET = "toolcalling-vi-src"
 DATA_DATASET = "toolcalling-vi-data"
-HF_DATASET = "hf-cache"
+HF_DATASET = "toolcalling-vi-hf-cache"
 
 #: (nguồn, đích tương đối trong dataset)
 SRC_ITEMS: tuple[tuple[Path, str], ...] = (
@@ -142,7 +144,9 @@ def download_hf_cache(destination: Path, models: Iterable[str] = HF_MODELS) -> N
     from huggingface_hub import HfApi, snapshot_download
 
     api = HfApi()
-    destination.mkdir(parents=True, exist_ok=True)
+    # `HF_HOME` tìm model trong `<HF_HOME>/hub/`, nên tải thẳng vào đó.
+    hub = destination / "hub"
+    hub.mkdir(parents=True, exist_ok=True)
     for model in models:
         files = set(api.list_repo_files(model))
         # KHÔNG loại thẳng `pytorch_model.bin`: BAAI/bge-m3 chỉ có định dạng này,
@@ -153,7 +157,7 @@ def download_hf_cache(destination: Path, models: Iterable[str] = HF_MODELS) -> N
         if has_safetensors:
             ignore.append("pytorch_model.bin")
         print(f"  tải {model} (safetensors={has_safetensors}) …", flush=True)
-        snapshot_download(repo_id=model, cache_dir=str(destination), ignore_patterns=ignore)
+        snapshot_download(repo_id=model, cache_dir=str(hub), ignore_patterns=ignore)
 
     problems = verify_hf_cache(destination, models)
     for problem in problems:
@@ -168,7 +172,7 @@ def verify_hf_cache(destination: Path, models: Iterable[str] = HF_MODELS) -> lis
     """Mỗi model phải có ít nhất một file trọng số thật trong cache."""
     problems: list[str] = []
     for model in models:
-        folder = destination / ("models--" + model.replace("/", "--"))
+        folder = destination / "hub" / ("models--" + model.replace("/", "--"))
         if not folder.exists():
             problems.append(f"{model}: không có thư mục cache")
             continue

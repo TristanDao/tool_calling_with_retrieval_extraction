@@ -19,7 +19,7 @@ pairs, cache model gần như không đổi. Tách ra thì sửa code không ph�
 |---|---|---|
 | `toolcalling-vi-src` | `src/`, `configs/{method2,eval}/`, `notebooks/` | 0.6 MB |
 | `toolcalling-vi-data` | `method2/`, `custom_vi/v1/`, `benchmark_vi/test.jsonl` | 222 MB |
-| `hf-cache` | `models--BAAI--bge-m3/`, `models--xlm-roberta-base/` | ~3.4 GB |
+| `toolcalling-vi-hf-cache` | `hub/models--BAAI--bge-m3/`, `hub/models--xlm-roberta-base/` | 3.2 GB |
 
 ## Hai chỗ dễ sai
 
@@ -27,10 +27,14 @@ pairs, cache model gần như không đổi. Tách ra thì sửa code không ph�
 Thiếu nó thì Run 0 fail — đúng thiết kế, nhưng dễ quên khi đóng gói bằng tay.
 Script kiểm tra tường minh file này.
 
-**Layout cache HuggingFace.** Đúng là `hf-cache/models--BAAI--bge-m3/…`, không
-phải `hf-cache/BAAI/bge-m3/…`. Notebook trỏ bằng `HF_HUB_CACHE` (không phải
-`HF_HOME`, vì `HF_HOME` cần thêm một tầng `hub/`). Đặt sai thì biến bị bỏ qua
-trong im lặng và model vẫn tải lại từ Hub mỗi session.
+**Layout cache HuggingFace.** Đúng là `hub/models--BAAI--bge-m3/…`, không phải
+`BAAI/bge-m3/…`. `HF_HOME` phải trỏ vào thư mục **chứa** `hub/`; thiếu tầng đó
+thì biến bị bỏ qua trong im lặng và model vẫn tải lại từ Hub mỗi session.
+Cell 0 của notebook tự dò cả hai biến thể lồng thư mục rồi `assert`, nên upload
+kiểu nào cũng chạy — nhưng nếu không tìm thấy `hub/` thì notebook dừng ngay.
+
+Thứ tự trong notebook quan trọng: **Cell 0 set `HF_HOME` trước mọi import
+`transformers`**. Import trước rồi mới set thì thư viện đã chốt cache mặc định.
 
 ## Upload
 
@@ -57,7 +61,9 @@ phẳng và notebook không tìm thấy `method2/…`.
 
 ## Sau khi upload
 
-Attach cả ba dataset vào notebook, bật GPU T4, rồi chạy theo thứ tự:
+Trong Notebook Editor: sidebar phải → **Input** → **Add Input** → tìm và Add
+lần lượt `toolcalling-vi-src`, `toolcalling-vi-data`, `toolcalling-vi-hf-cache`.
+Bật GPU T4, rồi chạy theo thứ tự:
 
 1. `method2_kaggle_run0_preflight.ipynb` — không train, chỉ kiểm tra cổng.
 2. `method2_kaggle_biencoder.ipynb` — dừng sau phần smoke + resume, review
