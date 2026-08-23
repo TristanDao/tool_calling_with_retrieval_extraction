@@ -3,7 +3,7 @@
 Dựng lại thư mục staging bất cứ lúc nào:
 
 ```bash
-python scripts/method2/build_kaggle_upload.py --hf-cache
+python scripts/method2/build_kaggle_upload.py --hf-cache --wheels
 ```
 
 Script tự kiểm tra `decontamination.json` có mặt và SHA-256 mọi artefact khớp
@@ -20,6 +20,29 @@ pairs, cache model gần như không đổi. Tách ra thì sửa code không ph�
 | `toolcalling-vi-src` | `src/`, `configs/{method2,eval}/`, `notebooks/` | 0.6 MB |
 | `toolcalling-vi-data` | `method2/`, `custom_vi/v1/`, `benchmark_vi/test.jsonl` | 222 MB |
 | `toolcalling-vi-hf-cache` | `hub/models--BAAI--bge-m3/`, `hub/models--xlm-roberta-base/` | 3.2 GB |
+| `toolcalling-vi-wheels` | `wheels/*.whl` — 55 wheel để cài offline | 80 MB |
+
+## Wheelhouse — vì sao không chỉ 3 wheel
+
+Notebook Kaggle có thể không bật internet. Cài 3 wheel chính bằng `--no-deps`
+thì **hỏng**: `transformers 5.15.1` cần `huggingface_hub>=1.5` và
+`tokenizers>=0.22`, mà image Kaggle gần như chắc chắn còn `huggingface_hub 0.x`
+— `import transformers` vỡ ngay.
+
+Nên wheelhouse chứa **cả closure** (55 wheel, 80 MB), trừ những package nặng mà
+Kaggle chắc chắn đã có: `torch`, `numpy`, `scipy`, `scikit-learn`, `pandas`,
+`sympy`, `networkx`, `jinja2`, `joblib`. Riêng `torch` (731 MB) **tuyệt đối
+không ship** — cài đè bản khác CUDA là hỏng GPU runtime của image.
+
+Wheel tải bằng `--platform manylinux2014_x86_64 --platform manylinux_2_28_x86_64
+--python-version 3.11`: máy dựng là Windows nên không khai platform thì pip lấy
+wheel `win_amd64`, đem lên Linux vô dụng.
+
+`verify_wheelhouse()` kiểm hai điều trước khi cho upload: mọi wheel phải là
+`py3-none-any` hoặc `manylinux`, và **closure phải đóng** — mỗi `Requires-Dist`
+(sau khi lọc `extra` và marker `python_version`) phải nằm trong wheelhouse hoặc
+trong nhóm giả định có sẵn. Thiếu một dep là `pip --no-index` fail giữa chừng
+trên Kaggle.
 
 ## Hai chỗ dễ sai
 
