@@ -1,8 +1,23 @@
 # Method 2 — Hướng dẫn vận hành
 
-Tài liệu này mô tả **code đã có và cách chạy**. Phần nghiên cứu phương pháp,
-ngân sách VRAM/thời gian và các quyết định thiết kế nằm ở `docs/method2_plan.md`.
-Định nghĩa metric và contract đánh giá nằm ở `docs/evaluation.md`.
+Tài liệu vận hành **duy nhất** cho Method 2: code đã có, cách chạy ở local, và
+toàn bộ quy trình Kaggle. Hai tài liệu bổ trợ, không trùng nội dung:
+
+- `docs/method2_plan.md` — nghiên cứu phương pháp, ngân sách VRAM/thời gian,
+  các quyết định thiết kế và điểm còn mở.
+- `docs/evaluation.md` — định nghĩa metric và prediction contract dùng chung cho
+  cả bốn method.
+
+| Mục | Nội dung |
+|---|---|
+| [1](#1-bản-đồ-module) | Module nào làm gì |
+| [2](#2-nguồn-dữ-liệu) | Ba nguồn dữ liệu và cách chia split |
+| [3](#3-quy-trình-chạy) | Lệnh chuẩn bị dữ liệu → train → đánh giá |
+| [4](#4-những-ràng-buộc-đã-mã-hoá-trong-code) | Ràng buộc đã mã hoá, kèm lý do |
+| [5](#5-decontamination-theo-query-giữa-các-split) | Chống leakage giữa các split |
+| [6](#6-run-manifest-audit-sau-mỗi-lần-train) | Audit sau mỗi lần train |
+| [7](#7-chạy-trên-kaggle) | Đóng gói, upload, attach, Run 0/1/2, xử lý sự cố |
+| [8](#8-việc-còn-lại) | Việc chưa làm và quyết định đang treo |
 
 ---
 
@@ -223,9 +238,92 @@ không làm hỏng job sau nhiều giờ GPU.
 
 ---
 
-## 7. Chạy trên Kaggle — thứ tự bắt buộc
+## 7. Chạy trên Kaggle
 
-### Run 0 — Pre-flight, 0 giờ GPU training
+### 7.1 Dựng gói upload
+
+```bash
+python scripts/method2/build_kaggle_upload.py --hf-cache
+```
+
+Script copy vào `kaggle_upload/`, kiểm tra `decontamination.json` có mặt, và
+verify SHA-256 mọi artefact khớp `manifest.json`. Không đạt thì exit khác 0 —
+đừng upload khi đó.
+
+| Kaggle Dataset | Nội dung | Dung lượng |
+|---|---|---|
+| `toolcalling-vi-src` | `src/`, `configs/{method2,eval}/`, `notebooks/` | 809 KB |
+| `toolcalling-vi-data` | `method2/` (192 MB), `custom_vi/v1/` (15 MB), `benchmark_vi/test.jsonl` (14 MB) | 223 MB |
+| `toolcalling-vi-hf-cache` | `hub/models--BAAI--bge-m3/`, `hub/models--xlm-roberta-base/` | 3.2 GB |
+
+Tách ba dataset vì vòng đời khác nhau: code đổi mỗi commit, data đổi khi rebuild
+pairs, cache model gần như không đổi. Sửa code thì không phải upload lại 3 GB.
+
+`custom_vi/v1/train.jsonl` (38 MB) **không** nằm trong gói: Method 2 train từ
+cặp đã sinh sẵn trong `data/method2/`, không đọc lại dữ liệu thô.
+
+### 7.2 Ba chỗ dễ sai khi đóng gói
+
+**`decontamination.json` nằm trong `.gitignore`** nên không đi theo `git clone`.
+Thiếu nó thì Run 0 fail — đúng thiết kế, nhưng dễ quên khi đóng gói bằng tay.
+
+**Layout cache HuggingFace.** Đúng là `hub/models--BAAI--bge-m3/…`, không phải
+`BAAI/bge-m3/…`. `HF_HOME` phải trỏ vào thư mục **chứa** `hub/`; thiếu tầng đó
+thì biến bị bỏ qua trong im lặng và model vẫn tải lại từ Hub mỗi session.
+`snapshot_download(cache_dir=X)` đặt thẳng `models--*` vào `X` (layout của
+`HF_HUB_CACHE`) nên script tự thêm `hub/`.
+
+**Có thư mục model chưa đủ.** `BAAI/bge-m3` chỉ có `pytorch_model.bin`, không có
+safetensors — loại nhầm định dạng đó thì cache tải xong mà không có trọng số
+nào, và lỗi chỉ lộ ra lúc nạp model trên Kaggle. `verify_hf_cache()` bắt buộc
+mỗi model có file trọng số > 100 MB.
+
+### 7.3 Upload
+
+Qua web: New Dataset → kéo thả từng thư mục con của `kaggle_upload/`.
+
+Qua CLI:
+
+```bash
+pip install kaggle          # cần ~/.kaggle/kaggle.json
+kaggle datasets init -p kaggle_upload/toolcalling-vi-src
+# sửa dataset-metadata.json: "title" và "id" = "<username>/toolcalling-vi-src"
+kaggle datasets create -p kaggle_upload/toolcalling-vi-src --dir-mode zip
+```
+
+`--dir-mode zip` giữ nguyên cấu trúc thư mục con; thiếu cờ này Kaggle trải phẳng
+và notebook không tìm thấy `method2/…`.
+
+Cập nhật về sau (dataset tạo qua web thì phải kéo metadata trước):
+
+```bash
+kaggle datasets metadata -p kaggle_upload/toolcalling-vi-src <user>/toolcalling-vi-src
+kaggle datasets version -p kaggle_upload/toolcalling-vi-src --dir-mode zip -m "mô tả thay đổi"
+```
+
+### 7.4 Attach vào notebook
+
+Notebook Editor → sidebar phải → **Input** → **Add Input** → Add lần lượt ba
+dataset. Bật GPU T4.
+
+**Notebook ghim theo version dataset, không tự nhảy sang bản mới.** Sau khi bump
+version, phải bấm cập nhật ở sidebar Input (hoặc remove rồi Add lại), nếu không
+Kaggle vẫn chạy code cũ và bạn sẽ thấy đúng lỗi như trước — dễ tưởng là chưa sửa
+được. Cách xác nhận nhanh: Cell 0 in ra ba dòng `SRC:` / `DATA:` / `HF:`.
+
+### 7.5 Bốn cell đầu của notebook
+
+| Cell | Việc | Vì sao tách riêng |
+|---|---|---|
+| 0 | dò `SRC_ROOT` / `DATA_ROOT` / `HF_HOME` theo **marker file**, set `HF_HOME` + `HF_HUB_OFFLINE` + `TRANSFORMERS_OFFLINE` | Kaggle mount thành `/kaggle/input/datasets/<user>/<ds>/<ds>/`, số tầng đổi theo cách upload. Phải chạy **trước mọi import transformers** vì thư viện chốt cache lúc import |
+| 1 | `pip install` bản đã pin | |
+| 2 | copy `src/`, `configs/`, `data/` sang `/kaggle/working` | dataset chỉ đọc, mà code ghi checkpoint và dùng đường dẫn tương đối. Dataset data bắt đầu thẳng bằng `method2/`, **không** có tầng `data/` |
+| 3 | kiểm 14 file bắt buộc + `import src.models.preflight` | tách khỏi preflight để phân biệt "copy hỏng" với "dữ liệu sai" |
+
+Đã kiểm tra logic dò trên 4 layout (phẳng, lồng 1 tầng, namespace, namespace +
+lồng) — đều tìm ra; không thấy thì notebook dừng kèm marker đã thử.
+
+### 7.6 Run 0 — Pre-flight, 0 giờ GPU training
 
 ```bash
 python -m src.models.preflight --config configs/method2/biencoder.yaml --require-gpu T4
@@ -249,7 +347,7 @@ python -m src.models.sources decontaminate
 python -m src.models.sources manifest
 ```
 
-### Run 1 — Bi-Encoder smoke, ~200 step
+### 7.7 Run 1 — Bi-Encoder smoke, ~200 step
 
 ```bash
 python -m src.models.biencoder.train train --config configs/method2/biencoder.yaml --smoke 200
@@ -268,36 +366,54 @@ trả lời đủ 7 câu hỏi của Run 1:
 | VRAM thực tế | `peak_vram_mb` |
 | throughput thực tế | `observed.samples_per_sec`, `estimated_sec_per_epoch` |
 | tên metric evaluator | `observed.evaluator_metric_names` |
-| checkpoint save/resume | notebook chạy 100 step → resume lên 200, assert `completed_steps == 200` |
+| checkpoint save/resume | notebook chạy 100 step → resume lên 200, assert `resume_verified` |
+| loss | `observed.last_train_loss` |
 
 `effective_batch_matches_config` là assert quan trọng nhất: nếu HF hạ batch
 xuống thì số in-batch negative của MNRL giảm theo mà loss vẫn giảm bình thường,
 không có triệu chứng gì.
 
-### Run 2 — Bi-Encoder full Round 1
+`completed_steps == 200` **không** chứng minh được resume: train lại từ đầu
+cũng cho đúng con số đó. Bằng chứng thật là `resumed_from_step` (đọc
+`global_step` trong `trainer_state.json` của checkpoint) và
+`steps_trained_this_run`. Đã xác minh cơ chế ở local bằng đối chứng thời gian
+trên cùng mốc 34 step: từ đầu 67.3 s, resume@30 chỉ 11.9 s.
+
+Tên metric của `InformationRetrievalEvaluator` đã biết chính xác nhờ chạy thật
+trên sentence-transformers 6.0.0:
+
+```
+eval_custom_val_cosine_{accuracy,precision,recall}@{1,3,5,10}
+eval_custom_val_cosine_ndcg@10 · _mrr@10 · _map@100
+```
+
+Vẫn để `train.metric_for_best_model: null` cho Run 1/Run 2 — chỉ **báo cáo**
+checkpoint tốt nhất, chưa tự nạp lại. Bật `load_best_model_at_end` cho các run
+chính/multi-seed sau, khi đã chắc khoá metric: tên sai chỉ nổ ở **cuối** job,
+mất vài giờ T4.
+
+### 7.8 Run 2 — Bi-Encoder full Round 1
 
 Chỉ chạy sau khi Run 1 pass. Gate trước khi sang Cross-Encoder: Recall@1 seen
 ≥ 0.90 · Recall@1 unseen ≥ 0.75 · Recall@5 unseen ≥ 0.92 · Negative Recall
 ≥ 0.80. Không đạt thì xử lý retrieval trước, chưa train Cross-Encoder.
 
-### Version pin
+### 7.9 Version pin
 
 `configs/method2/pinned_versions.json` — `transformers`, `sentence-transformers`
 và `peft` pin tuyệt đối vì chúng quyết định API training **và** tên metric của
 `InformationRetrievalEvaluator`; preflight fail nếu lệch. `torch` chỉ ghi nhận:
 Kaggle cài sẵn bản CUDA riêng, ép cài lại vừa chậm vừa dễ lệch CUDA runtime.
 
-### File cần upload
+### 7.10 Xử lý sự cố
 
-| Kaggle Dataset | Nội dung | Dung lượng |
-|---|---|---|
-| `toolcalling-vi-src` | `src/`, `configs/method2/`, `configs/eval/` | 1.4 MB |
-| `toolcalling-vi-data` | `data/method2/**` (12 file, gồm `decontamination.json`) | 192.4 MB |
-| `toolcalling-vi-data` | gold để eval: `data/custom_vi/v1/{val,test}_{seen,unseen}.jsonl`, `data/benchmark_vi/test.jsonl` | 29.6 MB |
-| `hf-cache` | cache HuggingFace của `BAAI/bge-m3`, `xlm-roberta-base` | ~2.5 GB |
-
-`decontamination.json` (10.8 MB) nằm trong `.gitignore` nên **không** đi theo
-`git clone`; phải upload thủ công, nếu không Run 0 sẽ fail — đúng như thiết kế.
+| Triệu chứng | Nguyên nhân |
+|---|---|
+| `ConnectionError … xet-read-token … 404` lúc tải model | backend `xet` của `huggingface_hub`; script đã tự đặt `HF_HUB_DISABLE_XET=1`, tải tay thì export biến đó trước |
+| `SHA-256 … không có trong manifest` | manifest sinh trên Windows dùng `\`; đã sửa bằng `preflight.posix_key()`, nếu vẫn gặp thì đang chạy code cũ |
+| `commit SHA — không đọc được git` | Kaggle không có `.git`; preflight rơi về `manifest.json::git_commit` |
+| Cell 0 báo không tìm thấy marker | chưa Add đủ dataset, hoặc upload thiếu `--dir-mode zip` khiến Kaggle trải phẳng thư mục |
+| Notebook chạy code cũ dù đã bump version | chưa cập nhật version dataset ở sidebar Input |
 
 ---
 

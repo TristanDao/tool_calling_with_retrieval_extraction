@@ -28,8 +28,11 @@ Chạy:
 
 ```bash
 python scripts/method2/build_kaggle_upload.py            # src + data
-python scripts/method2/build_kaggle_upload.py --hf-cache # thêm ~3.4 GB model
+python scripts/method2/build_kaggle_upload.py --hf-cache # thêm ~3.2 GB model
 ```
+
+Hướng dẫn đầy đủ (upload, attach vào notebook, thứ tự Run 0/1/2, xử lý sự cố):
+`docs/method2.md` §7.
 """
 
 from __future__ import annotations
