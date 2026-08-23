@@ -24,7 +24,17 @@ from pathlib import Path
 from typing import Any
 
 from src.models.biencoder.tool_pool import load_tool_pool
-from src.models.sources import DEFAULT_SOURCES, SourceSpec, iter_samples, write_jsonl
+from src.models.sources import (
+    DEFAULT_SOURCES,
+    DecontaminationIndex,
+    SourceSpec,
+    build_decontamination_index,
+    iter_samples,
+    load_or_build_decontamination,
+    normalize_query_key,
+    pairwise_overlap,
+    write_jsonl,
+)
 
 _TOKEN_RE = re.compile(r"\w+", re.UNICODE)
 
@@ -33,6 +43,7 @@ _TOKEN_RE = re.compile(r"\w+", re.UNICODE)
 class PairsConfig:
     tool_pool_path: Path = Path("data/method2/tool_pool.json")
     output_dir: Path = Path("data/method2/biencoder")
+    decontamination_path: Path = Path("data/method2/decontamination.json")
     stats_path: Path = Path("data/method2/biencoder/pairs_stats.json")
     n_hard_negatives: int = 4
     bm25_top_k: int = 20
@@ -47,6 +58,9 @@ class PairsConfig:
         return cls(
             tool_pool_path=Path(raw.get("tool_pool_path", defaults.tool_pool_path)),
             output_dir=Path(raw.get("output_dir", defaults.output_dir)),
+            decontamination_path=Path(
+                raw.get("decontamination_path", defaults.decontamination_path)
+            ),
             stats_path=Path(raw.get("stats_path", defaults.stats_path)),
             n_hard_negatives=int(raw.get("n_hard_negatives", defaults.n_hard_negatives)),
             bm25_top_k=int(raw.get("bm25_top_k", defaults.bm25_top_k)),
@@ -106,12 +120,16 @@ def build_pairs(
     }
     #: Kiểm tra tool unseen không lọt vào positive của split train (§1, Phase 1).
     positives_in_train: set[str] = set()
-    train_query_hashes: set[str] = set()
-    val_query_hashes: set[str] = set()
-    test_query_hashes: set[str] = set()
+    queries_seen: dict[str, set[str]] = defaultdict(set)
+
+    decontamination = load_or_build_decontamination(
+        config.decontamination_path, specs, config.limit_per_source
+    )
 
     processed = 0
-    for sample in iter_samples(specs, limit_per_source=config.limit_per_source):
+    for sample in iter_samples(
+        specs, limit_per_source=config.limit_per_source, decontamination=decontamination
+    ):
         processed += 1
         if config.progress_every and processed % config.progress_every == 0:
             print(f"[pairs] {processed} sample, {stats['n_positive_pairs']} positive", flush=True)
@@ -124,12 +142,7 @@ def build_pairs(
         gold_names = [c["name"] for c in (sample.get("function_calls") or []) if c.get("name")]
         unique_gold = list(dict.fromkeys(gold_names))
 
-        if split == "train":
-            train_query_hashes.add(query)
-        elif split == "val":
-            val_query_hashes.add(query)
-        else:
-            test_query_hashes.add(query)
+        queries_seen[split].add(normalize_query_key(query))
 
         if not unique_gold:
             rows_by_split[split].append(
@@ -183,26 +196,9 @@ def build_pairs(
             if split == "train":
                 positives_in_train.add(gold)
 
-    # Dedupe theo hash query: query xuất hiện ở val/test phải bị loại khỏi train.
-    held_out_queries = train_query_hashes & (test_query_hashes | val_query_hashes)
-    if held_out_queries:
-        before = len(rows_by_split["train"])
-        rows_by_split["train"] = [
-            row for row in rows_by_split["train"] if row["query"] not in held_out_queries
-        ]
-        stats["train_rows_dropped_by_query_dedupe"] = before - len(rows_by_split["train"])
-        stats["n_positive_pairs"] = sum(
-            1 for rows in rows_by_split.values() for row in rows if row["positive"]
-        )
-        stats["n_negative_samples"] = sum(
-            1 for rows in rows_by_split.values() for row in rows if not row["positive"]
-        )
-        positives_in_train = {
-            row["positive"] for row in rows_by_split["train"] if row["positive"]
-        }
-    else:
-        stats["train_rows_dropped_by_query_dedupe"] = 0
-    stats["n_leaked_queries"] = len(held_out_queries)
+    stats["decontamination"] = decontamination.report()
+    stats["split_overlap_after"] = pairwise_overlap(queries_seen)
+    stats["unique_queries_per_split"] = {k: len(v) for k, v in sorted(queries_seen.items())}
 
     unseen_tools = {
         name
@@ -292,6 +288,21 @@ def main() -> None:
         json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     print(f"[pairs] positive={stats['n_positive_pairs']} negative={stats['n_negative_samples']}")
+
+    decontamination = stats["decontamination"]
+    print(
+        f"[pairs] decontamination: {decontamination['n_overlapping_queries']} query trùng split "
+        f"→ loại {decontamination['rows_dropped_total']} sample "
+        f"({decontamination['rows_dropped_by_transition']})"
+    )
+
+    overlap = stats["split_overlap_after"]
+    print(f"[pairs] overlap sau decontamination: {overlap}")
+    dirty = {pair: n for pair, n in overlap.items() if n}
+    if dirty:
+        raise SystemExit(f"[pairs] LỖI: còn query dùng chung giữa các split: {dirty}")
+    print("[pairs] OK: train ∩ val = train ∩ test = val ∩ test = 0 theo normalized query")
+
     leaked = stats["unseen_tools_leaked_into_train_positives"]
     if leaked:
         raise SystemExit(f"[pairs] LỖI: tool unseen lọt vào positive của train: {leaked}")

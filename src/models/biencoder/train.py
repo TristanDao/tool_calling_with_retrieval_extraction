@@ -64,6 +64,8 @@ class BiEncoderTrainConfig:
     seed: int = 42
     n_negatives: int = 4
     resume_from: str | None = None
+    #: Tên metric chọn checkpoint. Để trống thì tự dò từ log history.
+    metric_for_best_model: str | None = None
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "BiEncoderTrainConfig":
@@ -106,6 +108,7 @@ class BiEncoderTrainConfig:
             seed=int(train_raw.get("seed", defaults.seed)),
             n_negatives=int(raw.get("pairs", {}).get("n_hard_negatives", defaults.n_negatives)),
             resume_from=train_raw.get("resume_from"),
+            metric_for_best_model=train_raw.get("metric_for_best_model"),
         )
 
 
@@ -243,15 +246,90 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
         loss=loss,
         evaluator=evaluator,
     )
+    import time
+
+    import torch
+
+    if torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
+    started = time.perf_counter()
     trainer.train(resume_from_checkpoint=config.resume_from)
+    duration_sec = time.perf_counter() - started
 
     final_dir = config.output_dir / "final"
     save_model(model, final_dir)
-    metrics = evaluator(model) if evaluator else {}
-    (config.output_dir / "train_metrics.json").write_text(
-        json.dumps({k: float(v) for k, v in metrics.items()}, indent=2), encoding="utf-8"
+    metrics = {k: float(v) for k, v in (evaluator(model) if evaluator else {}).items()}
+
+    log_history = list(getattr(trainer.state, "log_history", []))
+    report = {
+        "final_metrics": metrics,
+        "n_train_pairs": len(train_dataset),
+        "training_duration_sec": round(duration_sec, 1),
+        "training_duration_hours": round(duration_sec / 3600, 3),
+        "peak_vram_mb": (
+            round(torch.cuda.max_memory_allocated() / 1024**2, 1)
+            if torch.cuda.is_available()
+            else None
+        ),
+        "log_history": log_history,
+        "checkpoint_selection": select_best_checkpoint(log_history, config.metric_for_best_model),
+        "final_checkpoint": str(final_dir),
+    }
+    (config.output_dir / "train_report.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    return metrics
+    # Giữ tên cũ cho tương thích với script đã viết trước đó.
+    (config.output_dir / "train_metrics.json").write_text(
+        json.dumps(metrics, indent=2), encoding="utf-8"
+    )
+    return report
+
+
+def select_best_checkpoint(
+    log_history: list[dict[str, Any]],
+    metric_name: str | None = None,
+) -> dict[str, Any]:
+    """Chọn checkpoint tốt nhất từ log history của trainer.
+
+    Tên metric của `InformationRetrievalEvaluator` phụ thuộc phiên bản
+    sentence-transformers, nên không hardcode: nếu `metric_name` không có trong
+    log thì rơi về khoá đầu tiên khớp hậu tố quen thuộc. Toàn bộ `log_history`
+    vẫn được ghi lại để lần chạy sau khai báo đúng tên trong config.
+    """
+    evals = [entry for entry in log_history if any("eval" in k for k in entry)]
+    if not evals:
+        return {"metric": metric_name, "resolved_metric": None, "reason": "không có eval nào"}
+
+    candidates = sorted({k for entry in evals for k in entry if k.startswith("eval_")})
+    resolved = metric_name if metric_name and any(metric_name in c for c in candidates) else None
+    if resolved is None:
+        for suffix in ("ndcg@10", "recall@5", "accuracy@1", "mrr@10"):
+            match = next((c for c in candidates if c.endswith(suffix)), None)
+            if match:
+                resolved = match
+                break
+    if resolved is None:
+        return {
+            "metric": metric_name,
+            "resolved_metric": None,
+            "available_metrics": candidates,
+            "reason": "không khớp metric nào",
+        }
+
+    scored = [(entry.get(resolved), entry.get("step")) for entry in evals if resolved in entry]
+    best_value, best_step = max(scored, key=lambda pair: (pair[0] is not None, pair[0]))
+    return {
+        "metric": metric_name,
+        "resolved_metric": resolved,
+        "best_value": best_value,
+        "best_step": best_step,
+        "n_evaluations": len(scored),
+        "available_metrics": candidates,
+        "note": (
+            "Chỉ báo cáo, không tự nạp lại. Đặt load_best_model_at_end sau khi đã "
+            "biết tên metric chính xác từ available_metrics của lần chạy này."
+        ),
+    }
 
 
 def save_model(model, output_dir: str | Path) -> None:
@@ -346,8 +424,9 @@ def main() -> None:
         return
 
     if args.command == "train":
-        metrics = train(config)
-        print(json.dumps({k: float(v) for k, v in metrics.items()}, indent=2))
+        report = train(config)
+        print(json.dumps(report["final_metrics"], indent=2))
+        print(json.dumps(report["checkpoint_selection"], ensure_ascii=False, indent=2))
         return
 
     import yaml

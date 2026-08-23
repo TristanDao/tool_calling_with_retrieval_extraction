@@ -36,13 +36,23 @@ from src.models.crossencoder.label_generator import (
     LabelGeneratorConfig,
     SkipLabel,
 )
-from src.models.sources import DEFAULT_SOURCES, SourceSpec, iter_samples, load_jsonl, write_jsonl
+from src.models.sources import (
+    DEFAULT_SOURCES,
+    SourceSpec,
+    iter_samples,
+    load_jsonl,
+    load_or_build_decontamination,
+    normalize_query_key,
+    pairwise_overlap,
+    write_jsonl,
+)
 
 
 @dataclass
 class CrossEncoderPairsConfig:
     output_dir: Path = Path("data/method2/crossencoder")
     stats_path: Path = Path("data/method2/label_stats.json")
+    decontamination_path: Path = Path("data/method2/decontamination.json")
     #: Ngưỡng cảnh báo %SKIP (§1.5) — vượt ngưỡng thì dừng và xem lại Q2.
     skip_rate_gate: float = 0.30
     require_boolean_cue: bool = False
@@ -54,6 +64,9 @@ class CrossEncoderPairsConfig:
         return cls(
             output_dir=Path(raw.get("output_dir", defaults.output_dir)),
             stats_path=Path(raw.get("stats_path", defaults.stats_path)),
+            decontamination_path=Path(
+                raw.get("decontamination_path", defaults.decontamination_path)
+            ),
             skip_rate_gate=float(raw.get("skip_rate_gate", defaults.skip_rate_gate)),
             require_boolean_cue=bool(raw.get("require_boolean_cue", False)),
             limit_per_source=raw.get("limit_per_source"),
@@ -80,8 +93,17 @@ def build_pairs(
     has_value_counter: Counter = Counter()
     n_calls = 0
     n_calls_without_schema = 0
+    queries_seen: dict[str, set[str]] = defaultdict(set)
 
-    for sample in iter_samples(specs, limit_per_source=config.limit_per_source):
+    # Dùng chung index với Bi-Encoder: hai stage phải chia split y hệt nhau,
+    # nếu không val của stage này lại là test của stage kia.
+    decontamination = load_or_build_decontamination(
+        config.decontamination_path, specs, config.limit_per_source
+    )
+
+    for sample in iter_samples(
+        specs, limit_per_source=config.limit_per_source, decontamination=decontamination
+    ):
         query = str(sample.get("query", "")).strip()
         calls = sample.get("function_calls") or []
         if not query or not calls:
@@ -89,6 +111,7 @@ def build_pairs(
         schemas = {t["name"]: t for t in (sample.get("tools") or []) if t.get("name")}
         split = sample["_split"]
         source = sample.get("source") or sample["_source_key"]
+        queries_seen[split].add(normalize_query_key(query))
 
         for call in calls:
             tool_name = call.get("name")
@@ -158,6 +181,9 @@ def build_pairs(
             else 0.0,
         },
         "rows_per_split": {split: len(rows) for split, rows in rows_by_split.items()},
+        "decontamination": decontamination.report(),
+        "split_overlap_after": pairwise_overlap(queries_seen),
+        "unique_queries_per_split": {k: len(v) for k, v in sorted(queries_seen.items())},
     }
     return rows_by_split, stats
 
@@ -257,6 +283,13 @@ def main() -> None:
     print(f"[ce-pairs] tổng {stats['n_pairs_total']} cặp, SKIP {stats['skip_rate']:.1%}")
     for reason, count in list(stats["skip_by_reason"].items())[:6]:
         print(f"[ce-pairs]   {reason}: {count}")
+
+    overlap = stats["split_overlap_after"]
+    dirty = {pair: n for pair, n in overlap.items() if n}
+    if dirty:
+        raise SystemExit(f"[ce-pairs] LỖI: còn query dùng chung giữa các split: {dirty}")
+    print(f"[ce-pairs] OK: overlap giữa các split = 0 ({overlap})")
+
     if stats["skip_rate"] > config.skip_rate_gate:
         print(
             f"[ce-pairs] CẢNH BÁO: SKIP {stats['skip_rate']:.1%} > ngưỡng "

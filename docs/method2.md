@@ -10,7 +10,8 @@ ngân sách VRAM/thời gian và các quyết định thiết kế nằm ở `do
 
 ```
 src/models/
-  sources.py               # khai báo nguồn dữ liệu + loader + manifest SHA-256
+  sources.py               # nguồn dữ liệu, loader, decontamination, manifest SHA-256
+  run_manifest.py          # gom artifact audit của một run
   biencoder/
     tool_pool.py           # canonicalize + dedupe tool → tool pool thống nhất
     pairs.py               # sinh (query, positive, hard_negatives)
@@ -48,12 +49,15 @@ một trong hai package phải import ngược sang package kia.
 | Nguồn | File | Vai trò |
 |---|---|---|
 | glaive + xLAM positive | `data/benchmark_vi/{train,val,test}.jsonl` | 105,539 sample, dựng từ `src/data/build_benchmark.py` |
-| glaive negative | `data/translations/glaive_negative_vi.jsonl` | 15,141 sample no-call, chia split theo hash `id` |
+| glaive negative | `data/translations/glaive_negative_vi.jsonl` | 15,141 sample no-call, chia split theo hash **normalized query** |
 | CustomTools-VI | `data/custom_vi/v1/{train,val_seen,val_unseen,test_seen,test_unseen}.jsonl` | 8,000 sample, có sẵn seen/unseen |
 
 Split của Method 2 (`train`/`val`/`test`) khai báo trong `DEFAULT_SOURCES`;
 `glaive_negative` chưa có split nên được chia xác định 80/10/10 theo SHA-256 của
-`id` — cùng `id` luôn rơi vào cùng split giữa các lần chạy.
+**normalized query**. Chia theo `id` là sai bản chất: đơn vị cần cô lập là
+query instance chứ không phải id nguồn — file đó lặp lại cùng một query dưới
+hàng chục id, chia theo id thì query nằm ở cả ba split (đo được: negative dùng
+được tụt từ 18,334 xuống 6,469 sau khi dedupe).
 
 ---
 
@@ -68,10 +72,11 @@ python -m src.data.build_benchmark --config configs/data/benchmark.yaml --no-cla
 # Tool pool canonical (~4,464 tool, gộp từ ~23k biến thể)
 python -m src.models.biencoder.tool_pool
 
-# Cặp huấn luyện Bi-Encoder (mất ~30-60 phút vì có BM25 mining)
+# Cặp huấn luyện Bi-Encoder (~20 phút; tự build decontamination index nếu chưa có)
 python -m src.models.biencoder.pairs
 
 # Cặp (query, parameter) cho Cross-Encoder + label_stats.json
+# Dùng LẠI decontamination.json của bước trên — hai stage phải chia split y hệt.
 python -m src.models.crossencoder.dataset
 
 # Freeze snapshot: SHA-256 nguồn + artefact dẫn xuất + commit hash
@@ -80,9 +85,9 @@ python -m src.models.sources
 
 Kiểm tra bắt buộc sau bước này:
 
-- `data/method2/biencoder/pairs_stats.json` → `unseen_tools_leaked_into_train_positives`
-  phải rỗng (script tự raise nếu không), và `n_leaked_queries` cho biết bao nhiêu
-  query bị loại khỏi train do trùng với val/test.
+- `data/method2/biencoder/pairs_stats.json` → `split_overlap_after` phải bằng 0 ở
+  **cả ba cặp** và `unseen_tools_leaked_into_train_positives` phải rỗng. Cả hai
+  script đều tự `raise` nếu không đạt, nên không thể lỡ tay train trên dữ liệu bẩn.
 - `data/method2/label_stats.json` → `skip_rate`. **Vượt 30% thì dừng** và xem lại
   quyết định Q2 (§9 `method2_plan.md`): có thêm fuzzy span alignment hay không.
 
@@ -150,19 +155,82 @@ dùng chung một normalization và một rule so khớp.
 | Normalizer chỉ chạy trên span đã predict, chỉ khi schema cho phép | `normalize.py` | §8.4 experimental_plan cấm synonym mapping/LLM cho metric chính |
 | Key ngoài schema bị loại | `validator.py` | ArgA tính sai nếu thừa key |
 | Thiếu required → hạ ngưỡng riêng param đó xuống 0.3 rồi mới `incomplete` | `validator.py` | Error class `I` của §9 |
-| Query trùng giữa train và val/test bị loại khỏi train | `pairs.py` | Chống leakage |
+| Query trùng giữa các split bị dồn về split ưu tiên cao nhất (`test > val > train`) | `sources.py::DecontaminationIndex` | Chống leakage; xem §5 |
 | Tool `test_unseen` **có** trong pool nhưng **không** làm positive ở train | `pairs.py` (assert) | Đó chính là bài kiểm tra zero-shot |
 
 ---
 
-## 5. Việc còn lại
+## 5. Decontamination theo query giữa các split
 
-- `feature_group` của glaive/xLAM đang là `Khác` vì `src/data/feature_group_classify.py`
-  cần API key (`ALIBABA_*` trong `.env`). Ảnh hưởng: hard negative theo nhóm chỉ
-  hoạt động cho 40 tool CustomTools-VI (glaive/xLAM dùng BM25 — đúng như plan),
-  và slice `same_domain` của stress test chưa dùng được. Chạy lại
-  `python -m src.models.biencoder.tool_pool` sau khi có cache là đủ, không phải
-  build lại benchmark.
-- Phase 6 (ablation) và Phase 7 (stress test runner) chưa có code;
+`data/benchmark_vi` chia split theo **sample** chứ không theo query, nên cùng một
+query xuất hiện ở nhiều split. Đo trên dữ liệu thật, theo normalized query
+(NFC + gộp whitespace + casefold), **1,718 query** bị trùng:
+
+| Cặp | Số query |
+|---|---:|
+| `test ∩ train` | 574 |
+| `train ∩ val` | 572 |
+| `test ∩ train ∩ val` | 542 |
+| `test ∩ val` | 30 |
+
+`test ∩ val` (30 + 542 = 572 query) là rủi ro phương pháp luận nặng nhất: dù
+không train trên query đó, việc chọn checkpoint/hyperparameter bằng val vẫn làm
+metric test lạc quan hơn thực tế.
+
+**Cách xử lý.** `sources.py::DecontaminationIndex` gán mỗi normalized query đúng
+**một** split theo thứ tự ưu tiên `test > val > train`, rồi `iter_samples()` bỏ
+mọi bản sao ở split thấp hơn. Hệ quả:
+
+- **Tập test không mất sample nào** (13,819 positive + 1,270 negative giữ
+  nguyên) — bốn method vẫn được đánh giá trên đúng cùng một tập.
+- Val bỏ 3,432 dòng, train bỏ 28,908 dòng.
+- `train ∩ val = train ∩ test = val ∩ test = 0`, cả hai script tự `raise` nếu
+  không đạt.
+- CustomTools-VI **không bị ảnh hưởng** (230/230/460/460 positive nguyên vẹn),
+  nên gate Phase 2 đo trên custom val vẫn hợp lệ. Toàn bộ contamination nằm
+  trong glaive/xLAM.
+
+Hai stage dùng **chung** `data/method2/decontamination.json`. Nếu Bi-Encoder và
+Cross-Encoder chia split khác nhau thì val của stage này lại là test của stage kia.
+
+**Không sửa benchmark gốc.** `data/benchmark_vi/*` giữ nguyên để tái lập được;
+decontamination chỉ diễn ra ở tầng dataset của Method 2 và số sample bị loại được
+ghi vào `pairs_stats.json::decontamination`. Câu báo cáo tương ứng:
+
+> Benchmark gốc có overlap query giữa các split. Method 2 gán mỗi query đúng một
+> split theo thứ tự ưu tiên test > val > train, loại 3,432 dòng khỏi val và
+> 28,908 dòng khỏi train; tập test giữ nguyên.
+
+---
+
+## 6. Run manifest — audit sau mỗi lần train
+
+`python -m src.models.run_manifest --run-dir <RUN> --config <CFG> --stage biencoder
+--report retrieval=<eval.json>` gom vào `<RUN>/run_manifest.json`: commit SHA kèm
+cờ dirty, config YAML nguyên văn + SHA-256, fingerprint dataset và tool pool,
+query counts + overlap theo split, số positive/negative pair, checkpoint, best
+step và metric đã dùng để chọn, VRAM peak, thời lượng train, Recall@1/@5/@10 và
+MRR. Trường `audit_complete.missing` liệt kê mục còn thiếu; notebook `assert`
+trên trường này nên không thể train xong mà không audit được.
+
+Tên metric của `InformationRetrievalEvaluator` đổi theo phiên bản
+sentence-transformers nên `train.metric_for_best_model` để `null` ở lần chạy đầu;
+`train_report.json::checkpoint_selection.available_metrics` sẽ liệt kê tên thật
+để khai chính xác cho lần sau. Việc chọn checkpoint hiện chỉ **báo cáo**, chưa tự
+nạp lại — bật `load_best_model_at_end` khi đã biết chắc tên metric, để một tên sai
+không làm hỏng job sau nhiều giờ GPU.
+
+---
+
+## 7. Việc còn lại
+
+- `feature_group` của glaive/xLAM giữ nguyên `Khác` ở baseline này (quyết định
+  đã chốt: không chờ `ALIBABA_API_KEY`). Hard negative của chúng dùng BM25 đúng
+  như plan. Slice `same_domain` của Phase 7 đánh dấu **temporarily unavailable —
+  pending feature-group enrichment**. Có key thì chỉ cần chạy lại
+  `python -m src.models.biencoder.tool_pool`, không phải build lại benchmark.
+- Thứ tự đã chốt: Bi-Encoder train → evaluate → Cross-Encoder train →
+  normalize/calibrate → full Method 2 evaluation → **sau đó** mới quyết định
+  ablation (Phase 6) và stress test (Phase 7). Hai phase đó chưa có code;
   `configs/method2/stress.yaml` đã khai báo sẵn tham số.
 - Chưa train: mọi số trong plan là ước lượng cho tới khi chạy thật trên T4.

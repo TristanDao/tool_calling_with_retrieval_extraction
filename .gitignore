@@ -49,6 +49,7 @@ data/statistics/
 # vì đó là số liệu cần trích vào báo cáo.
 data/method2/**/*.jsonl
 data/method2/tool_pool.json
+data/method2/decontamination.json
 data/method2/index/
 artifacts/method2/
 

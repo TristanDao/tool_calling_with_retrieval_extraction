@@ -101,7 +101,45 @@ def _setup(title: str, subtitle: str) -> list[dict]:
     return cells
 
 
-BIENCODER_CELLS = [
+PREFLIGHT_CELLS = [
+    (
+        "markdown",
+        [
+            "## Pre-flight — kiểm tra split/leakage TRƯỚC khi chạy full training\n",
+            "\n",
+            "Benchmark gốc chia split theo **sample** chứ không theo query nên cùng một\n",
+            "query nằm ở nhiều split. Ba điều kiện phải đồng thời bằng 0 theo normalized\n",
+            "query: `train ∩ val`, `train ∩ test`, và — quan trọng nhất — `val ∩ test`.\n",
+            "\n",
+            "Vì sao `val ∩ test` mới là rủi ro nặng nhất: dù không train trên query đó,\n",
+            "việc chọn checkpoint/hyperparameter bằng val vẫn khiến metric test lạc quan\n",
+            "hơn thực tế. Decontamination diễn ra ở tầng dataset của Method 2; thư mục\n",
+            "`data/benchmark_vi` **giữ nguyên** để tái lập và để bốn method vẫn được đánh\n",
+            "giá trên đúng cùng một tập test.\n",
+        ],
+    ),
+    (
+        "code",
+        [
+            "stats = json.load(open('data/method2/biencoder/pairs_stats.json', encoding='utf-8'))\n",
+            "decon = stats['decontamination']\n",
+            "\n",
+            "print('unique query/split :', stats['unique_queries_per_split'])\n",
+            "print('positive pairs     :', stats['n_positive_pairs'])\n",
+            "print('negative samples   :', stats['n_negative_samples'])\n",
+            "print('query trùng split  :', decon['n_overlapping_queries'], decon['overlapping_queries'])\n",
+            "print('sample bị loại     :', decon['rows_dropped_total'], decon['rows_dropped_by_transition'])\n",
+            "print('overlap còn lại    :', stats['split_overlap_after'])\n",
+            "\n",
+            "dirty = {k: v for k, v in stats['split_overlap_after'].items() if v}\n",
+            "assert not dirty, f'Còn leakage giữa các split: {dirty}'\n",
+            "assert not stats['unseen_tools_leaked_into_train_positives']\n",
+            "print('\\nOK — train ∩ val = train ∩ test = val ∩ test = 0')\n",
+        ],
+    ),
+]
+
+BIENCODER_CELLS = PREFLIGHT_CELLS + [
     (
         "markdown",
         [
@@ -194,6 +232,41 @@ BIENCODER_CELLS = [
             "report = json.load(open('results/method2/metrics/biencoder_val.json', encoding='utf-8'))\n",
             "for slice_name, metrics in report['by_source_key'].items():\n",
             "    print(slice_name, {k: v for k, v in metrics.items() if 'recall@' in k or k == 'mrr'})\n",
+        ],
+    ),
+    (
+        "markdown",
+        [
+            "## Run manifest — chốt lại toàn bộ mục audit\n",
+            "\n",
+            "Train xong mà không audit được thì coi như chưa train. Cell này gom: commit\n",
+            "SHA (kèm cờ dirty), config YAML thực tế, fingerprint dataset + tool pool,\n",
+            "query counts và overlap theo split, số positive/negative pair, checkpoint,\n",
+            "best step + metric đã dùng để chọn, VRAM peak, thời lượng train, và\n",
+            "Recall@1/@5/@10 + MRR. Thiếu mục nào thì `audit_complete.missing` liệt kê ra.\n",
+            "\n",
+            "`checkpoint_selection.available_metrics` cho biết tên metric thật của\n",
+            "`InformationRetrievalEvaluator` ở phiên bản đang chạy — khai vào\n",
+            "`train.metric_for_best_model` cho lần chạy sau.\n",
+        ],
+    ),
+    (
+        "code",
+        [
+            "!python -m src.models.run_manifest \\\n",
+            "    --run-dir {RUN2} \\\n",
+            "    --config configs/method2/biencoder.yaml \\\n",
+            "    --stage biencoder \\\n",
+            "    --report retrieval=results/method2/metrics/biencoder_val.json\n",
+            "\n",
+            "manifest = json.load(open(f'{RUN2}/run_manifest.json', encoding='utf-8'))\n",
+            "missing = manifest['audit_complete']['missing']\n",
+            "print('thiếu:', missing or 'không thiếu mục nào')\n",
+            "print('Recall/MRR:', manifest.get('retrieval_gate', {}).get('metrics'))\n",
+            "print('VRAM peak MB:', manifest['train']['peak_vram_mb'])\n",
+            "print('thời lượng (giờ):', manifest['train']['duration_hours'])\n",
+            "print('chọn checkpoint:', manifest['train']['checkpoint_selection'])\n",
+            "assert not missing, f'Chưa đủ artifact để audit: {missing}'\n",
         ],
     ),
 ]
