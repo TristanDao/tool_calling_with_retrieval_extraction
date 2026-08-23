@@ -43,10 +43,17 @@ train:
   save_steps: 500
   seed: 42
   resume_from: null
-  # Để null ở lần chạy đầu: tên metric của InformationRetrievalEvaluator
-  # phụ thuộc phiên bản sentence-transformers. train_report.json sẽ liệt kê
-  # available_metrics để lần sau khai báo chính xác.
+  # Tên metric đã xác minh bằng cách chạy thật trên sentence-transformers
+  # 6.0.0 (xem docs/method2.md §7). Giữ null cho Run 1 và Run 2 — hiện chỉ
+  # BÁO CÁO chứ chưa nạp lại checkpoint tốt nhất. Khai tên dưới đây và bật
+  # load_best_model_at_end cho các run chính/multi-seed:
+  #   eval_custom_val_cosine_ndcg@10
+  #   eval_custom_val_cosine_recall@5
+  #   eval_custom_val_cosine_accuracy@1
+  #   eval_custom_val_cosine_mrr@10
   metric_for_best_model: null
+  # logging_steps nhỏ ở smoke run để thấy loss; preset tự đặt max(steps//10, 1).
+  logging_steps: 50
 
 # --------------------------------------------------------- hard negative mining
 mining:

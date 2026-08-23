@@ -61,6 +61,7 @@ class BiEncoderTrainConfig:
     gradient_checkpointing: bool = True
     eval_steps: int = 500
     save_steps: int = 500
+    logging_steps: int = 50
     seed: int = 42
     n_negatives: int = 4
     resume_from: str | None = None
@@ -109,6 +110,7 @@ class BiEncoderTrainConfig:
             ),
             eval_steps=int(train_raw.get("eval_steps", defaults.eval_steps)),
             save_steps=int(train_raw.get("save_steps", defaults.save_steps)),
+            logging_steps=int(train_raw.get("logging_steps", defaults.logging_steps)),
             seed=int(train_raw.get("seed", defaults.seed)),
             n_negatives=int(raw.get("pairs", {}).get("n_hard_negatives", defaults.n_negatives)),
             resume_from=train_raw.get("resume_from"),
@@ -248,7 +250,7 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
         save_strategy="steps",
         save_steps=config.save_steps,
         save_total_limit=2,
-        logging_steps=50,
+        logging_steps=config.logging_steps,
         seed=config.seed,
         report_to=[],
         **args_kwargs,
@@ -268,6 +270,9 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
 
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
+    resumed_from_step = checkpoint_step(config.resume_from)
+    if config.resume_from:
+        logger.info("resume từ %s (global_step %d)", config.resume_from, resumed_from_step)
     started = time.perf_counter()
     trainer.train(resume_from_checkpoint=config.resume_from)
     duration_sec = time.perf_counter() - started
@@ -292,7 +297,7 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
         "final_checkpoint": str(final_dir),
         "smoke": config.max_steps is not None,
         "observed": observed_runtime(
-            trainer, config, len(train_dataset), duration_sec, log_history
+            trainer, config, len(train_dataset), duration_sec, log_history, resumed_from_step
         ),
     }
     (config.output_dir / "train_report.json").write_text(
@@ -328,6 +333,9 @@ def apply_smoke_preset(
         epochs=1,
         save_steps=save_every,
         eval_steps=max(steps // 2, 10),
+        # Loss phải thấy được trong khoảng vài chục step, không thì smoke run
+        # kết thúc mà `last_train_loss` vẫn là None.
+        logging_steps=max(steps // 10, 1),
         # Đủ dữ liệu cho `steps` bước ở effective batch hiện tại, thêm biên 20%.
         max_train_samples=max(int(steps * config.batch_size * 1.2), config.batch_size * 2),
         output_dir=(
@@ -338,12 +346,26 @@ def apply_smoke_preset(
     )
 
 
+def checkpoint_step(path: str | Path | None) -> int:
+    """`global_step` ghi trong trainer_state.json của một checkpoint, 0 nếu không có."""
+    if not path:
+        return 0
+    state_file = Path(path) / "trainer_state.json"
+    if not state_file.exists():
+        return 0
+    try:
+        return int(json.loads(state_file.read_text(encoding="utf-8")).get("global_step", 0))
+    except (json.JSONDecodeError, ValueError):
+        return 0
+
+
 def observed_runtime(
     trainer: Any,
     config: "BiEncoderTrainConfig",
     n_samples: int,
     duration_sec: float,
     log_history: list[dict[str, Any]],
+    resumed_from_step: int = 0,
 ) -> dict[str, Any]:
     """Số đo thực tế của môi trường — cái mà smoke run (Run 1) cần trả lời.
 
@@ -362,6 +384,7 @@ def observed_runtime(
         * int(world_size)
     )
     completed_steps = int(getattr(trainer.state, "global_step", 0) or 0)
+    steps_this_run = max(completed_steps - resumed_from_step, 1)
     train_entries = [e for e in log_history if "loss" in e and "eval_loss" not in e]
 
     device_info: dict[str, Any] = {"cuda": torch.cuda.is_available()}
@@ -385,15 +408,21 @@ def observed_runtime(
         "effective_batch_matches_config": effective_batch == config.batch_size,
         "mini_batch_size": config.mini_batch_size,
         "completed_steps": completed_steps,
+        "resumed_from_step": resumed_from_step,
+        # Khi resume, `completed_steps` tính cả phần đã train ở lần trước. Throughput
+        # phải chia cho số step THẬT SỰ chạy lần này, không thì con số bị thổi phồng
+        # đúng ở chỗ dùng để ước tính giờ GPU cho full training.
+        "steps_trained_this_run": steps_this_run,
+        "resume_verified": bool(resumed_from_step) and completed_steps > resumed_from_step,
         "n_train_samples": n_samples,
         "duration_sec": round(duration_sec, 1),
-        "steps_per_sec": round(completed_steps / duration_sec, 4) if duration_sec else None,
+        "steps_per_sec": round(steps_this_run / duration_sec, 4) if duration_sec else None,
         "samples_per_sec": (
-            round(completed_steps * effective_batch / duration_sec, 2) if duration_sec else None
+            round(steps_this_run * effective_batch / duration_sec, 2) if duration_sec else None
         ),
         "estimated_sec_per_epoch": (
-            round(duration_sec / completed_steps * (n_samples / max(effective_batch, 1)), 1)
-            if completed_steps and duration_sec
+            round(duration_sec / steps_this_run * (n_samples / max(effective_batch, 1)), 1)
+            if steps_this_run and duration_sec
             else None
         ),
         "n_logged_train_steps": len(train_entries),

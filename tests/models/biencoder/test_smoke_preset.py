@@ -94,3 +94,25 @@ def test_select_best_checkpoint_handles_no_evaluation():
     result = select_best_checkpoint([{"loss": 1.0, "step": 1}], metric_name=None)
 
     assert result["resolved_metric"] is None
+
+
+def test_checkpoint_step_reads_global_step(tmp_path):
+    import json
+
+    from src.models.biencoder.train import checkpoint_step
+
+    ckpt = tmp_path / "checkpoint-100"
+    ckpt.mkdir()
+    (ckpt / "trainer_state.json").write_text(json.dumps({"global_step": 100}), encoding="utf-8")
+
+    assert checkpoint_step(ckpt) == 100
+    assert checkpoint_step(tmp_path / "không-có") == 0
+    assert checkpoint_step(None) == 0
+
+
+def test_smoke_preset_logs_loss_often_enough_to_be_visible():
+    # Với logging_steps mặc định 50, smoke run 100 step kết thúc mà
+    # `last_train_loss` vẫn None — đúng thứ cần báo cáo lại bị thiếu.
+    smoke = apply_smoke_preset(BiEncoderTrainConfig(), 100)
+
+    assert smoke.logging_steps <= smoke.max_steps // 2
