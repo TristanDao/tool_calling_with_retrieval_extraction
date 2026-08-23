@@ -30,8 +30,10 @@ Script kiểm tra tường minh file này.
 **Layout cache HuggingFace.** Đúng là `hub/models--BAAI--bge-m3/…`, không phải
 `BAAI/bge-m3/…`. `HF_HOME` phải trỏ vào thư mục **chứa** `hub/`; thiếu tầng đó
 thì biến bị bỏ qua trong im lặng và model vẫn tải lại từ Hub mỗi session.
-Cell 0 của notebook tự dò cả hai biến thể lồng thư mục rồi `assert`, nên upload
-kiểu nào cũng chạy — nhưng nếu không tìm thấy `hub/` thì notebook dừng ngay.
+Cell 0 **dò theo marker file** thay vì hardcode đường dẫn: Kaggle mount thành
+`/kaggle/input/datasets/<user>/<ds>/<ds>/…`, và số tầng đổi theo cách upload.
+Đã kiểm tra logic dò trên 4 layout (phẳng, lồng 1 tầng, namespace, namespace +
+lồng) — đều tìm ra. Không tìm thấy thì notebook dừng ngay kèm marker đã thử.
 
 Thứ tự trong notebook quan trọng: **Cell 0 set `HF_HOME` trước mọi import
 `transformers`**. Import trước rồi mới set thì thư viện đã chốt cache mặc định.
@@ -66,6 +68,8 @@ lần lượt `toolcalling-vi-src`, `toolcalling-vi-data`, `toolcalling-vi-hf-ca
 Bật GPU T4, rồi chạy theo thứ tự:
 
 1. `method2_kaggle_run0_preflight.ipynb` — không train, chỉ kiểm tra cổng.
+   Cell 0 dò dataset, Cell 2 copy sang `/kaggle/working`, Cell 3 kiểm tra bản
+   copy, rồi mới tới preflight. Ba bước tách riêng để hỏng ở đâu biết ngay.
 2. `method2_kaggle_biencoder.ipynb` — dừng sau phần smoke + resume, review
    `smoke_run01/train_report.json` trước khi chạy full.
 
