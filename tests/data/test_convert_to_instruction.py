@@ -119,7 +119,7 @@ def test_convert_file():
             json.dumps(_SAMPLE_MULTI_CALL, ensure_ascii=False) + "\n",
             encoding="utf-8",
         )
-        converted, skipped = convert_file(inp, out)
+        converted, skipped, contaminated = convert_file(inp, out)
         assert converted == 2
         assert skipped == 0
         assert out.exists()
@@ -140,6 +140,49 @@ def test_convert_file_skips_invalid():
             json.dumps({"query": "", "tools": []}, ensure_ascii=False) + "\n",
             encoding="utf-8",
         )
-        converted, skipped = convert_file(inp, out)
+        converted, skipped, contaminated = convert_file(inp, out)
         assert converted == 1
         assert skipped == 2
+
+
+def test_convert_file_drops_queries_belonging_to_a_higher_split():
+    """Method 1 phải dùng cùng decontamination index với Method 2.
+
+    Nếu Qwen/SFT train từ benchmark nguyên bản thì Method 1 có train→test
+    leakage trong khi Method 2 không, và bảng so sánh hai method mất hiệu lực.
+    """
+    from src.models.sources import DecontaminationIndex, normalize_query_key
+
+    index = DecontaminationIndex(
+        effective_split={normalize_query_key(_SAMPLE_SINGLE_CALL["query"]): "test"}
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        inp = Path(tmp) / "in.jsonl"
+        out = Path(tmp) / "out.jsonl"
+        inp.write_text(
+            json.dumps(_SAMPLE_SINGLE_CALL, ensure_ascii=False) + "\n" +
+            json.dumps(_SAMPLE_MULTI_CALL, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+
+        converted, _, contaminated = convert_file(inp, out, index, "train")
+
+        assert contaminated == 1
+        assert converted == 1
+
+
+def test_convert_file_keeps_sample_in_its_own_split():
+    from src.models.sources import DecontaminationIndex, normalize_query_key
+
+    index = DecontaminationIndex(
+        effective_split={normalize_query_key(_SAMPLE_SINGLE_CALL["query"]): "test"}
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        inp = Path(tmp) / "in.jsonl"
+        out = Path(tmp) / "out.jsonl"
+        inp.write_text(json.dumps(_SAMPLE_SINGLE_CALL, ensure_ascii=False), encoding="utf-8")
+
+        converted, _, contaminated = convert_file(inp, out, index, "test")
+
+        assert contaminated == 0
+        assert converted == 1

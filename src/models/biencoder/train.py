@@ -66,6 +66,10 @@ class BiEncoderTrainConfig:
     resume_from: str | None = None
     #: Tên metric chọn checkpoint. Để trống thì tự dò từ log history.
     metric_for_best_model: str | None = None
+    #: >0 để dừng sớm (chế độ smoke run). None = train đủ epochs.
+    max_steps: int | None = None
+    #: Cắt bớt train set để smoke run nạp dữ liệu nhanh.
+    max_train_samples: int | None = None
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "BiEncoderTrainConfig":
@@ -109,6 +113,8 @@ class BiEncoderTrainConfig:
             n_negatives=int(raw.get("pairs", {}).get("n_hard_negatives", defaults.n_negatives)),
             resume_from=train_raw.get("resume_from"),
             metric_for_best_model=train_raw.get("metric_for_best_model"),
+            max_steps=train_raw.get("max_steps"),
+            max_train_samples=train_raw.get("max_train_samples"),
         )
 
 
@@ -211,12 +217,21 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
 
     tool_pool = load_tool_pool(config.tool_pool_path)
     train_dataset = load_training_dataset(config.train_path, tool_pool, config.n_negatives)
+    if config.max_train_samples:
+        train_dataset = train_dataset.select(
+            range(min(config.max_train_samples, len(train_dataset)))
+        )
     logger.info("train pairs: %d", len(train_dataset))
 
     model = build_model(config)
     loss = CachedMultipleNegativesRankingLoss(
         model, mini_batch_size=config.mini_batch_size, scale=config.scale
     )
+
+    args_kwargs: dict[str, Any] = {}
+    if config.max_steps:
+        # max_steps ghi đè num_train_epochs trong HF Trainer.
+        args_kwargs["max_steps"] = config.max_steps
 
     args = SentenceTransformerTrainingArguments(
         output_dir=str(config.output_dir),
@@ -236,6 +251,7 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
         logging_steps=50,
         seed=config.seed,
         report_to=[],
+        **args_kwargs,
     )
 
     evaluator = build_ir_evaluator(config.val_path, tool_pool) if config.val_path.exists() else None
@@ -274,6 +290,10 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
         "log_history": log_history,
         "checkpoint_selection": select_best_checkpoint(log_history, config.metric_for_best_model),
         "final_checkpoint": str(final_dir),
+        "smoke": config.max_steps is not None,
+        "observed": observed_runtime(
+            trainer, config, len(train_dataset), duration_sec, log_history
+        ),
     }
     (config.output_dir / "train_report.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -283,6 +303,108 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
         json.dumps(metrics, indent=2), encoding="utf-8"
     )
     return report
+
+
+def apply_smoke_preset(
+    config: BiEncoderTrainConfig,
+    steps: int = 200,
+) -> BiEncoderTrainConfig:
+    """Cấu hình Run 1 — smoke, ~100-300 step, không nhằm đạt chất lượng.
+
+    Giữ nguyên **mọi tham số quyết định bộ nhớ và ngữ nghĩa** (batch_size,
+    mini_batch_size, fp16, LoRA, max_seq_length) vì đó chính là thứ smoke run
+    phải kiểm chứng. Chỉ đổi: số step, độ dày eval/save, và output_dir riêng để
+    checkpoint smoke không lẫn vào run thật.
+
+    `save_steps` đặt nhỏ hơn `max_steps` để chắc chắn có ít nhất 2 checkpoint —
+    cần cho bài kiểm tra resume.
+    """
+    from dataclasses import replace
+
+    save_every = max(steps // 4, 10)
+    return replace(
+        config,
+        max_steps=steps,
+        epochs=1,
+        save_steps=save_every,
+        eval_steps=max(steps // 2, 10),
+        # Đủ dữ liệu cho `steps` bước ở effective batch hiện tại, thêm biên 20%.
+        max_train_samples=max(int(steps * config.batch_size * 1.2), config.batch_size * 2),
+        output_dir=(
+            config.output_dir
+            if config.output_dir.name.startswith("smoke")
+            else config.output_dir.parent / f"smoke_{config.output_dir.name}"
+        ),
+    )
+
+
+def observed_runtime(
+    trainer: Any,
+    config: "BiEncoderTrainConfig",
+    n_samples: int,
+    duration_sec: float,
+    log_history: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Số đo thực tế của môi trường — cái mà smoke run (Run 1) cần trả lời.
+
+    Ghi lại **effective batch quan sát được** chứ không chỉ giá trị khai trong
+    config: `CachedMNRL` chỉ đạt 256 in-batch negative khi
+    `per_device_train_batch_size` thật sự là 256; nếu HF tự hạ xuống thì lợi thế
+    của GradCache biến mất mà loss vẫn giảm bình thường, không có triệu chứng.
+    """
+    import torch
+
+    args = trainer.args
+    world_size = getattr(args, "world_size", 1) or 1
+    effective_batch = (
+        int(args.per_device_train_batch_size)
+        * int(getattr(args, "gradient_accumulation_steps", 1) or 1)
+        * int(world_size)
+    )
+    completed_steps = int(getattr(trainer.state, "global_step", 0) or 0)
+    train_entries = [e for e in log_history if "loss" in e and "eval_loss" not in e]
+
+    device_info: dict[str, Any] = {"cuda": torch.cuda.is_available()}
+    if torch.cuda.is_available():
+        properties = torch.cuda.get_device_properties(0)
+        device_info.update(
+            {
+                "name": properties.name,
+                "total_memory_mb": round(properties.total_memory / 1024**2, 1),
+                "bf16_supported": torch.cuda.is_bf16_supported(),
+            }
+        )
+
+    return {
+        "device": device_info,
+        "fp16_enabled": bool(getattr(args, "fp16", False)),
+        "bf16_enabled": bool(getattr(args, "bf16", False)),
+        "per_device_batch_size": int(args.per_device_train_batch_size),
+        "gradient_accumulation_steps": int(getattr(args, "gradient_accumulation_steps", 1) or 1),
+        "effective_batch_size": effective_batch,
+        "effective_batch_matches_config": effective_batch == config.batch_size,
+        "mini_batch_size": config.mini_batch_size,
+        "completed_steps": completed_steps,
+        "n_train_samples": n_samples,
+        "duration_sec": round(duration_sec, 1),
+        "steps_per_sec": round(completed_steps / duration_sec, 4) if duration_sec else None,
+        "samples_per_sec": (
+            round(completed_steps * effective_batch / duration_sec, 2) if duration_sec else None
+        ),
+        "estimated_sec_per_epoch": (
+            round(duration_sec / completed_steps * (n_samples / max(effective_batch, 1)), 1)
+            if completed_steps and duration_sec
+            else None
+        ),
+        "n_logged_train_steps": len(train_entries),
+        "last_train_loss": train_entries[-1].get("loss") if train_entries else None,
+        "evaluator_metric_names": sorted(
+            {k for entry in log_history for k in entry if k.startswith("eval_")}
+        ),
+        "checkpoints_written": sorted(
+            p.name for p in Path(config.output_dir).glob("checkpoint-*") if p.is_dir()
+        ),
+    }
 
 
 def select_best_checkpoint(
@@ -411,9 +533,24 @@ def main() -> None:
     parser.add_argument("--model", type=str, default=None)
     parser.add_argument("--resume-from", type=str, default=None)
     parser.add_argument("--output-dir", type=Path, default=None)
+    parser.add_argument(
+        "--smoke",
+        nargs="?",
+        type=int,
+        const=200,
+        default=None,
+        metavar="STEPS",
+        help="Smoke run: dừng sau N step (mặc định 200), eval/save dày để kiểm tra resume",
+    )
     args = parser.parse_args()
 
     config = BiEncoderTrainConfig.from_yaml(args.config)
+    if args.smoke is not None:
+        config = apply_smoke_preset(config, args.smoke)
+        logger.info(
+            "SMOKE RUN: %d step, save mỗi %d, eval mỗi %d, output %s",
+            config.max_steps, config.save_steps, config.eval_steps, config.output_dir,
+        )
     if args.resume_from:
         config.resume_from = args.resume_from
     if args.output_dir:

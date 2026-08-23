@@ -57,6 +57,7 @@ class CrossEncoderPairsConfig:
     skip_rate_gate: float = 0.30
     require_boolean_cue: bool = False
     limit_per_source: int | None = None
+    allow_build_decontamination: bool = False
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "CrossEncoderPairsConfig":
@@ -98,7 +99,10 @@ def build_pairs(
     # Dùng chung index với Bi-Encoder: hai stage phải chia split y hệt nhau,
     # nếu không val của stage này lại là test của stage kia.
     decontamination = load_or_build_decontamination(
-        config.decontamination_path, specs, config.limit_per_source
+        config.decontamination_path,
+        specs,
+        config.limit_per_source,
+        allow_build=config.allow_build_decontamination,
     )
 
     for sample in iter_samples(
@@ -257,6 +261,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build Cross-Encoder training pairs")
     parser.add_argument("--config", type=Path, default=Path("configs/method2/crossencoder.yaml"))
     parser.add_argument("--limit-per-source", type=int, default=None)
+    parser.add_argument(
+        "--rebuild-decontamination",
+        action="store_true",
+        help="Build lại decontamination index nếu thiếu (bước preprocessing)",
+    )
     args = parser.parse_args()
 
     raw: dict[str, Any] = {}
@@ -267,6 +276,8 @@ def main() -> None:
     config = CrossEncoderPairsConfig.from_dict(raw)
     if args.limit_per_source:
         config.limit_per_source = args.limit_per_source
+    if args.rebuild_decontamination:
+        config.allow_build_decontamination = True
 
     rows_by_split, stats = build_pairs(config)
 

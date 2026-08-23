@@ -51,6 +51,8 @@ class PairsConfig:
     seed: int = 42
     limit_per_source: int | None = None
     progress_every: int = 5000
+    #: True chỉ khi chạy như bước preprocessing tường minh (--rebuild-decontamination).
+    allow_build_decontamination: bool = False
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "PairsConfig":
@@ -123,7 +125,10 @@ def build_pairs(
     queries_seen: dict[str, set[str]] = defaultdict(set)
 
     decontamination = load_or_build_decontamination(
-        config.decontamination_path, specs, config.limit_per_source
+        config.decontamination_path,
+        specs,
+        config.limit_per_source,
+        allow_build=config.allow_build_decontamination,
     )
 
     processed = 0
@@ -263,6 +268,11 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=Path("configs/method2/biencoder.yaml"))
     parser.add_argument("--limit-per-source", type=int, default=None)
     parser.add_argument("--no-bm25", action="store_true")
+    parser.add_argument(
+        "--rebuild-decontamination",
+        action="store_true",
+        help="Build lại decontamination index nếu thiếu (bước preprocessing)",
+    )
     args = parser.parse_args()
 
     raw: dict[str, Any] = {}
@@ -275,6 +285,8 @@ def main() -> None:
         config.limit_per_source = args.limit_per_source
     if args.no_bm25:
         config.use_bm25 = False
+    if args.rebuild_decontamination:
+        config.allow_build_decontamination = True
 
     rows_by_split, stats = build_pairs(config)
 

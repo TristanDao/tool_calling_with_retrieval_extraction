@@ -11,6 +11,7 @@ ngân sách VRAM/thời gian và các quyết định thiết kế nằm ở `do
 ```
 src/models/
   sources.py               # nguồn dữ liệu, loader, decontamination, manifest SHA-256
+  preflight.py             # cổng fail-closed trước training
   run_manifest.py          # gom artifact audit của một run
   biencoder/
     tool_pool.py           # canonicalize + dedupe tool → tool pool thống nhất
@@ -34,7 +35,7 @@ src/models/
 
 configs/method2/   tool_pool.yaml  biencoder.yaml  crossencoder.yaml
                    pipeline.yaml   stress.yaml
-notebooks/         method2_kaggle_{biencoder,crossencoder,eval}.ipynb
+notebooks/         method2_kaggle_{run0_preflight,biencoder,crossencoder,eval}.ipynb
 scripts/method2/   make_notebooks.py
 ```
 
@@ -222,7 +223,85 @@ không làm hỏng job sau nhiều giờ GPU.
 
 ---
 
-## 7. Việc còn lại
+## 7. Chạy trên Kaggle — thứ tự bắt buộc
+
+### Run 0 — Pre-flight, 0 giờ GPU training
+
+```bash
+python -m src.models.preflight --config configs/method2/biencoder.yaml --require-gpu T4
+```
+
+Chuỗi fail-closed, dừng ngay tại bước đầu tiên không đạt:
+
+```
+decontamination.json tồn tại → SHA-256 == manifest → overlap == 0
+    → unseen leakage == 0 → version khớp bản pin → CHO PHÉP TRAIN
+```
+
+`decontamination.json` là **artefact bắt buộc**. Thiếu file hoặc hash lệch thì
+job dừng (exit 1), **không rebuild tự động** — nếu experiment chính tự dựng lại
+index từ dữ liệu đang có trên máy thì ta mất đúng thứ cần đảm bảo: bằng chứng
+model được train trên đúng split đã kiểm định. Rebuild là lệnh preprocessing
+riêng, chạy ở local rồi upload lại:
+
+```bash
+python -m src.models.sources decontaminate
+python -m src.models.sources manifest
+```
+
+### Run 1 — Bi-Encoder smoke, ~200 step
+
+```bash
+python -m src.models.biencoder.train train --config configs/method2/biencoder.yaml --smoke 200
+```
+
+Preset smoke **giữ nguyên** batch_size, mini_batch_size, fp16, LoRA và
+max_seq_length — đó chính là những thứ cần kiểm chứng; chỉ đổi số step, độ dày
+eval/save, và ghi vào `smoke_run01/` để không lẫn với run thật. `train_report.json`
+trả lời đủ 7 câu hỏi của Run 1:
+
+| Câu hỏi | Trường |
+|---|---|
+| CUDA/fp16 hoạt động | `observed.device`, `observed.fp16_enabled` |
+| CachedMNRL + LoRA không OOM | chạy hết N step không lỗi |
+| effective batch đúng 256 | `observed.effective_batch_matches_config` |
+| VRAM thực tế | `peak_vram_mb` |
+| throughput thực tế | `observed.samples_per_sec`, `estimated_sec_per_epoch` |
+| tên metric evaluator | `observed.evaluator_metric_names` |
+| checkpoint save/resume | notebook chạy 100 step → resume lên 200, assert `completed_steps == 200` |
+
+`effective_batch_matches_config` là assert quan trọng nhất: nếu HF hạ batch
+xuống thì số in-batch negative của MNRL giảm theo mà loss vẫn giảm bình thường,
+không có triệu chứng gì.
+
+### Run 2 — Bi-Encoder full Round 1
+
+Chỉ chạy sau khi Run 1 pass. Gate trước khi sang Cross-Encoder: Recall@1 seen
+≥ 0.90 · Recall@1 unseen ≥ 0.75 · Recall@5 unseen ≥ 0.92 · Negative Recall
+≥ 0.80. Không đạt thì xử lý retrieval trước, chưa train Cross-Encoder.
+
+### Version pin
+
+`configs/method2/pinned_versions.json` — `transformers`, `sentence-transformers`
+và `peft` pin tuyệt đối vì chúng quyết định API training **và** tên metric của
+`InformationRetrievalEvaluator`; preflight fail nếu lệch. `torch` chỉ ghi nhận:
+Kaggle cài sẵn bản CUDA riêng, ép cài lại vừa chậm vừa dễ lệch CUDA runtime.
+
+### File cần upload
+
+| Kaggle Dataset | Nội dung | Dung lượng |
+|---|---|---|
+| `toolcalling-vi-src` | `src/`, `configs/method2/`, `configs/eval/` | 1.4 MB |
+| `toolcalling-vi-data` | `data/method2/**` (12 file, gồm `decontamination.json`) | 192.4 MB |
+| `toolcalling-vi-data` | gold để eval: `data/custom_vi/v1/{val,test}_{seen,unseen}.jsonl`, `data/benchmark_vi/test.jsonl` | 29.6 MB |
+| `hf-cache` | cache HuggingFace của `BAAI/bge-m3`, `xlm-roberta-base` | ~2.5 GB |
+
+`decontamination.json` (10.8 MB) nằm trong `.gitignore` nên **không** đi theo
+`git clone`; phải upload thủ công, nếu không Run 0 sẽ fail — đúng như thiết kế.
+
+---
+
+## 8. Việc còn lại
 
 - `feature_group` của glaive/xLAM giữ nguyên `Khác` ở baseline này (quyết định
   đã chốt: không chờ `ALIBABA_API_KEY`). Hard negative của chúng dùng BM25 đúng
@@ -233,4 +312,11 @@ không làm hỏng job sau nhiều giờ GPU.
   normalize/calibrate → full Method 2 evaluation → **sau đó** mới quyết định
   ablation (Phase 6) và stress test (Phase 7). Hai phase đó chưa có code;
   `configs/method2/stress.yaml` đã khai báo sẵn tham số.
+- **Method 1 (SLM/SFT)**: `src/data/convert_to_instruction.py` giờ áp cùng
+  `decontamination.json` (mặc định bật, `--no-decontamination` để tắt kèm cảnh
+  báo). Trước thay đổi này nó đọc thẳng `data/benchmark_vi/{train,val,test}.jsonl`
+  nên nếu đã train thì đã có train→test leakage. **Còn một khác biệt chưa xử lý**:
+  Method 1 chỉ dùng `benchmark_vi`, không có `custom_vi` và `glaive_negative`,
+  trong khi Method 2 train trên cả ba. Hai method đang học trên corpus khác nhau
+  — cần chốt trước khi so sánh, nằm ngoài phạm vi đã duyệt nên chưa sửa.
 - Chưa train: mọi số trong plan là ước lượng cho tới khi chạy thật trên T4.

@@ -257,22 +257,54 @@ def build_decontamination_index(
 DECONTAMINATION_PATH = Path("data/method2/decontamination.json")
 
 
+class MissingDecontaminationIndex(FileNotFoundError):
+    """Index bắt buộc nhưng không có — dừng job thay vì âm thầm build lại."""
+
+
+def load_decontamination(path: str | Path = DECONTAMINATION_PATH) -> DecontaminationIndex:
+    """Nạp index, **fail-closed** nếu thiếu.
+
+    Không tự build lại: rebuild là một bước preprocessing riêng
+    (`python -m src.models.sources decontaminate`). Nếu experiment chính tự
+    dựng lại index từ dữ liệu đang có trên máy, ta mất đúng thứ cần đảm bảo —
+    bằng chứng rằng model được train trên đúng split đã kiểm định.
+
+    Bi-Encoder, Cross-Encoder và Method 1 **phải** dùng chung một index; hai
+    pipeline chia split khác nhau thì val của bên này là test của bên kia.
+    """
+    path = Path(path)
+    if not path.exists():
+        raise MissingDecontaminationIndex(
+            f"Thiếu decontamination index: {path}\n"
+            f"Đây là artifact bắt buộc, không được build lại trong job training.\n"
+            f"Chạy bước preprocessing: python -m src.models.sources decontaminate"
+        )
+    return DecontaminationIndex.load(path)
+
+
 def load_or_build_decontamination(
     path: str | Path = DECONTAMINATION_PATH,
     specs: tuple[SourceSpec, ...] = DEFAULT_SOURCES,
     limit_per_source: int | None = None,
+    allow_build: bool = False,
 ) -> DecontaminationIndex:
-    """Nạp index nếu có, không thì build và ghi ra đĩa.
+    """Nạp index; chỉ build lại khi `allow_build=True` (bước preprocessing).
 
-    Bi-Encoder và Cross-Encoder **phải** dùng chung một index — nếu hai bên chia
-    split khác nhau thì val của stage này lại là test của stage kia.
+    `limit_per_source` là chế độ smoke test trên tập con nên luôn build tại chỗ
+    và **không** ghi đè index thật.
     """
     path = Path(path)
-    if limit_per_source is None and path.exists():
+    if limit_per_source is not None:
+        return build_decontamination_index(specs, limit_per_source)
+    if path.exists():
         return DecontaminationIndex.load(path)
-    index = build_decontamination_index(specs, limit_per_source)
-    if limit_per_source is None:
-        index.save(path)
+    if not allow_build:
+        raise MissingDecontaminationIndex(
+            f"Thiếu decontamination index: {path}\n"
+            f"Chạy: python -m src.models.sources decontaminate"
+        )
+    index = build_decontamination_index(specs)
+    index.save(path)
     return index
 
 
@@ -325,14 +357,45 @@ DERIVED_ARTIFACTS = (
 
 
 def main() -> None:
-    """Ghi `data/method2/manifest.json` — nguồn + artefact dẫn xuất + commit hash."""
+    """Hai lệnh preprocessing: `manifest` và `decontaminate`.
+
+    Rebuild index tách hẳn khỏi job training để experiment chính fail-closed.
+    """
     import argparse
+
+    parser = argparse.ArgumentParser(description="Method 2 dataset preprocessing")
+    parser.add_argument(
+        "command",
+        nargs="?",
+        default="manifest",
+        choices=["manifest", "decontaminate"],
+        help="manifest = freeze SHA-256 snapshot; decontaminate = build lại index",
+    )
+    parser.add_argument("--output", type=Path, default=None)
+    args = parser.parse_args()
+
+    if args.command == "decontaminate":
+        _run_decontaminate(args.output or DECONTAMINATION_PATH)
+        return
+    _run_manifest(args.output or Path("data/method2/manifest.json"))
+
+
+def _run_decontaminate(output: Path) -> None:
+    index = build_decontamination_index()
+    index.save(output)
+    stats = index.stats
+    print(f"[decontaminate] {stats['n_unique_queries']} query duy nhất → {output}")
+    print(f"[decontaminate] query trùng split: {stats['n_overlapping_queries']}")
+    for pair, count in stats["overlapping_queries"].items():
+        print(f"[decontaminate]   {pair}: {count}")
+    print(f"[decontaminate] unique query/split trước: {stats['unique_queries_per_split_before']}")
+    print(f"[decontaminate] unique query/split sau:   {stats['unique_queries_per_split_after']}")
+    print("[decontaminate] Chạy lại `python -m src.models.sources manifest` để cập nhật SHA-256.")
+
+
+def _run_manifest(output: Path) -> None:
     import subprocess
     from datetime import datetime, timezone
-
-    parser = argparse.ArgumentParser(description="Freeze dataset snapshot for Method 2")
-    parser.add_argument("--output", type=Path, default=Path("data/method2/manifest.json"))
-    args = parser.parse_args()
 
     try:
         commit = subprocess.run(
@@ -355,10 +418,10 @@ def main() -> None:
         "sources": build_manifest(),
         "derived": derived,
     }
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     n_present = sum(1 for e in manifest["sources"].values() if e.get("present"))
-    print(f"[manifest] {n_present}/{len(manifest['sources'])} nguồn → {args.output}")
+    print(f"[manifest] {n_present}/{len(manifest['sources'])} nguồn → {output}")
 
 
 if __name__ == "__main__":
