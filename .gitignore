@@ -92,3 +92,4 @@ Thumbs.db
 # Hydra outputs
 outputs/
 multirun/
+kaggle_upload/
