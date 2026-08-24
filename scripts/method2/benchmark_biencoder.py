@@ -101,51 +101,74 @@ def run_case(case: Case, steps: int, config: Path, output_root: Path) -> dict:
         "peak_vram_mb": report.get("peak_vram_mb"),
         "effective_batch": observed.get("effective_batch_size"),
         "batch_ok": observed.get("effective_batch_matches_config"),
-        "hours_per_epoch": (
-            round(observed["estimated_sec_per_epoch"] / 3600, 2)
-            if observed.get("estimated_sec_per_epoch")
-            else None
-        ),
+        "n_train_examples": observed.get("n_train_examples"),
+        "steps_per_epoch": observed.get("steps_per_epoch"),
+        "hours_per_epoch": observed.get("estimated_hours_per_epoch"),
+        "hours_3_epochs": observed.get("estimated_hours_3_epochs"),
         "setup_overhead_sec": observed.get("setup_overhead_sec"),
     }
 
 
 def print_table(results: list[dict]) -> None:
-    print("\n" + "=" * 78)
-    print(f"{'':2} {'batch':>6} {'mini':>5} {'ckpt':>5} {'s/step':>9} {'VRAM MB':>9} {'h/epoch':>8}")
-    print("-" * 78)
+    """So sánh theo **giờ/epoch**, không theo s/step.
+
+    Giảm effective batch làm s/step đẹp hẳn lên nhưng số step mỗi epoch tăng
+    đúng bấy nhiêu lần — xếp hạng theo s/step sẽ chọn nhầm đúng cấu hình vừa
+    chậm hơn vừa yếu hơn về chất lượng.
+    """
+    print("\n" + "=" * 92)
+    header = f"{'':2} {'batch':>6} {'mini':>5} {'ckpt':>5} {'s/step':>8} {'step/ep':>8} {'h/epoch':>8} {'h×3ep':>7} {'VRAM MB':>9}"
+    print(header)
+    print("-" * 92)
     for row in results:
         case = row["case"]
         ckpt = "on" if case.grad_checkpointing else "off"
         if not row["ok"]:
-            print(f"{case.name:2} {case.batch_size:>6} {case.mini_batch_size:>5} {ckpt:>5}   LỖI: {row['error'][:40]}")
+            print(f"{case.name:2} {case.batch_size:>6} {case.mini_batch_size:>5} {ckpt:>5}   LỖI: {row['error'][:44]}")
             continue
         print(
             f"{case.name:2} {case.batch_size:>6} {case.mini_batch_size:>5} {ckpt:>5} "
-            f"{row['sec_per_step'] or 0:>9.1f} {row['peak_vram_mb'] or 0:>9.0f} "
-            f"{row['hours_per_epoch'] or 0:>8.1f}"
+            f"{row['sec_per_step'] or 0:>8.1f} {row['steps_per_epoch'] or 0:>8,} "
+            f"{row['hours_per_epoch'] or 0:>8.2f} {row['hours_3_epochs'] or 0:>7.1f} "
+            f"{row['peak_vram_mb'] or 0:>9.0f}"
         )
-    print("-" * 78)
+    print("-" * 92)
 
-    good = [r for r in results if r["ok"] and r["sec_per_step"]]
+    good = [r for r in results if r["ok"] and r["hours_per_epoch"]]
     if not good:
         print("Không case nào chạy được.")
         return
 
-    best = min(good, key=lambda r: r["sec_per_step"])
+    best = min(good, key=lambda r: r["hours_per_epoch"])
+    fastest_step = min(good, key=lambda r: r["sec_per_step"])
     baseline = next((r for r in good if r["case"].name == "A"), None)
+
     speedup = (
-        f", nhanh hơn A {baseline['sec_per_step'] / best['sec_per_step']:.1f}×"
+        f", nhanh hơn A {baseline['hours_per_epoch'] / best['hours_per_epoch']:.2f}×"
         if baseline and baseline is not best
         else ""
     )
-    print(f"Nhanh nhất: {best['case'].name} — {best['sec_per_step']:.1f} s/step{speedup}")
-    print(f"            {best['hours_per_epoch']:.1f} h/epoch, peak {best['peak_vram_mb']:.0f} MB")
+    print(f"Nhanh nhất theo EPOCH: {best['case'].name} — {best['hours_per_epoch']:.2f} h/epoch{speedup}")
+    print(f"   {best['sec_per_step']:.1f} s/step × {best['steps_per_epoch']:,} step, peak {best['peak_vram_mb']:.0f} MB")
+    print(f"   3 epoch ≈ {best['hours_3_epochs']:.1f} h")
 
+    if fastest_step is not best:
+        print(
+            f"\nLƯU Ý: {fastest_step['case'].name} có s/step thấp nhất "
+            f"({fastest_step['sec_per_step']:.1f}) nhưng {fastest_step['hours_per_epoch']:.2f} h/epoch "
+            f"— effective batch nhỏ hơn nên số step mỗi epoch nhiều hơn. Chọn theo h/epoch."
+        )
     if best["case"].batch_size != 256:
         print(
-            "LƯU Ý: case này giảm effective batch nên ĐỔI chất lượng, không chỉ tốc độ —\n"
+            "LƯU Ý: case thắng giảm effective batch nên ĐỔI chất lượng, không chỉ tốc độ —\n"
             "       MNRL mạnh lên theo số in-batch negative. Ghi rõ vào báo cáo."
+        )
+    if best["peak_vram_mb"] and best["peak_vram_mb"] > 9000:
+        print(
+            f"\nCẢNH BÁO VRAM: {best['peak_vram_mb']:.0f} MB đo khi TẮT eval. Evaluator còn phải\n"
+            "       encode ~4,4k tool doc trong khi trạng thái train vẫn nằm trong VRAM,\n"
+            "       và peak_vram_mb không tính phần allocator giữ lại. Chạy lại case này\n"
+            "       CÓ eval trước khi tin là an toàn."
         )
     for row in good:
         if row["batch_ok"] is False:

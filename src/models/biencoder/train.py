@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import math
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -222,6 +223,9 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
 
     tool_pool = load_tool_pool(config.tool_pool_path)
     train_dataset = load_training_dataset(config.train_path, tool_pool, config.n_negatives)
+    # Kích thước THẬT của tập train, giữ lại trước khi smoke cắt bớt. Ngoại suy
+    # giờ/epoch mà dùng kích thước đã cắt thì ra số vô nghĩa (đo được: 0.1 h).
+    n_train_full = len(train_dataset)
     if config.max_train_samples:
         train_dataset = train_dataset.select(
             range(min(config.max_train_samples, len(train_dataset)))
@@ -310,7 +314,7 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
         "smoke": config.max_steps is not None,
         "observed": observed_runtime(
             trainer, config, len(train_dataset), duration_sec, log_history,
-            resumed_from_step, hf_metrics,
+            resumed_from_step, hf_metrics, n_train_full,
         ),
     }
     (config.output_dir / "train_report.json").write_text(
@@ -380,6 +384,7 @@ def observed_runtime(
     log_history: list[dict[str, Any]],
     resumed_from_step: int = 0,
     hf_metrics: dict[str, Any] | None = None,
+    n_train_full: int | None = None,
 ) -> dict[str, Any]:
     """Số đo thực tế của môi trường — cái mà smoke run (Run 1) cần trả lời.
 
@@ -402,6 +407,9 @@ def observed_runtime(
     hf_metrics = hf_metrics or {}
     # Rơi về wall-clock nếu HF không trả train_runtime (vd bị ngắt giữa chừng).
     train_runtime = float(hf_metrics.get("train_runtime") or duration_sec)
+    sec_per_step = train_runtime / steps_this_run if steps_this_run else None
+    n_examples = n_train_full if n_train_full is not None else n_samples
+    steps_per_epoch = math.ceil(n_examples / max(effective_batch, 1))
     train_entries = [e for e in log_history if "loss" in e and "eval_loss" not in e]
 
     device_info: dict[str, Any] = {"cuda": torch.cuda.is_available()}
@@ -432,18 +440,28 @@ def observed_runtime(
         "steps_trained_this_run": steps_this_run,
         "resume_verified": bool(resumed_from_step) and completed_steps > resumed_from_step,
         "n_train_samples": n_samples,
+        # Số example của tập ĐẦY ĐỦ; `n_train_samples` có thể đã bị smoke cắt.
+        "n_train_examples": n_examples,
+        "steps_per_epoch": steps_per_epoch,
         "duration_sec": round(duration_sec, 1),
         "train_runtime_sec": round(train_runtime, 1),
         "setup_overhead_sec": round(duration_sec - train_runtime, 1),
-        "sec_per_step": round(train_runtime / steps_this_run, 2) if steps_this_run else None,
+        "sec_per_step": round(sec_per_step, 2) if sec_per_step else None,
         "steps_per_sec": round(steps_this_run / train_runtime, 4) if train_runtime else None,
         "samples_per_sec": (
             round(steps_this_run * effective_batch / train_runtime, 2) if train_runtime else None
         ),
+        # Ngoại suy theo tập đầy đủ. So sánh cấu hình phải dùng giờ/epoch chứ
+        # KHÔNG phải s/step: giảm effective batch làm s/step đẹp lên nhưng số
+        # step mỗi epoch tăng đúng bấy nhiêu lần.
         "estimated_sec_per_epoch": (
-            round(train_runtime / steps_this_run * (n_samples / max(effective_batch, 1)), 1)
-            if steps_this_run and train_runtime
-            else None
+            round(sec_per_step * steps_per_epoch, 1) if sec_per_step else None
+        ),
+        "estimated_hours_per_epoch": (
+            round(sec_per_step * steps_per_epoch / 3600, 3) if sec_per_step else None
+        ),
+        "estimated_hours_3_epochs": (
+            round(sec_per_step * steps_per_epoch * 3 / 3600, 2) if sec_per_step else None
         ),
         "n_logged_train_steps": len(train_entries),
         "last_train_loss": train_entries[-1].get("loss") if train_entries else None,
