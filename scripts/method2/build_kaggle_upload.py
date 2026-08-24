@@ -61,6 +61,8 @@ SRC_ITEMS: tuple[tuple[Path, str], ...] = (
     (Path("configs/method2"), "configs/method2"),
     (Path("configs/eval"), "configs/eval"),
     (Path("notebooks"), "notebooks"),
+    # benchmark_biencoder.py chạy TRÊN Kaggle nên phải nằm trong dataset.
+    (Path("scripts/method2"), "scripts/method2"),
 )
 
 DATA_ITEMS: tuple[tuple[Path, str], ...] = (
