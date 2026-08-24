@@ -347,7 +347,43 @@ python -m src.models.sources decontaminate
 python -m src.models.sources manifest
 ```
 
-### 7.7 Run 1 — Bi-Encoder smoke, ~200 step
+### 7.7 Run 1a — Benchmark cấu hình (bắt buộc trước smoke)
+
+Lần chạy đầu trên T4 cho **475 s/step**: 100 step = 13.2 giờ, một epoch = 49
+giờ, trong khi plan dự toán 50-70 phút/epoch. Lệch ~45×.
+
+Vì sao mỗi step đắt như vậy: `CachedMNRL` không phải một forward/backward bình
+thường. Effective batch 256, mỗi sample có anchor + positive + 4 negative →
+**1,536 lượt encode**. Chia mini_batch 8 thành 192 chunk, GradCache chạy **hai**
+pha (forward no-grad để cache, rồi forward+backward tính lại) → ~384 lần gọi
+model mỗi step, mỗi lần chỉ 8×192 = 1,536 token. Quá nhỏ để lấp đầy T4 nên phần
+lớn thời gian là overhead; cộng DataParallel giữa 2 GPU thì nhân lên tiếp.
+
+```bash
+python scripts/method2/benchmark_biencoder.py --steps 5
+```
+
+| Case | GPU | batch | mini | ckpt | đổi gì |
+|---|---|---|---|---|---|
+| A | 1×T4 | 256 | 8 | on | tách ảnh hưởng DataParallel |
+| B | 1×T4 | 256 | 16 | on | nửa số lần gọi model |
+| C | 1×T4 | 256 | 32 | on | 1/4 số lần gọi model |
+| D | 1×T4 | 128 | 32 | on | giảm effective batch |
+| E | 1×T4 | 256 | 32 | off | tắt grad checkpointing |
+
+A→C chỉ đổi **tốc độ**. D đổi **chất lượng**: MNRL mạnh lên theo số in-batch
+negative, giảm batch là giảm negative — chỉ dùng khi A–C không đủ và phải ghi rõ
+vào báo cáo.
+
+`sec_per_step` lấy từ `train_runtime` của HF nên **không** gồm thời gian nạp
+BGE-M3; với run 5 step thì nạp model lấn át hoàn toàn wall-clock. Benchmark chạy
+với `--no-eval` vì eval trên corpus 4,4k tool làm nhiễu số đo mà không liên quan
+tốc độ train.
+
+Ngưỡng thực dụng: **> 60 s/step là chưa dùng được** — 370 step/epoch × 3 epoch ở
+60 s/step đã là 18 giờ, vượt quota tuần.
+
+### 7.8 Run 1 — Bi-Encoder smoke, ~200 step
 
 ```bash
 python -m src.models.biencoder.train train --config configs/method2/biencoder.yaml --smoke 200
@@ -392,20 +428,20 @@ checkpoint tốt nhất, chưa tự nạp lại. Bật `load_best_model_at_end` 
 chính/multi-seed sau, khi đã chắc khoá metric: tên sai chỉ nổ ở **cuối** job,
 mất vài giờ T4.
 
-### 7.8 Run 2 — Bi-Encoder full Round 1
+### 7.9 Run 2 — Bi-Encoder full Round 1
 
 Chỉ chạy sau khi Run 1 pass. Gate trước khi sang Cross-Encoder: Recall@1 seen
 ≥ 0.90 · Recall@1 unseen ≥ 0.75 · Recall@5 unseen ≥ 0.92 · Negative Recall
 ≥ 0.80. Không đạt thì xử lý retrieval trước, chưa train Cross-Encoder.
 
-### 7.9 Version pin
+### 7.10 Version pin
 
 `configs/method2/pinned_versions.json` — `transformers`, `sentence-transformers`
 và `peft` pin tuyệt đối vì chúng quyết định API training **và** tên metric của
 `InformationRetrievalEvaluator`; preflight fail nếu lệch. `torch` chỉ ghi nhận:
 Kaggle cài sẵn bản CUDA riêng, ép cài lại vừa chậm vừa dễ lệch CUDA runtime.
 
-### 7.10 Xử lý sự cố
+### 7.11 Xử lý sự cố
 
 | Triệu chứng | Nguyên nhân |
 |---|---|
@@ -414,6 +450,7 @@ Kaggle cài sẵn bản CUDA riêng, ép cài lại vừa chậm vừa dễ lệ
 | `commit SHA — không đọc được git` | Kaggle không có `.git`; preflight rơi về `manifest.json::git_commit` |
 | Cell 0 báo không tìm thấy marker | chưa Add đủ dataset, hoặc upload thiếu `--dir-mode zip` khiến Kaggle trải phẳng thư mục |
 | Notebook chạy code cũ dù đã bump version | chưa cập nhật version dataset ở sidebar Input |
+| Train chậm bất thường (hàng trăm s/step) | DataParallel + mini_batch quá nhỏ; chạy §7.7 để chốt cấu hình |
 
 ---
 

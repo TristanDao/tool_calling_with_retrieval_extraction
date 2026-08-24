@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -71,6 +72,8 @@ class BiEncoderTrainConfig:
     max_steps: int | None = None
     #: Cắt bớt train set để smoke run nạp dữ liệu nhanh.
     max_train_samples: int | None = None
+    #: False để tắt evaluator khi đo throughput.
+    eval_enabled: bool = True
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "BiEncoderTrainConfig":
@@ -245,7 +248,7 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
         fp16=config.fp16,
         bf16=False,  # T4 không hỗ trợ bf16
         gradient_checkpointing=config.gradient_checkpointing,
-        eval_strategy="steps" if config.val_path.exists() else "no",
+        eval_strategy="steps" if (config.eval_enabled and config.val_path.exists()) else "no",
         eval_steps=config.eval_steps,
         save_strategy="steps",
         save_steps=config.save_steps,
@@ -256,7 +259,11 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
         **args_kwargs,
     )
 
-    evaluator = build_ir_evaluator(config.val_path, tool_pool) if config.val_path.exists() else None
+    evaluator = (
+        build_ir_evaluator(config.val_path, tool_pool)
+        if config.eval_enabled and config.val_path.exists()
+        else None
+    )
     trainer = SentenceTransformerTrainer(
         model=model,
         args=args,
@@ -274,8 +281,12 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
     if config.resume_from:
         logger.info("resume từ %s (global_step %d)", config.resume_from, resumed_from_step)
     started = time.perf_counter()
-    trainer.train(resume_from_checkpoint=config.resume_from)
+    train_output = trainer.train(resume_from_checkpoint=config.resume_from)
     duration_sec = time.perf_counter() - started
+    # `train_runtime` của HF chỉ tính vòng train, KHÔNG gồm nạp model và
+    # dựng dataset. Với run ngắn (benchmark 5-10 step) thì nạp BGE-M3 mất vài
+    # phút, lấn át hoàn toàn wall-clock — dùng nhầm là đo ra số vô nghĩa.
+    hf_metrics = dict(getattr(train_output, "metrics", {}) or {})
 
     final_dir = config.output_dir / "final"
     save_model(model, final_dir)
@@ -292,12 +303,14 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
             if torch.cuda.is_available()
             else None
         ),
+        "hf_metrics": hf_metrics,
         "log_history": log_history,
         "checkpoint_selection": select_best_checkpoint(log_history, config.metric_for_best_model),
         "final_checkpoint": str(final_dir),
         "smoke": config.max_steps is not None,
         "observed": observed_runtime(
-            trainer, config, len(train_dataset), duration_sec, log_history, resumed_from_step
+            trainer, config, len(train_dataset), duration_sec, log_history,
+            resumed_from_step, hf_metrics,
         ),
     }
     (config.output_dir / "train_report.json").write_text(
@@ -366,6 +379,7 @@ def observed_runtime(
     duration_sec: float,
     log_history: list[dict[str, Any]],
     resumed_from_step: int = 0,
+    hf_metrics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Số đo thực tế của môi trường — cái mà smoke run (Run 1) cần trả lời.
 
@@ -385,6 +399,9 @@ def observed_runtime(
     )
     completed_steps = int(getattr(trainer.state, "global_step", 0) or 0)
     steps_this_run = max(completed_steps - resumed_from_step, 1)
+    hf_metrics = hf_metrics or {}
+    # Rơi về wall-clock nếu HF không trả train_runtime (vd bị ngắt giữa chừng).
+    train_runtime = float(hf_metrics.get("train_runtime") or duration_sec)
     train_entries = [e for e in log_history if "loss" in e and "eval_loss" not in e]
 
     device_info: dict[str, Any] = {"cuda": torch.cuda.is_available()}
@@ -416,13 +433,16 @@ def observed_runtime(
         "resume_verified": bool(resumed_from_step) and completed_steps > resumed_from_step,
         "n_train_samples": n_samples,
         "duration_sec": round(duration_sec, 1),
-        "steps_per_sec": round(steps_this_run / duration_sec, 4) if duration_sec else None,
+        "train_runtime_sec": round(train_runtime, 1),
+        "setup_overhead_sec": round(duration_sec - train_runtime, 1),
+        "sec_per_step": round(train_runtime / steps_this_run, 2) if steps_this_run else None,
+        "steps_per_sec": round(steps_this_run / train_runtime, 4) if train_runtime else None,
         "samples_per_sec": (
-            round(steps_this_run * effective_batch / duration_sec, 2) if duration_sec else None
+            round(steps_this_run * effective_batch / train_runtime, 2) if train_runtime else None
         ),
         "estimated_sec_per_epoch": (
-            round(duration_sec / steps_this_run * (n_samples / max(effective_batch, 1)), 1)
-            if steps_this_run and duration_sec
+            round(train_runtime / steps_this_run * (n_samples / max(effective_batch, 1)), 1)
+            if steps_this_run and train_runtime
             else None
         ),
         "n_logged_train_steps": len(train_entries),
@@ -571,7 +591,36 @@ def main() -> None:
         metavar="STEPS",
         help="Smoke run: dừng sau N step (mặc định 200), eval/save dày để kiểm tra resume",
     )
+    parser.add_argument(
+        "--single-gpu",
+        action="store_true",
+        help="Chỉ dùng GPU 0. sentence-transformers tự bọc DataParallel khi thấy "
+             "nhiều GPU, mà GradCache gọi model hàng trăm lần mỗi step nên phí "
+             "scatter/gather nhân lên rất nhanh.",
+    )
+    parser.add_argument("--batch-size", type=int, default=None, help="Ghi đè effective batch")
+    parser.add_argument("--mini-batch-size", type=int, default=None, help="Ghi đè mini batch GradCache")
+    parser.add_argument("--max-seq-length", type=int, default=None)
+    parser.add_argument(
+        "--grad-checkpointing",
+        dest="grad_checkpointing",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Bật/tắt gradient checkpointing (--no-grad-checkpointing để tắt)",
+    )
+    parser.add_argument(
+        "--no-eval",
+        action="store_true",
+        help="Tắt evaluator. Khi đo throughput thì eval trên corpus 4,4k tool "
+             "làm nhiễu số đo mà không liên quan tới tốc độ train.",
+    )
     args = parser.parse_args()
+
+    if args.single_gpu:
+        # PHẢI đặt trước khi bất cứ đâu import torch, nếu không CUDA đã khởi tạo
+        # xong với cả hai thiết bị.
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+        logger.info("CUDA_VISIBLE_DEVICES=0 — ép chạy một GPU")
 
     config = BiEncoderTrainConfig.from_yaml(args.config)
     if args.smoke is not None:
@@ -580,6 +629,18 @@ def main() -> None:
             "SMOKE RUN: %d step, save mỗi %d, eval mỗi %d, output %s",
             config.max_steps, config.save_steps, config.eval_steps, config.output_dir,
         )
+    # Override sau smoke preset để cờ CLI luôn thắng — lưới benchmark đổi
+    # tham số bằng cờ chứ không sửa YAML mỗi lần.
+    if args.batch_size:
+        config.batch_size = args.batch_size
+    if args.mini_batch_size:
+        config.mini_batch_size = args.mini_batch_size
+    if args.max_seq_length:
+        config.max_seq_length = args.max_seq_length
+    if args.grad_checkpointing is not None:
+        config.gradient_checkpointing = args.grad_checkpointing
+    if args.no_eval:
+        config.eval_enabled = False
     if args.resume_from:
         config.resume_from = args.resume_from
     if args.output_dir:

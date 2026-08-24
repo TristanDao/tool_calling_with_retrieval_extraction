@@ -322,6 +322,96 @@ RUN0_CELLS = PREFLIGHT_CELLS + [
     ),
 ]
 
+BENCHMARK_CELLS = [
+    (
+        "markdown",
+        [
+            "# Run 1a — Benchmark cấu hình (BẮT BUỘC trước smoke)\n",
+            "\n",
+            "Lần chạy đầu trên T4 cho **475 s/step**: 100 step mất 13.2 giờ, một epoch\n",
+            "mất 49 giờ, trong khi plan dự toán 50-70 phút/epoch. Lệch ~45× nên phải tìm\n",
+            "cấu hình dùng được trước, đừng chạy tiếp smoke 100 step.\n",
+            "\n",
+            "Vì sao mỗi step đắt: `CachedMNRL` không phải một forward/backward bình\n",
+            "thường. Effective batch 256, mỗi sample có anchor + positive + 4 negative →\n",
+            "**1,536 lượt encode**. Chia mini_batch 8 thành 192 chunk, GradCache chạy\n",
+            "**hai** pha (forward no-grad để cache, rồi forward+backward tính lại) →\n",
+            "~384 lần gọi model mỗi step. Mỗi lần chỉ 8×192 = 1,536 token, quá nhỏ để lấp\n",
+            "đầy T4 nên phần lớn thời gian là overhead — cộng thêm DataParallel giữa 2 GPU\n",
+            "thì nhân lên tiếp.\n",
+            "\n",
+            "| Case | GPU | batch | mini | ckpt | đổi gì so với case trước |\n",
+            "|---|---|---|---|---|---|\n",
+            "| A | 1×T4 | 256 | 8 | on | tách ảnh hưởng DataParallel |\n",
+            "| B | 1×T4 | 256 | 16 | on | nửa số lần gọi model |\n",
+            "| C | 1×T4 | 256 | 32 | on | 1/4 số lần gọi model |\n",
+            "| D | 1×T4 | 128 | 32 | on | giảm effective batch |\n",
+            "| E | 1×T4 | 256 | 32 | off | tắt grad checkpointing |\n",
+            "\n",
+            "A→C chỉ đổi **tốc độ**. D đổi **chất lượng**: MNRL mạnh lên theo số in-batch\n",
+            "negative, giảm batch là giảm negative — chỉ dùng khi A–C không đủ, và phải\n",
+            "ghi rõ vào báo cáo.\n",
+        ],
+    ),
+    (
+        "code",
+        [
+            "# 5 step mỗi case, tắt eval (eval trên corpus 4,4k tool làm nhiễu số đo).\n",
+            "# `sec_per_step` lấy từ `train_runtime` của HF nên KHÔNG gồm thời gian nạp\n",
+            "# BGE-M3 — với run 5 step thì nạp model lấn át hoàn toàn wall-clock.\n",
+            "!python scripts/method2/benchmark_biencoder.py \\\n",
+            "    --steps 5 \\\n",
+            "    --config configs/method2/biencoder.yaml \\\n",
+            "    --output results/method2/benchmark_biencoder.json\n",
+        ],
+    ),
+    (
+        "markdown",
+        [
+            "### Chốt cấu hình\n",
+            "\n",
+            "Chọn case nhanh nhất mà VRAM còn an toàn (< ~13 GB để chừa chỗ cho eval),\n",
+            "rồi ghi vào `configs/method2/biencoder.yaml` trước khi chạy smoke.\n",
+            "\n",
+            "Ngưỡng thực dụng: **> 60 s/step là chưa dùng được** — 370 step/epoch × 3\n",
+            "epoch mà 60 s/step đã là 18 giờ, vượt quota tuần.\n",
+        ],
+    ),
+    (
+        "code",
+        [
+            "bench = json.load(open('results/method2/benchmark_biencoder.json', encoding='utf-8'))\n",
+            "ok = [b for b in bench if b['ok'] and b['sec_per_step']]\n",
+            "assert ok, 'Không case nào chạy được — xem log ở trên'\n",
+            "\n",
+            "best = min(ok, key=lambda b: b['sec_per_step'])\n",
+            "print('nhanh nhất:', best['case']['name'],\n",
+            "      f\"{best['sec_per_step']:.1f} s/step,\",\n",
+            "      f\"{best['hours_per_epoch']:.1f} h/epoch,\",\n",
+            "      f\"peak {best['peak_vram_mb']:.0f} MB\")\n",
+            "\n",
+            "# Ghi cấu hình thắng cuộc vào YAML để smoke và full train dùng chung.\n",
+            "import yaml\n",
+            "\n",
+            "cfg_path = 'configs/method2/biencoder.yaml'\n",
+            "cfg = yaml.safe_load(open(cfg_path, encoding='utf-8'))\n",
+            "cfg['train']['batch_size'] = best['case']['batch_size']\n",
+            "cfg['train']['mini_batch_size'] = best['case']['mini_batch_size']\n",
+            "cfg['train']['gradient_checkpointing'] = best['case']['grad_checkpointing']\n",
+            "yaml.safe_dump(cfg, open(cfg_path, 'w', encoding='utf-8'), allow_unicode=True, sort_keys=False)\n",
+            "print('đã ghi vào', cfg_path)\n",
+            "\n",
+            "if best['sec_per_step'] > 60:\n",
+            "    print('\\nCHƯA DÙNG ĐƯỢC:', f\"{best['hours_per_epoch']:.1f} h/epoch\")\n",
+            "    print('Thử tiếp: mini_batch 64, hoặc max_seq_length 192 → 128,')\n",
+            "    print('hoặc đổi backbone Bi-Encoder sang bản nhỏ hơn BGE-M3.')\n",
+            "if best['case']['batch_size'] != 256:\n",
+            "    print('\\nLƯU Ý: effective batch giảm còn', best['case']['batch_size'],\n",
+            "          '— đổi CHẤT LƯỢNG chứ không chỉ tốc độ, phải ghi vào báo cáo.')\n",
+        ],
+    ),
+]
+
 SMOKE_CELLS = [
     (
         "markdown",
@@ -450,7 +540,15 @@ SMOKE_CELLS = [
     ),
 ]
 
-BIENCODER_CELLS = PREFLIGHT_CELLS + [
+BIENCODER_CELLS = PREFLIGHT_CELLS + BENCHMARK_CELLS + SMOKE_CELLS + [
+    (
+        "markdown",
+        [
+            "# Run 2 — Full training\n",
+            "\n",
+            "Chỉ chạy sau khi Run 1a chốt được cấu hình và Run 1 pass mọi assert.\n",
+        ],
+    ),
     (
         "markdown",
         [
@@ -730,6 +828,38 @@ SAVE_CELL = (
 )
 
 
+#: Chuỗi bắt buộc phải có trong từng notebook.
+#:
+#: Từng có lần `SMOKE_CELLS` được định nghĩa nhưng quên nối vào `BIENCODER_CELLS`
+#: — notebook sinh ra thiếu hẳn phần smoke/resume mà vẫn hợp lệ về cú pháp, nên
+#: không ai phát hiện cho tới khi chạy thật trên Kaggle. Kiểm cú pháp là chưa đủ;
+#: phải kiểm cả việc từng khối có mặt.
+REQUIRED_MARKERS: dict[str, tuple[str, ...]] = {
+    "method2_kaggle_run0_preflight.ipynb": (
+        "find_root", "src.models.preflight", "Kết thúc Run 0",
+    ),
+    "method2_kaggle_biencoder.ipynb": (
+        "find_root", "src.models.preflight",
+        "benchmark_biencoder.py", "Run 1a",          # benchmark cấu hình
+        "--smoke", "resume_verified", "steps_trained_this_run",  # smoke + resume
+        "Run 2", "biencoder.train train", "biencoder.index",     # full training
+        "evaluate calibrate", "run_manifest",
+    ),
+    "method2_kaggle_crossencoder.ipynb": (
+        "crossencoder.dataset", "skip_rate", "crossencoder.train", "crossencoder.evaluate",
+    ),
+    "method2_kaggle_eval.ipynb": (
+        "pipeline.method2", "oracle", "evaluation.cli", "latency",
+    ),
+}
+
+
+def check_markers(path: Path) -> list[str]:
+    notebook = json.loads(path.read_text(encoding="utf-8"))
+    source = "".join("".join(cell["source"]) for cell in notebook["cells"])
+    return [m for m in REQUIRED_MARKERS.get(path.name, ()) if m not in source]
+
+
 def build_notebooks() -> list[Path]:
     specs = [
         (
@@ -778,5 +908,12 @@ def build_notebooks() -> list[Path]:
 
 
 if __name__ == "__main__":
+    problems: dict[str, list[str]] = {}
     for path in build_notebooks():
-        print(f"[notebooks] → {path}")
+        missing = check_markers(path)
+        status = "OK" if not missing else f"THIẾU {missing}"
+        print(f"[notebooks] → {path}  {status}")
+        if missing:
+            problems[path.name] = missing
+    if problems:
+        raise SystemExit(f"Notebook thiếu khối bắt buộc: {problems}")
