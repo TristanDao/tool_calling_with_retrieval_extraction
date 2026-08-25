@@ -327,6 +327,19 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
     return report
 
 
+def clean_resume(value: str | None) -> str | None:
+    """Chuẩn hoá `--resume-from`, coi "None"/rỗng là không resume.
+
+    `!python ... --resume-from {var}` trong notebook nội suy `None` thành chuỗi
+    `"None"`. Không lọc thì HF Trainer coi đó là đường dẫn checkpoint, đi tải
+    `sentence-transformers/None` từ Hub rồi chết vì đang chạy offline.
+    """
+    if value is None:
+        return None
+    value = value.strip()
+    return None if value.lower() in ("", "none", "null") else value
+
+
 def apply_smoke_preset(
     config: BiEncoderTrainConfig,
     steps: int = 200,
@@ -659,8 +672,8 @@ def main() -> None:
         config.gradient_checkpointing = args.grad_checkpointing
     if args.no_eval:
         config.eval_enabled = False
-    if args.resume_from:
-        config.resume_from = args.resume_from
+    if clean_resume(args.resume_from):
+        config.resume_from = clean_resume(args.resume_from)
     if args.output_dir:
         config.output_dir = args.output_dir
 

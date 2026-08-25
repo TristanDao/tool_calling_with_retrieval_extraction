@@ -77,3 +77,78 @@ def test_marker_check_catches_a_dropped_block(tmp_path):
 
     assert "--smoke" in missing
     assert "resume_verified" in missing
+
+
+def _train_commands(source: str, module: str) -> list[str]:
+    r"""Gom lệnh `!python -m <module>`, ghép cả dòng nối bằng `\`."""
+    blocks, current = [], None
+    for line in source.split("\n"):
+        if module in line and line.strip().startswith("!"):
+            current = [line]
+        elif current is not None:
+            current.append(line)
+            if not line.rstrip().endswith("\\"):
+                blocks.append("\n".join(current))
+                current = None
+    if current:
+        blocks.append("\n".join(current))
+    return blocks
+
+
+def test_every_biencoder_train_command_forces_single_gpu():
+    """Benchmark đo ở chế độ 1 GPU; để DataParallel bật lại thì số đo vô nghĩa.
+
+    sentence-transformers tự bọc DataParallel khi thấy >1 GPU, và với GradCache
+    gọi model hàng trăm lần mỗi step thì phí đồng bộ đẩy từ ~36 lên ~475 s/step.
+    """
+    source = "".join(
+        "".join(c["source"])
+        for c in json.loads(
+            (Path("notebooks") / "method2_kaggle_biencoder.ipynb").read_text(encoding="utf-8")
+        )["cells"]
+    )
+
+    commands = _train_commands(source, "src.models.biencoder.train train")
+
+    assert commands, "không tìm thấy lệnh train nào"
+    missing = [c for c in commands if "--single-gpu" not in c]
+    assert not missing, f"{len(missing)} lệnh train thiếu --single-gpu"
+
+
+@pytest.mark.parametrize("path", NOTEBOOKS, ids=lambda p: p.name)
+def test_shell_commands_never_interpolate_a_maybe_none_variable(path):
+    """`!python ... --resume-from {resume}` nội suy None thành chuỗi "None".
+
+    HF Trainer coi "None" là đường dẫn checkpoint rồi đi tải
+    `sentence-transformers/None` từ Hub — chết ngay vì đang chạy offline. Cách
+    an toàn là dựng sẵn `resume_arg` (rỗng khi không có checkpoint) rồi nội suy
+    biến đó, nên chỉ kiểm tra bên trong lệnh shell.
+    """
+    source = "".join(
+        "".join(c["source"]) for c in json.loads(path.read_text(encoding="utf-8"))["cells"]
+    )
+
+    for module in ("src.models.biencoder.train", "src.models.crossencoder.train"):
+        for command in _train_commands(source, module):
+            assert "{resume}" not in command, f"nội suy biến có thể None: {command[:80]}"
+
+
+@pytest.mark.parametrize("path", NOTEBOOKS, ids=lambda p: p.name)
+def test_checkpoints_sorted_numerically(path):
+    """`sorted()` theo tên cho 'checkpoint-1000' < 'checkpoint-500'."""
+    source = "".join(
+        "".join(c["source"]) for c in json.loads(path.read_text(encoding="utf-8"))["cells"]
+    )
+
+    assert "sorted(glob.glob(f'{RUN}/checkpoint-*'))[-1]" not in source
+
+
+def test_clean_resume_treats_none_string_as_no_resume():
+    from src.models.biencoder.train import clean_resume
+
+    assert clean_resume("None") is None
+    assert clean_resume("none") is None
+    assert clean_resume("") is None
+    assert clean_resume("  ") is None
+    assert clean_resume(None) is None
+    assert clean_resume("artifacts/run01/checkpoint-500") == "artifacts/run01/checkpoint-500"

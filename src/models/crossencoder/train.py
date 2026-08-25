@@ -455,7 +455,8 @@ def main() -> None:
     args = parser.parse_args()
 
     config = CrossEncoderTrainConfig.from_yaml(args.config)
-    if args.resume_from and args.resume_from != "None":
+    # Notebook nội suy `None` thành chuỗi "None"; coi như không resume.
+    if args.resume_from and args.resume_from.strip().lower() not in ("", "none", "null"):
         config.resume_from = args.resume_from
     if args.output_dir:
         config.output_dir = args.output_dir
