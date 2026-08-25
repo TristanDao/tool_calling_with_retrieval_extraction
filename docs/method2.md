@@ -16,7 +16,7 @@ toàn bộ quy trình Kaggle. Hai tài liệu bổ trợ, không trùng nội du
 | [4](#4-những-ràng-buộc-đã-mã-hoá-trong-code) | Ràng buộc đã mã hoá, kèm lý do |
 | [5](#5-decontamination-theo-query-giữa-các-split) | Chống leakage giữa các split |
 | [6](#6-run-manifest-audit-sau-mỗi-lần-train) | Audit sau mỗi lần train |
-| [7](#7-chạy-trên-kaggle) | Đóng gói, upload, attach, Run 0/1/2, xử lý sự cố |
+| [7](#7-chạy-trên-kaggle) | Đóng gói, upload, attach, cấu hình đã chốt, cắt giảm quota, xử lý sự cố |
 | [8](#8-việc-còn-lại) | Việc chưa làm và quyết định đang treo |
 
 ---
@@ -107,7 +107,7 @@ Kiểm tra bắt buộc sau bước này:
 - `data/method2/label_stats.json` → `skip_rate`. **Vượt 30% thì dừng** và xem lại
   quyết định Q2 (§9 `method2_plan.md`): có thêm fuzzy span alignment hay không.
 
-### 3.2 Bi-Encoder (Kaggle T4, ~4h)
+### 3.2 Bi-Encoder (Kaggle T4, ~4.1h — xem §7.8)
 
 ```bash
 python -m src.models.biencoder.train train  --config configs/method2/biencoder.yaml
@@ -347,101 +347,84 @@ python -m src.models.sources decontaminate
 python -m src.models.sources manifest
 ```
 
-### 7.7 Run 1a — Benchmark cấu hình (bắt buộc trước smoke)
+### 7.7 Cấu hình đã chốt từ benchmark
 
-Lần chạy đầu trên T4 cho **475 s/step**: 100 step = 13.2 giờ, một epoch = 49
-giờ, trong khi plan dự toán 50-70 phút/epoch. Lệch ~45×.
-
-Vì sao mỗi step đắt như vậy: `CachedMNRL` không phải một forward/backward bình
-thường. Effective batch 256, mỗi sample có anchor + positive + 4 negative →
-**1,536 lượt encode**. Chia mini_batch 8 thành 192 chunk, GradCache chạy **hai**
-pha (forward no-grad để cache, rồi forward+backward tính lại) → ~384 lần gọi
-model mỗi step, mỗi lần chỉ 8×192 = 1,536 token. Quá nhỏ để lấp đầy T4 nên phần
-lớn thời gian là overhead; cộng DataParallel giữa 2 GPU thì nhân lên tiếp.
+Lần chạy đầu trên T4 cho **475 s/step** — một epoch 49 giờ, trong khi plan dự
+toán 50-70 phút. Nguyên nhân: `CachedMNRL` gọi model ~384 lần mỗi step (batch
+256 × 6 văn bản ÷ mini_batch 8, nhân 2 pha GradCache), mỗi lần chỉ 8×192 token
+— quá nhỏ để lấp đầy T4; cộng DataParallel giữa 2 GPU thì nhân lên tiếp.
 
 ```bash
 python scripts/method2/benchmark_biencoder.py --steps 5
 ```
 
-| Case | GPU | batch | mini | ckpt | đổi gì |
-|---|---|---|---|---|---|
-| A | 1×T4 | 256 | 8 | on | tách ảnh hưởng DataParallel |
-| B | 1×T4 | 256 | 16 | on | nửa số lần gọi model |
-| C | 1×T4 | 256 | 32 | on | 1/4 số lần gọi model |
-| D | 1×T4 | 128 | 32 | on | giảm effective batch |
-| E | 1×T4 | 256 | 32 | off | tắt grad checkpointing |
+| Case | batch | mini | ckpt | s/step | step/epoch | h/epoch | VRAM |
+|---|---|---|---|---|---|---|---|
+| A | 256 | 8 | on | 64.9 | 307 | 5.53 | 2.6 GB |
+| B | 256 | 16 | on | 44.1 | 307 | 3.76 | 2.9 GB |
+| C | 256 | 32 | on | 47.7 | 307 | 4.07 | 3.6 GB |
+| D | 128 | 32 | on | **24.8** | 613 | 4.22 | 3.5 GB |
+| **E** | 256 | 32 | **off** | 36.4 | 307 | **3.10** | 10.9 GB |
 
-A→C chỉ đổi **tốc độ**. D đổi **chất lượng**: MNRL mạnh lên theo số in-batch
-negative, giảm batch là giảm negative — chỉ dùng khi A–C không đủ và phải ghi rõ
-vào báo cáo.
+**Xếp hạng theo `h/epoch`, không theo `s/step`.** D có s/step thấp nhất nhưng
+effective batch 128 nên gấp đôi số step mỗi epoch — chọn theo s/step sẽ lấy
+đúng cấu hình vừa chậm hơn vừa yếu hơn (MNRL mạnh lên theo số in-batch
+negative). `benchmark_biencoder.py` in cảnh báo riêng cho đúng cái bẫy này.
 
-`sec_per_step` lấy từ `train_runtime` của HF nên **không** gồm thời gian nạp
-BGE-M3; với run 5 step thì nạp model lấn át hoàn toàn wall-clock. Benchmark chạy
-với `--no-eval` vì eval trên corpus 4,4k tool làm nhiễu số đo mà không liên quan
-tốc độ train.
+Cảnh báo VRAM của E: 10.9 GB đo khi **tắt eval**, và `max_memory_allocated()`
+không tính phần allocator giữ lại. OOM thì bật `gradient_checkpointing: true`
+rồi chạy lại — training tự resume từ checkpoint gần nhất.
 
-Ngưỡng thực dụng: **> 60 s/step là chưa dùng được** — 370 step/epoch × 3 epoch ở
-60 s/step đã là 18 giờ, vượt quota tuần.
+### 7.8 Cắt giảm để vừa quota
 
-### 7.8 Run 1 — Bi-Encoder smoke, ~200 step
+Plan gốc (E, `n_hard_negatives` 4, 3 epoch, có Round 2) tốn **18.6 h** chỉ
+riêng Bi-Encoder, cộng ~3.9 h cho phần còn lại của Method 2 → 22.5 h. Cấu hình
+hiện tại trong `configs/method2/biencoder.yaml`:
 
-```bash
-python -m src.models.biencoder.train train --config configs/method2/biencoder.yaml --smoke 200
-```
+| Cắt gì | Từ → đến | Tiết kiệm | Ảnh hưởng |
+|---|---|---|---|
+| `epochs` | 3 → 2 | 3.1 h | ít |
+| `n_hard_negatives` | 4 → 2 | 3.1 h | **đổi chất lượng** — ablation §6.4 |
+| `mining.enabled` (Round 2) | true → false | 4.1 h | không có hard negative đã mine |
 
-Preset smoke **giữ nguyên** batch_size, mini_batch_size, fp16, LoRA và
-max_seq_length — đó chính là những thứ cần kiểm chứng; chỉ đổi số step, độ dày
-eval/save, và ghi vào `smoke_run01/` để không lẫn với run thật. `train_report.json`
-trả lời đủ 7 câu hỏi của Run 1:
+Còn **4.1 h** cho Bi-Encoder, tổng Method 2 khoảng **8 h**.
 
-| Câu hỏi | Trường |
-|---|---|
-| CUDA/fp16 hoạt động | `observed.device`, `observed.fp16_enabled` |
-| CachedMNRL + LoRA không OOM | chạy hết N step không lỗi |
-| effective batch đúng 256 | `observed.effective_batch_matches_config` |
-| VRAM thực tế | `peak_vram_mb` |
-| throughput thực tế | `observed.samples_per_sec`, `estimated_sec_per_epoch` |
-| tên metric evaluator | `observed.evaluator_metric_names` |
-| checkpoint save/resume | notebook chạy 100 step → resume lên 200, assert `resume_verified` |
-| loss | `observed.last_train_loss` |
+`n_hard_negatives` chỉ là số cột đọc từ file pairs — file vẫn có sẵn 4 negative
+mỗi dòng, nâng lại chỉ cần sửa config, không phải sinh lại dữ liệu.
 
-`effective_batch_matches_config` là assert quan trọng nhất: nếu HF hạ batch
-xuống thì số in-batch negative của MNRL giảm theo mà loss vẫn giảm bình thường,
-không có triệu chứng gì.
+Ba khoản cắt này **phải xuất hiện trong báo cáo**: kết quả Bi-Encoder là của
+Round 1, 2 epoch, 2 hard negative — không phải cấu hình trong plan gốc.
 
-`completed_steps == 200` **không** chứng minh được resume: train lại từ đầu
-cũng cho đúng con số đó. Bằng chứng thật là `resumed_from_step` (đọc
-`global_step` trong `trainer_state.json` của checkpoint) và
-`steps_trained_this_run`. Đã xác minh cơ chế ở local bằng đối chứng thời gian
-trên cùng mốc 34 step: từ đầu 67.3 s, resume@30 chỉ 11.9 s.
+### 7.9 Smoke run (đã chạy, không còn trong luồng)
 
-Tên metric của `InformationRetrievalEvaluator` đã biết chính xác nhờ chạy thật
-trên sentence-transformers 6.0.0:
+Smoke 100 → resume 200 đã chạy và pass phần chức năng:
 
-```
-eval_custom_val_cosine_{accuracy,precision,recall}@{1,3,5,10}
-eval_custom_val_cosine_ndcg@10 · _mrr@10 · _map@100
-```
+- `resume từ .../checkpoint-100 (global_step 100)` — đúng mốc;
+- loss 4.606 → 4.297 → 3.971 → 3.626 → 2.931, giảm đều, không NaN;
+- checkpoint ghi và đọc lại được;
+- lấy đủ tên metric của `InformationRetrievalEvaluator`.
 
-Vẫn để `train.metric_for_best_model: null` cho Run 1/Run 2 — chỉ **báo cáo**
-checkpoint tốt nhất, chưa tự nạp lại. Bật `load_best_model_at_end` cho các run
-chính/multi-seed sau, khi đã chắc khoá metric: tên sai chỉ nổ ở **cuối** job,
-mất vài giờ T4.
+Số **180 s/step** của lần smoke đó **không** đo cấu hình E: log ghi
+`Currently using DataParallel (DP)` và `mini_batch` còn là 8. Đừng dùng nó để
+ngoại suy.
 
-### 7.9 Run 2 — Bi-Encoder full Round 1
+Bật lại smoke khi đổi backbone hoặc đổi stack: `SMOKE_CELLS` vẫn nằm trong
+`scripts/method2/make_notebooks.py`, chỉ cần nối lại vào `BIENCODER_CELLS`.
+
+### 7.10 Full training
 
 Chỉ chạy sau khi Run 1 pass. Gate trước khi sang Cross-Encoder: Recall@1 seen
 ≥ 0.90 · Recall@1 unseen ≥ 0.75 · Recall@5 unseen ≥ 0.92 · Negative Recall
 ≥ 0.80. Không đạt thì xử lý retrieval trước, chưa train Cross-Encoder.
 
-### 7.10 Version pin
+### 7.11 Version pin
 
 `configs/method2/pinned_versions.json` — `transformers`, `sentence-transformers`
 và `peft` pin tuyệt đối vì chúng quyết định API training **và** tên metric của
 `InformationRetrievalEvaluator`; preflight fail nếu lệch. `torch` chỉ ghi nhận:
 Kaggle cài sẵn bản CUDA riêng, ép cài lại vừa chậm vừa dễ lệch CUDA runtime.
 
-### 7.11 Xử lý sự cố
+### 7.12 Xử lý sự cố
 
 | Triệu chứng | Nguyên nhân |
 |---|---|

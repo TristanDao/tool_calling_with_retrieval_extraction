@@ -75,8 +75,8 @@ def test_marker_check_catches_a_dropped_block(tmp_path):
 
     missing = module.check_markers(incomplete)
 
-    assert "--smoke" in missing
-    assert "resume_verified" in missing
+    assert "Full training" in missing
+    assert "biencoder.index" in missing
 
 
 def _train_commands(source: str, module: str) -> list[str]:

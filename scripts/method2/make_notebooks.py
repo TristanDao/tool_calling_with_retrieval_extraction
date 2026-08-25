@@ -564,13 +564,32 @@ SMOKE_CELLS = [
     ),
 ]
 
-BIENCODER_CELLS = PREFLIGHT_CELLS + BENCHMARK_CELLS + SMOKE_CELLS + [
+# SMOKE_CELLS không còn trong luồng mặc định: smoke đã chạy và pass phần chức
+# năng (resume đúng mốc 100, loss 4.61 -> 2.93 không NaN, checkpoint đọc lại
+# được). Giữ định nghĩa để bật lại khi đổi backbone hoặc đổi stack.
+BIENCODER_CELLS = PREFLIGHT_CELLS + BENCHMARK_CELLS + [
     (
         "markdown",
         [
-            "# Run 2 — Full training\n",
+            "# Full training\n",
             "\n",
-            "Chỉ chạy sau khi Run 1a chốt được cấu hình và Run 1 pass mọi assert.\n",
+            "Cấu hình đã chốt trong `configs/method2/biencoder.yaml` từ benchmark:\n",
+            "batch 256 · mini_batch 32 · grad checkpointing **tắt** · **2 epoch** ·\n",
+            "`n_hard_negatives` **2**. Ước tính **~4.1 h**.\n",
+            "\n",
+            "Ba thứ đã cắt so với plan gốc, để vừa quota — phải ghi vào báo cáo:\n",
+            "\n",
+            "| Cắt gì | Từ → đến | Tiết kiệm | Ảnh hưởng |\n",
+            "|---|---|---|---|\n",
+            "| epoch | 3 → 2 | 3.1 h | ít, MNRL hội tụ nhanh |\n",
+            "| `n_hard_negatives` | 4 → 2 | 3.1 h | **đổi chất lượng** — ablation §6.4 |\n",
+            "| Round 2 (mining) | có → không | 4.1 h | không có hard negative đã mine |\n",
+            "\n",
+            "Smoke đã chạy trước đó và pass phần chức năng (resume đúng mốc 100, loss\n",
+            "4.61 → 2.93 không NaN, checkpoint đọc lại được) nên bỏ khỏi luồng này.\n",
+            "\n",
+            "OOM thì đặt `gradient_checkpointing: true` rồi chạy lại cell — nó tự resume\n",
+            "từ checkpoint gần nhất (save mỗi 100 step).\n",
         ],
     ),
     (
@@ -613,23 +632,52 @@ BIENCODER_CELLS = PREFLIGHT_CELLS + BENCHMARK_CELLS + SMOKE_CELLS + [
     (
         "markdown",
         [
-            "## Round 2 — mine hard negatives rồi train lại **từ base**\n",
+            "## Round 2 — mine hard negatives rồi train lại **từ base** (TUỲ CHỌN)\n",
             "\n",
             "Lấy tool sai nhưng xếp hạng cao (bỏ top-1 để tránh false negative). Round 2\n",
             "train lại từ checkpoint gốc, không train tiếp từ round 1.\n",
+            "\n",
+            "**Mặc định TẮT** (`mining.enabled: false`) vì đây là một lần train đầy đủ\n",
+            "nữa, tốn bằng Round 1. Bật lại khi còn quota; nếu bỏ thì phải ghi rõ trong\n",
+            "báo cáo là kết quả Bi-Encoder chỉ có Round 1, chưa mine hard negative.\n",
         ],
     ),
     (
         "code",
         [
-            "!python -m src.models.biencoder.train mine \\\n",
-            "    --config configs/method2/biencoder.yaml \\\n",
-            "    --model {RUN}/final\n",
+            "import subprocess, sys\n",
             "\n",
+            "import yaml\n",
+            "\n",
+            "_cfg = yaml.safe_load(open('configs/method2/biencoder.yaml', encoding='utf-8'))\n",
+            "RUN_ROUND2 = bool(_cfg.get('mining', {}).get('enabled', False))\n",
             "RUN2 = '/kaggle/working/artifacts/method2/biencoder/run02'\n",
-            "!sed -i 's#biencoder/train.jsonl#biencoder/train_mined.jsonl#' configs/method2/biencoder.yaml\n",
-            "!python -m src.models.biencoder.train train \\\n",
-            "    --config configs/method2/biencoder.yaml --output-dir {RUN2} --single-gpu\n",
+            "\n",
+            "# subprocess thay vì `!` trong `if`: exit code hiện ra rõ ràng, và một lệnh\n",
+            "# hỏng không bị trôi qua trong Save & Run All.\n",
+            "if RUN_ROUND2:\n",
+            "    subprocess.run(\n",
+            "        [sys.executable, '-m', 'src.models.biencoder.train', 'mine',\n",
+            "         '--config', 'configs/method2/biencoder.yaml', '--model', f'{RUN}/final'],\n",
+            "        check=True,\n",
+            "    )\n",
+            "    cfg_text = open('configs/method2/biencoder.yaml', encoding='utf-8').read()\n",
+            "    open('configs/method2/biencoder.yaml', 'w', encoding='utf-8').write(\n",
+            "        cfg_text.replace('biencoder/train.jsonl', 'biencoder/train_mined.jsonl')\n",
+            "    )\n",
+            "    subprocess.run(\n",
+            "        [sys.executable, '-m', 'src.models.biencoder.train', 'train',\n",
+            "         '--config', 'configs/method2/biencoder.yaml',\n",
+            "         '--output-dir', RUN2, '--single-gpu'],\n",
+            "        check=True,\n",
+            "    )\n",
+            "else:\n",
+            "    print('Round 2 TẮT (mining.enabled=false) — dùng checkpoint của Round 1.')\n",
+            "\n",
+            "# Mọi bước sau dùng FINAL, không trỏ cứng vào RUN2: bỏ Round 2 thì RUN2\n",
+            "# không tồn tại và index/calibrate sẽ chết vì không tìm thấy model.\n",
+            "FINAL = RUN2 if RUN_ROUND2 else RUN\n",
+            "print('checkpoint dùng cho các bước sau:', FINAL)\n",
         ],
     ),
     (
@@ -640,14 +688,14 @@ BIENCODER_CELLS = PREFLIGHT_CELLS + BENCHMARK_CELLS + SMOKE_CELLS + [
         "code",
         [
             "!python -m src.models.biencoder.index \\\n",
-            "    --config configs/method2/biencoder.yaml --model {RUN2}/final\n",
+            "    --config configs/method2/biencoder.yaml --model {FINAL}/final\n",
             "\n",
             "# τ và τ_call CHỈ được hiệu chỉnh trên val, rồi freeze trước khi chạy test.\n",
             "!python -m src.models.biencoder.evaluate calibrate \\\n",
             "    --config configs/method2/biencoder.yaml \\\n",
-            "    --model {RUN2}/final \\\n",
+            "    --model {FINAL}/final \\\n",
             "    --pairs data/method2/biencoder/val.jsonl \\\n",
-            "    --output {RUN2}/thresholds.json\n",
+            "    --output {FINAL}/thresholds.json\n",
         ],
     ),
     (
@@ -672,7 +720,7 @@ BIENCODER_CELLS = PREFLIGHT_CELLS + BENCHMARK_CELLS + SMOKE_CELLS + [
         [
             "!python -m src.models.biencoder.evaluate evaluate \\\n",
             "    --config configs/method2/biencoder.yaml \\\n",
-            "    --model {RUN2}/final \\\n",
+            "    --model {FINAL}/final \\\n",
             "    --pairs data/method2/biencoder/val.jsonl \\\n",
             "    --output results/method2/metrics/biencoder_val.json\n",
             "\n",
@@ -701,12 +749,12 @@ BIENCODER_CELLS = PREFLIGHT_CELLS + BENCHMARK_CELLS + SMOKE_CELLS + [
         "code",
         [
             "!python -m src.models.run_manifest \\\n",
-            "    --run-dir {RUN2} \\\n",
+            "    --run-dir {FINAL} \\\n",
             "    --config configs/method2/biencoder.yaml \\\n",
             "    --stage biencoder \\\n",
             "    --report retrieval=results/method2/metrics/biencoder_val.json\n",
             "\n",
-            "manifest = json.load(open(f'{RUN2}/run_manifest.json', encoding='utf-8'))\n",
+            "manifest = json.load(open(f'{FINAL}/run_manifest.json', encoding='utf-8'))\n",
             "missing = manifest['audit_complete']['missing']\n",
             "print('thiếu:', missing or 'không thiếu mục nào')\n",
             "print('Recall/MRR:', manifest.get('retrieval_gate', {}).get('metrics'))\n",
@@ -889,8 +937,8 @@ REQUIRED_MARKERS: dict[str, tuple[str, ...]] = {
     "method2_kaggle_biencoder.ipynb": (
         "find_root", "src.models.preflight",
         "benchmark_biencoder.py", "Run 1a",          # benchmark cấu hình
-        "--smoke", "resume_verified", "steps_trained_this_run",  # smoke + resume
-        "Run 2", "biencoder.train train", "biencoder.index",     # full training
+        "Full training", "biencoder.train train", "biencoder.index",
+        "RUN_ROUND2", "FINAL",                       # Round 2 tuỳ chọn
         "evaluate calibrate", "run_manifest",
     ),
     "method2_kaggle_crossencoder.ipynb": (

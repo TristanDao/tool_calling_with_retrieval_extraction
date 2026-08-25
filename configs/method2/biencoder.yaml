@@ -6,7 +6,11 @@ pairs:
   tool_pool_path: data/method2/tool_pool.json
   output_dir: data/method2/biencoder
   stats_path: data/method2/biencoder/pairs_stats.json
-  n_hard_negatives: 4        # ablation §6.4: 0 / 4 / 8
+  # 4 -> 2 để vừa quota: mỗi sample encode 4 văn bản thay vì 6, cắt ~33%
+  # compute. ĐỔI CHẤT LƯỢNG chứ không chỉ tốc độ (MNRL mạnh lên theo số
+  # negative), phải ghi vào báo cáo. File pairs vẫn có sẵn 4 negative nên
+  # nâng lại chỉ cần sửa số này, không phải sinh lại dữ liệu.
+  n_hard_negatives: 2        # ablation §6.4: 0 / 2 / 4 / 8
   bm25_top_k: 20
   use_bm25: true
   seed: 42
@@ -31,16 +35,22 @@ train:
   output_dir: artifacts/method2/biencoder/run01
   loss: CachedMultipleNegativesRankingLoss   # GradCache, không phải grad accum
   scale: 20.0                # = 1/τ, mặc định sentence-transformers
-  batch_size: 256            # effective, nhờ GradCache
-  mini_batch_size: 8         # thực tế đưa vào GPU
-  epochs: 3
+  # Cấu hình case E của benchmark (xem docs/method2.md §7.7): 36.4 s/step ở
+  # n_neg=4, còn ~24.3 ở n_neg=2. mini_batch 8 khiến GPU chạy không tải —
+  # GradCache gọi model 384 lần/step, mỗi lần chỉ 8x192 token.
+  batch_size: 256            # effective, nhờ GradCache — GIỮ NGUYÊN, quyết định chất lượng
+  mini_batch_size: 32        # thực tế đưa vào GPU
+  epochs: 2                  # 3 -> 2 để vừa quota
   lr: 2.0e-5
   warmup_ratio: 0.1
   scheduler: cosine
   fp16: true
-  gradient_checkpointing: true
-  eval_steps: 500
-  save_steps: 500
+  # Tắt: benchmark cho 36.4 s/step thay vì 47.7, đổi lại peak 10.9 GB / 14.6.
+  # OOM thì bật lại true rồi resume từ checkpoint gần nhất.
+  gradient_checkpointing: false
+  eval_steps: 300
+  # 500 quá thưa cho run ~614 step: OOM hay đứt session là mất gần hết.
+  save_steps: 100
   seed: 42
   resume_from: null
   # Tên metric đã xác minh bằng cách chạy thật trên sentence-transformers
@@ -57,7 +67,9 @@ train:
 
 # --------------------------------------------------------- hard negative mining
 mining:
-  enabled: true              # round 2 sau khi có checkpoint round 1
+  # TẮT vì quota: Round 2 là một lần train đầy đủ nữa (~4 h). Ghi rõ trong
+  # báo cáo là kết quả Bi-Encoder chỉ có Round 1, chưa mine hard negative.
+  enabled: false             # round 2 sau khi có checkpoint round 1
   top_k: 20
   skip_top: 1                # bỏ top-1 để tránh false negative
   n_negatives: 4
