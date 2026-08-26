@@ -71,6 +71,31 @@ def git_state() -> dict[str, Any]:
     }
 
 
+def resolve_git_state(manifest_path: Path) -> dict[str, Any]:
+    """Commit của snapshot, lấy từ git nếu có, không thì từ `manifest.json`.
+
+    Kaggle chạy từ dataset đã copy nên không có thư mục `.git`. Yêu cầu audit là
+    **biết code nào sinh ra artefact này**, không phải là phải có repo git tại
+    chỗ chạy — mà commit đó đã được ghi vào manifest lúc build ở local.
+    `preflight.check_git` đã rơi về cùng nguồn này; thiếu ở đây thì
+    `audit_complete.missing` báo `git_commit` và chặn nhầm một run hợp lệ.
+    """
+    state = git_state()
+    if state.get("commit"):
+        state["commit_source"] = "git"
+        return state
+
+    manifest = _read_json(manifest_path)
+    commit = manifest.get("git_commit") if isinstance(manifest, dict) else None
+    return {
+        "commit": commit,
+        "branch": None,
+        "dirty": False,
+        "dirty_files": [],
+        "commit_source": "dataset manifest" if commit else None,
+    }
+
+
 def environment_state() -> dict[str, Any]:
     info: dict[str, Any] = {
         "python": sys.version.split()[0],
@@ -163,7 +188,7 @@ def build_run_manifest(
         "created_at": datetime.now(timezone.utc).isoformat(),
         "stage": stage,
         "run_dir": str(run_dir),
-        "git": git_state(),
+        "git": resolve_git_state(DEFAULT_DATA_REPORTS["dataset_manifest"]),
         "environment": environment_state(),
         "config": {
             "path": str(config_path),

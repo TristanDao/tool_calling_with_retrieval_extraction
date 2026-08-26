@@ -272,3 +272,39 @@ def test_old_as_posix_approach_would_break_on_linux():
     assert PurePosixPath(windows_key).as_posix() != expected
     # Cách mới: đúng bất kể hệ điều hành.
     assert posix_key(windows_key) == expected
+
+
+def test_run_manifest_falls_back_to_dataset_manifest_without_git(tmp_path, monkeypatch):
+    """Kaggle chạy từ dataset đã copy nên không có `.git`.
+
+    `preflight.check_git` đã rơi về `manifest.json::git_commit`; `run_manifest`
+    thiếu cùng fallback nên `audit_complete.missing` báo `git_commit` và chặn
+    nhầm một run đã hoàn tất.
+    """
+    from src.models.run_manifest import resolve_git_state
+
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"git_commit": "2720ac3deadbeef"}), encoding="utf-8")
+    monkeypatch.setattr(
+        "src.models.run_manifest.git_state",
+        lambda: {"commit": None, "branch": None, "dirty": False, "dirty_files": []},
+    )
+
+    state = resolve_git_state(manifest)
+
+    assert state["commit"] == "2720ac3deadbeef"
+    assert state["commit_source"] == "dataset manifest"
+
+
+def test_run_manifest_prefers_real_git_when_available(tmp_path, monkeypatch):
+    from src.models.run_manifest import resolve_git_state
+
+    monkeypatch.setattr(
+        "src.models.run_manifest.git_state",
+        lambda: {"commit": "abc123", "branch": "feature/x", "dirty": False, "dirty_files": []},
+    )
+
+    state = resolve_git_state(tmp_path / "không-có.json")
+
+    assert state["commit"] == "abc123"
+    assert state["commit_source"] == "git"
