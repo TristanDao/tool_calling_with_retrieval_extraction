@@ -122,15 +122,51 @@ def _write_experiment(
         path = experiment / "train.jsonl"
         _write_jsonl(path, merged)
         files.append(path)
-        instruction = experiment / "instruction" / "train_chat.jsonl"
-        convert_file(path, instruction)
-        files.append(instruction)
+        train_sources = [("en", "en", train_en), ("vi", "vi", train_vi)]
+        if custom_train:
+            custom_path = experiment / "train_custom_vi.jsonl"
+            _write_jsonl(custom_path, custom_train)
+            files.append(custom_path)
+            train_sources.append(("vi", "custom_vi", custom_train))
+        instruction_dir = experiment / "instruction"
+        instruction_parts: list[Path] = []
+        for language, label, rows in train_sources:
+            if not rows:
+                continue
+            source_path = experiment / f"_train_{label}.jsonl"
+            output_path = instruction_dir / f"train_{label}_chat.jsonl"
+            _write_jsonl(source_path, rows)
+            converted, skipped = convert_file(source_path, output_path, language=language)
+            if skipped or converted != len(rows):
+                raise ValueError(f"Instruction conversion mismatch for {name}/{language}")
+            source_path.unlink()
+            files.append(output_path)
+            instruction_parts.append(output_path)
+        combined = instruction_dir / "train_chat.jsonl"
+        with combined.open("w", encoding="utf-8") as target:
+            for part in instruction_parts:
+                target.write(part.read_text(encoding="utf-8"))
+        files.append(combined)
 
     for language, splits in (("en", eval_en), ("vi", eval_vi)):
         for split_name in ("val", "test"):
             path = experiment / f"{split_name}_{language}.jsonl"
             _write_jsonl(path, splits[split_name])
             files.append(path)
+            if split_name == "val":
+                instruction_path = experiment / "instruction" / f"val_{language}_chat.jsonl"
+                convert_file(path, instruction_path, language=language)
+                files.append(instruction_path)
+
+    val_parts = [
+        experiment / "instruction" / "val_en_chat.jsonl",
+        experiment / "instruction" / "val_vi_chat.jsonl",
+    ]
+    val_combined = experiment / "instruction" / "val_chat.jsonl"
+    with val_combined.open("w", encoding="utf-8") as target:
+        for part in val_parts:
+            target.write(part.read_text(encoding="utf-8"))
+    files.append(val_combined)
 
     custom_files: list[str] = []
     custom_dir = ROOT / "custom_vi"

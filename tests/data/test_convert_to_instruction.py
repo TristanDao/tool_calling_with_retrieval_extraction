@@ -125,6 +125,14 @@ def test_convert_sample_feature_group_not_in_prompt():
     assert "feature_group" not in system_val
 
 
+def test_convert_sample_english_prompt():
+    result = convert_sample(_SAMPLE_SINGLE_CALL, language="en")
+    assert result is not None
+    system_val = result["conversations"][0]["value"]
+    assert system_val.startswith("You are an AI assistant")
+    assert "Available tools" in system_val
+
+
 def test_convert_file():
     with tempfile.TemporaryDirectory() as tmp:
         inp = Path(tmp) / "in.jsonl"

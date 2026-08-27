@@ -401,6 +401,11 @@ tool_calling_with_retrieval_extraction/
 - **[x] Kaggle upload helper** (2026-08-27):
   - Thêm `scripts/data/upload_experiments_to_kaggle.py` dùng `kagglehub` để upload `data/experiments/`.
   - Kaggle token lấy từ `~/.kaggle/access_token`; không lưu credential trong repo.
+- **[x] Experiment instruction formatting** (2026-08-27):
+  - EN và VI dùng system prompt đúng ngôn ngữ; negative samples được chuyển thành `<no_tool_call>`.
+  - E4/E5 giữ riêng core EN, core VI và CustomTools instruction files, sau đó ghép thành `train_chat.jsonl` không ghi đè dữ liệu.
+- **[x] Kaggle notebook guide** (2026-08-27):
+  - Thêm `docs/kaggle_notebook_guide.md` hướng dẫn setup, QLoRA SFT, E0 zero-shot, artifact và thứ tự chạy E0-E5.
 - **[x] Translation backup chain + API smoke test** (2026-08-04):
   - Translation retry chain: `ALIBABA_MODEL` → `ALIBABA_BACKUP_MODELS` (74 models, comma-separated, ordered by quality tier).
   - Smoke test 1 sample không ghi output/checkpoint bằng `bash scripts/data/run_translate_glaive.sh 175 176 --smoke-test`.

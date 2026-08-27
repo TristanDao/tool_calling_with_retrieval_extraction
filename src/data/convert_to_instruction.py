@@ -34,6 +34,15 @@ SYSTEM_PROMPT_VI = (
     "Công cụ có sẵn:\n"
 )
 
+SYSTEM_PROMPT_EN = (
+    "You are an AI assistant capable of tool calling. "
+    "Below is a list of available tools. "
+    "If a tool is needed, return exactly this format:\n"
+    "<tool_call>{\"name\": \"<tool_name>\", \"arguments\": {<arguments>}}</tool_call>\n"
+    "If no tool is needed, return: <no_tool_call>\n\n"
+    "Available tools:\n"
+)
+
 
 def _format_tool_for_prompt(tool: dict[str, Any]) -> dict[str, Any]:
     return {
@@ -47,7 +56,9 @@ def _format_tool_call_for_prompt(fc: dict[str, Any]) -> str:
     return f'<tool_call>{json.dumps(fc, ensure_ascii=False)}</tool_call>'
 
 
-def convert_sample(sample: dict[str, Any]) -> dict[str, Any] | None:
+def convert_sample(sample: dict[str, Any], language: str = "vi") -> dict[str, Any] | None:
+    if language not in {"en", "vi"}:
+        raise ValueError("language must be 'en' or 'vi'")
     query = sample.get("query", "")
     function_calls = sample.get("function_calls", [])
     tools = sample.get("tools", [])
@@ -61,7 +72,7 @@ def convert_sample(sample: dict[str, Any]) -> dict[str, Any] | None:
         indent=2,
     )
 
-    system_content = SYSTEM_PROMPT_VI + tools_json
+    system_content = (SYSTEM_PROMPT_EN if language == "en" else SYSTEM_PROMPT_VI) + tools_json
 
     assistant_content: str
     if not function_calls:
@@ -82,7 +93,9 @@ def convert_sample(sample: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
-def convert_file(input_path: Path, output_path: Path) -> tuple[int, int]:
+def convert_file(
+    input_path: Path, output_path: Path, language: str = "vi"
+) -> tuple[int, int]:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     converted = 0
     skipped = 0
@@ -99,7 +112,7 @@ def convert_file(input_path: Path, output_path: Path) -> tuple[int, int]:
                     skipped += 1
                     continue
 
-                result = convert_sample(sample)
+                result = convert_sample(sample, language=language)
                 if result is None:
                     skipped += 1
                     continue
@@ -130,6 +143,7 @@ def main() -> None:
         "--benchmark-dir", type=Path, default=Path("data/benchmark_vi"),
         help="Benchmark directory (used with --all-splits)",
     )
+    parser.add_argument("--language", choices=["en", "vi"], default="vi")
     args = parser.parse_args()
 
     if args.all_splits:
@@ -139,12 +153,12 @@ def main() -> None:
             if not inp.exists():
                 print(f"[convert] SKIP {split} — {inp} not found")
                 continue
-            c, s = convert_file(inp, out)
+            c, s = convert_file(inp, out, language=args.language)
             print(f"[convert] {split}: {c} converted, {s} skipped → {out}")
     else:
         if args.input is None or args.output is None:
             parser.error("--input and --output are required unless --all-splits is used")
-        c, s = convert_file(args.input, args.output)
+        c, s = convert_file(args.input, args.output, language=args.language)
         print(f"[convert] {c} converted, {s} skipped → {args.output}")
 
 

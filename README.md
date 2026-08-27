@@ -122,6 +122,7 @@ python scripts/data/upload_experiments_to_kaggle.py <kaggle-username>/tool-calli
 - `docs/benchmark.md` — cấu trúc benchmark tiếng Việt.
 - `docs/translation_guidelines.md` — quy tắc dịch.
 - `docs/references.md` — papers & resources.
+- `docs/kaggle_notebook_guide.md` — chạy E0-E5 trên Kaggle.
 
 ## 7. Trạng thái
 
