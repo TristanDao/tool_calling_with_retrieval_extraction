@@ -25,7 +25,7 @@ tool_calling_with_retrieval_extraction/
 ├── .gitignore
 ├── .env.example
 ├── configs/              # Hydra structured config
-├── data/                 # raw / translations / benchmark_vi
+├── data/                 # raw / translations / benchmark_vi / experiments
 ├── src/                  # data/ + models/ + pipeline/ + evaluation/
 ├── scripts/              # CLI wrappers
 ├── notebooks/            # EDA + analysis
@@ -62,6 +62,9 @@ bash scripts/data/run_qa.sh
 
 # 6. Build benchmark
 bash scripts/data/run_benchmark.sh
+
+# 7. Materialize data cho Method 1 E0–E5
+bash scripts/data/prepare_experiments.sh
 ```
 
 ## 4. Data Schema
@@ -86,6 +89,18 @@ Quy ước: `query` VI, `function_calls[].name` + `arguments` keys EN, values c�
 
 - **Method 1**: convert sang instruction format qua `src/data/convert_to_instruction.py`.
 - **Method 2**: dùng trực tiếp schema master để train Bi-Encoder + Cross-Encoder.
+
+Sau bước materialize, dữ liệu chạy Method 1 nằm trong `data/experiments/{e0,e1,e2,e3,e4,e5}/`; mỗi folder có `manifest.json` và tập instruction tương ứng.
+
+Upload lên Kaggle Dataset:
+
+```bash
+pip install kagglehub
+python scripts/data/upload_experiments_to_kaggle.py <kaggle-username>/tool-calling-vi-experiments --dry-run
+python scripts/data/upload_experiments_to_kaggle.py <kaggle-username>/tool-calling-vi-experiments
+```
+
+`kagglehub` tự đọc token từ `~/.kaggle/access_token`; không ghi token vào source code hoặc commit vào Git.
 
 ## 5. Tech stack
 

@@ -42,6 +42,7 @@ data/translations/
 data/translations/qwen_mt_logs/
 data/translations/qa_samples/
 data/statistics/
+data/experiments/
 *.csv
 
 

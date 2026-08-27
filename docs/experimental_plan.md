@@ -113,6 +113,18 @@ Full-data track không thay thế main controlled track và phải báo cáo ri�
 - E5 có thể dùng thêm `val_seen` và `val_unseen` để chọn checkpoint, nhưng phải báo cáo riêng từng kết quả và không dùng bất kỳ test split nào.
 - Test bắt buộc gồm core test EN/VI và `CustomTools-VI/test_seen.jsonl` + `test_unseen.jsonl`, trong đó CustomTools phải tách positive/negative khi báo cáo.
 
+#### Cấu trúc thư mục để chạy
+
+Materialize toàn bộ controlled track bằng:
+
+```bash
+bash scripts/data/prepare_experiments.sh
+```
+
+Script tạo `data/experiments/{e0,e1,e2,e3,e4,e5}/`. Mỗi thư mục có `manifest.json`, các file `train_*.jsonl`, `train.jsonl`, `val_{en,vi}.jsonl`, `test_{en,vi}.jsonl`; E5 có thêm các file `custom_{val,test}_*.jsonl`. Method 1 dùng `instruction/train_chat.jsonl`.
+
+E0 không có file train vì đây là zero-shot. E1 và E3 train EN, E2 train VI, E4 train song ngữ 30k EN + 30k VI, E5 dùng đúng E4 cộng `data/custom_vi/train.jsonl`. Các file test/validation được materialize riêng và không bao giờ được đưa vào `train.jsonl`.
+
 ## 4. Chuẩn Output Chung
 
 Mọi model phải được chuyển về cùng một output contract trước khi tính metric.

@@ -198,6 +198,9 @@ tool_calling_with_retrieval_extraction/
 │   │   ├── train.jsonl / val.jsonl / test.jsonl
 │   │   └── instruction/       # ← Method 1: convert sang chat format
 │   │       ├── train_chat.jsonl / val_chat.jsonl / test_chat.jsonl
+│   ├── experiments/           # Materialized Method 1 data (gitignored)
+│   │   ├── e0/ ... e5/
+│   │   └── manifest.json + train/val/test files per experiment
 │   ├── translations/          # Qwen-MT logs + QA samples
 │   └── statistics/
 │
@@ -391,6 +394,13 @@ tool_calling_with_retrieval_extraction/
   - Main controlled track dùng 60,000 core examples cho E1–E4 và 65,600 cho E5 (thêm toàn bộ `data/custom_vi/train.jsonl`).
   - Qwen3.5-2B và Qwen3.5-4B phải dùng cùng sample IDs, seed, epoch target và training budget.
   - Full-data runs là robustness/scale-up track riêng, không thay thế main controlled track.
+- **[x] Experiment data materialization** (2026-08-27):
+  - Thêm `src/data/prepare_experiments.py` và `scripts/data/prepare_experiments.sh`.
+  - Tạo `data/experiments/e0` đến `e5` với manifest, EN/VI paired data, validation/test riêng và instruction data.
+  - E1/E2/E3 có 60,000 mẫu, E4 có 60,000 mẫu song ngữ, E5 có 65,600 mẫu gồm CustomTools train.
+- **[x] Kaggle upload helper** (2026-08-27):
+  - Thêm `scripts/data/upload_experiments_to_kaggle.py` dùng `kagglehub` để upload `data/experiments/`.
+  - Kaggle token lấy từ `~/.kaggle/access_token`; không lưu credential trong repo.
 - **[x] Translation backup chain + API smoke test** (2026-08-04):
   - Translation retry chain: `ALIBABA_MODEL` → `ALIBABA_BACKUP_MODELS` (74 models, comma-separated, ordered by quality tier).
   - Smoke test 1 sample không ghi output/checkpoint bằng `bash scripts/data/run_translate_glaive.sh 175 176 --smoke-test`.

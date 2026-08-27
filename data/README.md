@@ -40,6 +40,12 @@ Thư mục `data/` chứa toàn bộ dữ liệu dự án ở các giai đoạn 
 - **Mục đích**: Lưu index mapping và dữ liệu thử nghiệm tải (Phase 7 - Stress test).
 - **Thành phần**: `glaive_single_turn_index.jsonl`, `glaive_single_turn_raw.jsonl`, `stress_test/`.
 
+### 7. `experiments/` — DỮ LIỆU CHO TỪNG EXPERIMENT
+- **Mục đích**: Các tập train/validation/test được materialize tái lập từ canonical inputs để chạy Method 1.
+- **Tạo bằng**: `bash scripts/data/prepare_experiments.sh`.
+- **Thành phần**: `e0` đến `e5`, mỗi thư mục có `manifest.json`; E1/E2/E3 dùng 60.000 mẫu, E4 dùng 60.000 mẫu song ngữ, E5 dùng 65.600 mẫu.
+- **Quản lý**: Được gitignore vì có thể regenerate; manifest phải được lưu cùng log và checkpoint của experiment.
+
 ---
 
 ## 📌 Quy định & Hướng dẫn cho đồng đội (Team Members)
