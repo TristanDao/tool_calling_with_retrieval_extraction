@@ -11,7 +11,7 @@ Cấu trúc:
   - `run_qa.sh` — QC translation.
   - `run_cleanup.sh` — Inventory và archive generated pilot artifacts.
   - `run_benchmark.sh` — Build/freeze paired core revision và active VI export.
-  - `prepare_experiments.sh` — Materialize E0/E1/E2/E4/E5 train-only artifacts.
+  - `prepare_experiments.sh` — Materialize E0/E1/E2/E3/E4 train-only artifacts.
   - `06_build_stress_test.sh` — Build stress test (Phase 7).
 - `train/` — Huấn luyện.
   - `train_biencoder.sh` — Train Bi-Encoder (BGE-M3 + FlagEmbedding + MNRL).

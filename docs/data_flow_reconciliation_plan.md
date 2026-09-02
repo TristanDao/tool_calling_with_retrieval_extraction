@@ -77,9 +77,8 @@ Inventory dưới đây ghi lại cấu trúc trước migration, làm cơ sở 
 | E0 | `val_en`, `val_vi`, `test_en`, `test_vi`, `instruction/val_*`, `custom_val_*`, `custom_test_*`, `manifest` | 12 | Zero-shot nhưng bị copy validation/test vào folder |
 | E1 | `train_en`, `train`, `instruction/train_*`, `val_*`, `test_*`, `custom_*`, `manifest` | 16 | Chỉ cần train artifact + manifest |
 | E2 | `train_vi`, `train`, `instruction/train_*`, `val_*`, `test_*`, `custom_*`, `manifest` | 16 | Chỉ cần train artifact + manifest |
-| E3 | Giống E1 | 16 | Hiện chỉ là bản sao E1, không có general-SFT stage |
-| E4 | `train_en`, `train_vi`, `train`, nhiều instruction files, `val_*`, `test_*`, `custom_*`, `manifest` | 18 | Có nhiều bản ghép/copy không cần thiết |
-| E5 | E4 + `train_custom_vi`, `train_custom_vi_chat` và các copy eval | 20 | Chỉ CustomTools train cần nằm trong E5 |
+| E3 | `train_en`, `train_vi`, `train`, nhiều instruction files, `val_*`, `test_*`, `custom_*`, `manifest` | 18 | Có nhiều bản ghép/copy không cần thiết |
+| E4 | E3 + `train_custom_vi`, `train_custom_vi_chat` và các copy eval | 20 | Chỉ CustomTools train cần nằm trong E4 |
 
 Chi tiết các file hiện không cần giữ trong từng E:
 
@@ -115,7 +114,7 @@ Chi tiết các file hiện không cần giữ trong từng E:
 | `data/benchmark_vi/tool_pool.json` cũ | Đã sinh lại | Phủ toàn bộ core revision |
 | `data/benchmark_vi/.cache/feature_group.json` cũ | Đã thay bằng cache revision | Cache hiện có cả giá trị fallback theo tool |
 | `data/benchmark_vi/instruction/` cũ | Đã loại khỏi active path | Native train view nằm trong từng experiment |
-| `data/experiments/e0...e5/` cũ | Đã archive và materialize lại | Chỉ còn E0 và E1/E2/E4/E5 theo policy mới |
+| `data/experiments/e0...e4/` cũ | Đã archive và materialize lại | Chỉ còn E0 và E1/E2/E3/E4 theo policy mới |
 | `data/statistics/` cũ | Đã archive | Thống kê mới lấy từ frozen revision |
 
 Trước khi xóa phải tạo `cleanup_manifest.json` gồm path, file count, byte size, SHA-256 và lý do xử lý. Nếu cần giữ toàn bộ pilot, lưu archive read-only bên ngoài active benchmark path; archive không được dùng trong training/evaluation.
@@ -233,11 +232,11 @@ Mỗi manifest phải ghi benchmark revision ID, checkpoint ID/revision, experim
 | E0 | Không có | Không selection | Chỉ manifest/config, không train file |
 | E1 | 60k core EN | `core/en/val` | Giữ |
 | E2 | Đúng 60k IDs của E1 nhưng VI | `core/vi/val` | Giữ |
-| E3 | General SFT độc lập + 60k core EN | `core/en/val` | Optional, không tạo nếu thiếu prerequisite |
-| E4 | 30k core EN + 30k paired core VI | Macro rule đăng ký trước trên EN/VI val | Giữ |
-| E5 | E4 + `custom_vi/train.jsonl` 5.6k | Core val + CustomTools val theo rule đăng ký trước | Giữ |
+| E3 | 30k core EN + 30k paired core VI | Macro rule đăng ký trước trên EN/VI val | Bilingual tool-calling SFT |
+| E4 | E3 + `custom_vi/train.jsonl` 5.6k | Core val + CustomTools val theo rule đăng ký trước | Tool-specific SFT |
 
-E3 hiện không được materialize mặc định vì code cũ chỉ sao chép E1, không có general-SFT stage. Không gọi bản sao E1 là E3.
+E3 hiện là bilingual tool-calling SFT, dùng cùng checkpoint Qwen3.5
+post-trained/Instruct như các experiment chính; không có general-SFT stage riêng.
 
 ### 7.3 Cấu trúc sau cleanup
 
@@ -253,11 +252,11 @@ data/experiments/
     train.jsonl
     instruction/train_chat.jsonl
     manifest.json
-  e4/
+  e3/
     train.jsonl
     instruction/train_chat.jsonl
     manifest.json
-  e5/
+  e4/
     train.jsonl
     instruction/train_chat.jsonl
     manifest.json
@@ -361,7 +360,7 @@ theo ngôn ngữ và ghi policy này trong experiment manifest. Không dùng mar
 4. [x] Export active `data/benchmark_vi/` từ revision mới.
 5. [x] Invalidate tool cache và rebuild tool pool/schema.
 6. [x] Refactor `prepare_experiments.py` đọc frozen revision, không tự split lại.
-7. [x] Không materialize E0 train; không tạo E3 nếu thiếu general-SFT prerequisite.
+7. [x] Không materialize E0 train; materialize E3 bilingual và E4 với CustomTools.
 8. [x] Loại test/val copies khỏi experiment folders.
 9. [x] Thay converter cũ bằng native Qwen3.5 training adapter.
 10. [x] Tạo Unsloth training entrypoint/config cho `unsloth/Qwen3.5-4B` và tùy chọn 2B.
@@ -377,7 +376,7 @@ theo ngôn ngữ và ghi policy này trong experiment manifest. Không dùng mar
 | `docs/architecture.md` | Shared frozen benchmark, E train-only artifacts và native Qwen flow |
 | `docs/methodology.md` | Core VI, transfer EN, CustomTools và Unsloth native output |
 | `docs/benchmark.md` | Negative support, dedup, paired split, revision manifest và active export |
-| `docs/experimental_plan.md` | Nguồn truth duy nhất cho matrix E0-E5 và fixed evaluation |
+| `docs/experimental_plan.md` | Nguồn truth duy nhất cho matrix E0-E4 và fixed evaluation |
 | `docs/kaggle_notebook_guide.md` | Loại LLaMA-Factory; thêm Unsloth, native template và shared evaluation |
 | `docs/custom_vi_dataset_plan.md` | Không merge validation vào train; chuẩn hóa field dẫn xuất |
 | `docs/translation_guidelines.md` | Tách normalized main path khỏi raw legacy audit path |
@@ -394,10 +393,10 @@ theo ngôn ngữ và ghi policy này trong experiment manifest. Không dùng mar
 - Revision có positive và negative theo counts manifest.
 - Không CustomTools validation/test ID xuất hiện trong train.
 - E1/E2 dùng cùng sample ID set.
-- E4 đúng composition 30k EN + 30k VI.
-- E5 đúng E4 + 5.6k CustomTools train.
+- E3 đúng composition 30k EN + 30k VI.
+- E4 đúng E3 + 5.6k CustomTools train.
 - E0 không có train file.
-- E3 bị từ chối nếu không có general-SFT prerequisite.
+- E3 dùng bilingual core training và không yêu cầu general-SFT prerequisite.
 - Rebuild cùng input revision/seed tạo cùng hashes.
 
 ### Native Qwen tests
@@ -415,7 +414,7 @@ theo ngôn ngữ và ghi policy này trong experiment manifest. Không dùng mar
 
 - Không còn test/val copies trong `data/experiments/e*`.
 - Không còn artifact instruction cũ được dùng bởi trainer.
-- Không còn E3 duplicate được ghi là experiment độc lập.
+- E3 là experiment bilingual, không phải bản sao E1.
 - `data/benchmark_vi/metadata.json` trỏ tới revision mới.
 - Mọi active benchmark file có hash trong manifest.
 - Có cleanup manifest cho pilot cũ; không mất raw/normalized/translation/custom source data.
@@ -425,7 +424,7 @@ theo ngôn ngữ và ghi policy này trong experiment manifest. Không dùng mar
 1. [x] Duyệt plan, inventory và ghi cleanup manifest.
 2. [x] Archive pilot và dọn generated benchmark/experiment artifacts.
 3. [x] Rebuild, validate, freeze và promote active `data/benchmark_vi/`.
-4. [x] Materialize E1, E2, E4, E5; giữ E0 manifest-only; không thêm E3 khi thiếu prerequisite.
+4. [x] Materialize E1, E2, E3, E4; giữ E0 manifest-only.
 5. [x] Generate native Qwen training views và đồng bộ documentation/Kaggle workflow.
 6. [ ] Chạy template smoke test và Unsloth training trong môi trường GPU/Internet.
 7. [ ] Chạy experiments chính sau khi smoke test và acceptance criteria còn lại pass.

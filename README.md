@@ -69,7 +69,7 @@ bash scripts/data/run_benchmark.sh \
   --revision 2026-09-02-full-dedup-seed42 \
   --feature-group-cache data/legacy/pilot_20260902T000000Z/benchmark_vi/.cache/feature_group.json
 
-# 8. Materialize train-only artifacts (E0, E1, E2, E4, E5)
+# 8. Materialize train-only artifacts (E0, E1, E2, E3, E4)
 bash scripts/data/prepare_experiments.sh --overwrite
 
 # 9. Smoke-test the exact Qwen3.5 templates in a GPU/Internet environment
@@ -99,7 +99,7 @@ Quy ước: `query` và `tools[].description` theo language split EN/VI; `functi
 - **Method 1**: convert sang native `messages`/`tool_calls` qua `src/data/convert_to_instruction.py`; training render dùng `apply_chat_template()` của checkpoint.
 - **Method 2**: dùng trực tiếp schema master để train Bi-Encoder + Cross-Encoder.
 
-Sau bước materialize, `data/experiments/{e0,e1,e2,e4,e5}/` chỉ có train input native và `manifest.json`. Test/validation dùng trực tiếp từ frozen revision và `data/custom_vi/`; E3 chỉ tạo khi có general-SFT checkpoint độc lập.
+Sau bước materialize, `data/experiments/{e0,e1,e2,e3,e4}/` chỉ có train input native và `manifest.json`. Test/validation dùng trực tiếp từ frozen revision và `data/custom_vi/`. Qwen3.5 post-trained/Instruct là checkpoint khởi đầu cho E1-E4.
 
 Upload training data cùng frozen benchmark và CustomTools test lên Kaggle Dataset:
 
@@ -134,7 +134,8 @@ python scripts/data/upload_experiments_to_kaggle.py \
 - `docs/benchmark.md` — cấu trúc benchmark tiếng Việt.
 - `docs/translation_guidelines.md` — quy tắc dịch.
 - `docs/references.md` — papers & resources.
-- `docs/kaggle_notebook_guide.md` — chạy E0-E5 trên Kaggle.
+- `docs/kaggle_notebook_guide.md` — chạy E0-E4 trên Kaggle.
+- `docs/kaggle_data_only_guide.md` — chạy Kaggle chỉ với Dataset, không cần source code repo.
 
 ## 7. Trạng thái
 

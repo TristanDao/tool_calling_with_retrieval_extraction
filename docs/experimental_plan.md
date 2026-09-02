@@ -80,7 +80,7 @@ Quy mô input và evaluation hiện hành:
 |---|---:|---|---|
 | Frozen core revision | 77,028 | EN/VI paired, 4,817 negative | Core train/val/test |
 | Frozen core unique tools | 4,421 | Shared EN/VI tool pool | Retrieval và native prompt |
-| CustomTools-VI train | 5,600 | VI, 3,600 positive + 2,000 negative | Tool-specific SFT của E5 |
+| CustomTools-VI train | 5,600 | VI, 3,600 positive + 2,000 negative | Tool-specific SFT của E4 |
 | CustomTools-VI validation | 800 | VI, seen/unseen | Model selection và diagnostic |
 | CustomTools-VI test | 1,600 | VI, seen/unseen | Chỉ đánh giá cuối |
 
@@ -92,10 +92,9 @@ Các con số trên là quy mô input hiện tại, không phải số lượng 
   `60,000` rows: `56,151` positive (`10,712` Glaive + `45,439` xLAM) và
   `3,849` negative. Không lấy validation/test để bù quota.
 - E1 dùng 60,000 mẫu tiếng Anh; E2 dùng đúng các sample IDs tương ứng bằng tiếng Việt.
-- E3 nếu chạy dùng cùng 60,000 mẫu tiếng Anh như E1, sau general SFT.
-- E4 dùng `30,000 EN + 30,000 VI`; mỗi ngôn ngữ gồm `27,000` positive
+- E3 dùng `30,000 EN + 30,000 VI`; mỗi ngôn ngữ gồm `27,000` positive
   (`10,712` Glaive + `16,288` xLAM) và `3,000` negative.
-- E5 dùng toàn bộ 60,000 mẫu của E4 cộng toàn bộ `5,600` mẫu `CustomTools-VI/train.jsonl`, tổng `65,600` training examples. Không đưa bất kỳ file CustomTools validation/test nào vào training.
+- E4 dùng toàn bộ 60,000 mẫu của E3 cộng toàn bộ `5,600` mẫu `CustomTools-VI/train.jsonl`, tổng `65,600` training examples. Không đưa bất kỳ file CustomTools validation/test nào vào training.
 - Lấy mẫu một lần bằng seed cố định và lưu manifest; không lấy lại subset khác cho Qwen3.5-2B.
 
 Cap 60,000 không phải giới hạn lý thuyết của model 2B/4B. Đây là ngân sách
@@ -109,8 +108,8 @@ Sau khi hoàn tất deduplication và QA, chạy thêm một full-data run cho m
 
 - E1-full: toàn bộ core train tiếng Anh.
 - E2-full: toàn bộ core train tiếng Việt.
-- E4-full: toàn bộ core train song ngữ, giữ tỷ lệ EN/VI `1:1`.
-- E5-full: E4-full cộng `CustomTools-VI/train.jsonl`.
+- E3-full: toàn bộ core train song ngữ, giữ tỷ lệ EN/VI `1:1`.
+- E4-full: E3-full cộng `CustomTools-VI/train.jsonl`.
 
 Full-data track không thay thế main controlled track và phải báo cáo riêng số training examples, số token, số step và compute. Nếu tài nguyên hạn chế, ưu tiên main controlled track; không tự ý cắt test hoặc validation để giảm chi phí.
 
@@ -120,7 +119,7 @@ Full-data track không thay thế main controlled track và phải báo cáo ri�
 - Tỷ lệ core split là `80/10/10` theo train/validation/test sau deduplication.
 - Không cap validation hoặc test. Các test rows không được dùng để chọn checkpoint, điều chỉnh prompt hoặc chọn hyperparameter.
 - E1–E4 chọn checkpoint bằng core validation tương ứng; CustomTools validation chỉ là zero-shot diagnostic, không dùng để chọn checkpoint.
-- E5 có thể dùng thêm `val_seen` và `val_unseen` để chọn checkpoint, nhưng phải báo cáo riêng từng kết quả và không dùng bất kỳ test split nào.
+- E4 có thể dùng thêm `val_seen` và `val_unseen` để chọn checkpoint, nhưng phải báo cáo riêng từng kết quả và không dùng bất kỳ test split nào.
 - Test bắt buộc gồm core test EN/VI và `CustomTools-VI/test_seen.jsonl` + `test_unseen.jsonl`, trong đó CustomTools phải tách positive/negative khi báo cáo.
 
 #### Cấu trúc thư mục để chạy
@@ -131,15 +130,14 @@ Materialize toàn bộ controlled track bằng:
 bash scripts/data/prepare_experiments.sh
 ```
 
-Script tạo `data/experiments/{e0,e1,e2,e4,e5}/`. Mỗi thư mục chỉ có
+Script tạo `data/experiments/{e0,e1,e2,e3,e4}/`. Mỗi thư mục chỉ có
 `manifest.json`, `train.jsonl` và native `instruction/train_chat.jsonl` khi có
 training data. Validation/test đọc trực tiếp từ frozen revision và
 `data/custom_vi/`; Method 1 dùng `instruction/train_chat.jsonl`.
 
-E0 không có file train vì đây là zero-shot. E1 và E3 train EN, E2 train VI,
-E4 train song ngữ 30k EN + 30k VI, E5 dùng đúng E4 cộng
-`data/custom_vi/train.jsonl`. E3 không được tạo nếu thiếu general-SFT
-prerequisite. Các file test/validation không được đưa vào training.
+E0 không có file train vì đây là zero-shot. E1 train EN, E2 train VI,
+E3 train song ngữ 30k EN + 30k VI, E4 dùng đúng E3 cộng
+`data/custom_vi/train.jsonl`. Các file test/validation không được đưa vào training.
 
 ## 4. Chuẩn Output Chung
 
@@ -195,13 +193,14 @@ Main result dùng controlled track 60k; full-data track được báo cáo riên
 | E0 | Qwen3.5 post-trained, chưa fine-tune | 0 | 0 | Không fine-tune | Core EN/VI + CustomTools test | Zero-shot baseline |
 | E1 | Qwen3.5 post-trained | 60k EN | 0 | Core EN val | Core EN/VI test + CustomTools test | Đo transfer EN → VI |
 | E2 | Qwen3.5 post-trained | 60k VI | 0 | Core VI val | Core EN/VI test + CustomTools test | Đo lợi ích của dữ liệu tiếng Việt |
-| E3 | Qwen3.5 post-trained + general SFT | 60k EN | 0 | Core EN val | Core EN/VI test + CustomTools test | Đo ảnh hưởng của general instruction tuning |
-| E4 | Qwen3.5 post-trained + general SFT | 30k EN + 30k VI | 0 | Core EN/VI val | Core EN/VI test + CustomTools test | Đo bilingual training ở cùng ngân sách 60k |
-| E5 | Qwen3.5 post-trained + general SFT | 30k EN + 30k VI | 5,600 VI | Core EN/VI val + CustomTools val | Core EN/VI test + CustomTools test | Đo tool-specific fine-tuning |
+| E3 | Qwen3.5 post-trained | 30k EN + 30k VI | 0 | Core EN/VI val | Core EN/VI test + CustomTools test | Đo bilingual training ở cùng ngân sách 60k |
+| E4 | Qwen3.5 post-trained | 30k EN + 30k VI | 5,600 VI | Core EN/VI val + CustomTools val | Core EN/VI test + CustomTools test | Đo tool-specific fine-tuning |
 
-E3 chỉ bắt buộc nếu có general instruction dataset độc lập. Nếu chưa có, đánh dấu E3 là optional và không dùng dữ liệu test để thay thế. Nếu chạy E3, general SFT phải được thực hiện trước tool-calling SFT và phải ghi riêng checkpoint trung gian.
+E3 trong project là bilingual tool-calling SFT, không phải E3 của bài Arabic.
+Qwen3.5 post-trained/Instruct được dùng làm checkpoint khởi đầu cho toàn bộ main
+track; không có general-SFT stage riêng.
 
-Mỗi experiment nên chạy cho `unsloth/Qwen3.5-4B` trước. `unsloth/Qwen3.5-2B` chạy sau để đo ảnh hưởng kích thước model. Dự án chỉ dùng các checkpoint Qwen3.5 post-trained không có hậu tố `-Base`; không dùng checkpoint `-Base`.
+Mỗi experiment nên chạy cho `unsloth/Qwen3.5-4B` trước. `unsloth/Qwen3.5-2B` chạy sau để đo ảnh hưởng kích thước model. Dự án chỉ dùng các checkpoint Qwen3.5 post-trained/Instruct không có hậu tố `-Base` trong main track.
 
 ### 5.3 Quy tắc huấn luyện
 
@@ -420,8 +419,8 @@ Thiết kế đầy đủ:
 
 | Model | Experiment | Test set | Tool P | Tool R | Negative R | ArgA | JSON valid |
 |---|---|---|---:|---:|---:|---:|---:|
-| `unsloth/Qwen3.5-4B` | E0, E1, E2, E4, E5 | | | | | | |
-| `unsloth/Qwen3.5-2B` | E0, E1, E2, E4, E5 | | | | | | |
+| `unsloth/Qwen3.5-4B` | E0, E1, E2, E3, E4 | | | | | | |
+| `unsloth/Qwen3.5-2B` | E0, E1, E2, E3, E4 | | | | | | |
 
 ### Bảng C — Method comparison
 
@@ -460,8 +459,8 @@ Thiết kế đầy đủ:
 - [ ] Chạy Method 1 với `unsloth/Qwen3.5-4B`.
 - [ ] Chạy E1 English-only.
 - [ ] Chạy E2 Vietnamese-only.
-- [ ] Chạy E4 bilingual.
-- [ ] Chạy E5 bilingual + CustomTools.
+- [ ] Chạy E3 bilingual.
+- [ ] Chạy E4 bilingual + CustomTools.
 - [ ] Lặp lại các experiment chính với `unsloth/Qwen3.5-2B`.
 - [ ] Train và đánh giá Bi-Encoder.
 - [ ] Train và đánh giá Cross-Encoder với oracle retrieval.
@@ -509,7 +508,6 @@ Bản kết quả cuối phải trả lời được bốn câu hỏi:
 ## 15. Quyết Định Cần Chốt Trước Khi Chạy Chính Thức
 
 - [x] Ghi exact checkpoint ID của Qwen3.5 post-trained cho mỗi experiment; không dùng Base checkpoint.
-- [ ] Có hoặc không có general instruction dataset cho E3. E3 vẫn optional và chưa materialize.
 - [x] Chọn LoRA QLoRA thay vì full fine-tuning.
 - [x] Chốt format multi-call native `tool_calls` list.
 - [x] Chốt strict và normalized comparison rules.

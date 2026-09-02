@@ -14,7 +14,7 @@ Dữ liệu dịch từ tiếng Anh (Glaive, xLAM) giải quyết được khả
 - Tỉ lệ phân chia: **5,600 Train** / **800 Val** (`400 seen + 400 unseen`) /
   **1,600 Test** (`800 seen + 800 unseen`).
 - **Mục đích đánh giá**:
-  - `Train (5,600 mẫu)`: Chỉ tập train được đưa vào E5 để model học ngữ cảnh VN.
+  - `Train (5,600 mẫu)`: Chỉ tập train được đưa vào E4 để model học ngữ cảnh VN.
   - `Val (800 mẫu)`: Dùng model selection/diagnostic, không trộn vào training.
   - `Test (1,600 mẫu)`: **Giữ riêng** làm bộ benchmark chuyên biệt kiểm chứng năng lực tiếng Việt (đo chỉ số ArgA & Tool Accuracy trước và sau khi thêm data VN).
 
@@ -160,7 +160,7 @@ Dùng LLM (như Gemini Flash hoặc Qwen) chạy tự động nhân bản từ 3
 ### Bước 4: Tách Split & Tích hợp vào Benchmark
 - Chia dữ liệu thành `5,600 train`, `800 val` (`400 seen + 400 unseen`) và
   `1,600 test` (`800 seen + 800 unseen`).
-- Chỉ `train.jsonl` được đưa vào E5; validation không được trộn vào training.
+- Chỉ `train.jsonl` được đưa vào E4; validation không được trộn vào training.
 - Giữ toàn bộ validation/test riêng để đánh giá khả năng xử lý tình huống Việt Nam.
 - Chuyển đổi training rows sang native `messages`/`tools`/`tool_calls` bằng
   chat template của checkpoint Qwen3.5 khi chạy Method 1.

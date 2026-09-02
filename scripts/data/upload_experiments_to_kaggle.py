@@ -89,7 +89,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--version-notes",
-        default="Method 1 E0-E5 controlled-track data, seed 42",
+        default="Method 1 E0-E4 controlled-track data, seed 42",
     )
     parser.add_argument("--dry-run", action="store_true", help="Validate without uploading")
     args = parser.parse_args()

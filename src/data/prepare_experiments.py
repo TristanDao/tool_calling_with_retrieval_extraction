@@ -44,7 +44,6 @@ class ExperimentSpec:
     validation_paths: list[str]
     validation_rule: str
     custom_train_included: bool = False
-    prerequisite: dict[str, Any] | None = None
     sampling: dict[str, Any] | None = None
 
 
@@ -217,7 +216,6 @@ def _write_experiment(
     revision: str,
     revision_dir: Path,
     seed: int,
-    general_sft_checkpoint: str | None,
 ) -> None:
     experiment_dir = output / spec.name
     experiment_dir.mkdir(parents=True, exist_ok=False)
@@ -256,7 +254,7 @@ def _write_experiment(
             "custom_unique_ids": len(custom_ids),
             "core_ids_sha256": _ids_hash(core_ids),
             "custom_ids_sha256": _ids_hash(custom_ids),
-            "sample_id_policy": "E1/E2 use the same core IDs; E4 pairs EN and VI by ID",
+            "sample_id_policy": "E1/E2 use the same core IDs; E3 pairs EN and VI by ID",
             "sampling": spec.sampling or {},
             "budget": TRAINING_BUDGET,
         },
@@ -283,10 +281,6 @@ def _write_experiment(
         ),
         "files": {},
     }
-    if spec.prerequisite is not None:
-        manifest["general_sft_prerequisite"] = spec.prerequisite
-        if general_sft_checkpoint:
-            manifest["general_sft_prerequisite"]["checkpoint"] = general_sft_checkpoint
     manifest["files"] = {
         str(path.relative_to(experiment_dir)): _sha256(path)
         for path in sorted(files)
@@ -299,8 +293,6 @@ def _make_specs(
     vi_train: list[dict[str, Any]],
     custom_train: list[dict[str, Any]],
     revision_dir: Path,
-    include_e3: bool,
-    general_sft_checkpoint: str | None,
     seed: int,
 ) -> list[ExperimentSpec]:
     en_val = str(revision_dir / "en" / "val.jsonl")
@@ -343,14 +335,14 @@ def _make_specs(
             sampling=controlled_sampling,
         ),
         ExperimentSpec(
-            "e4",
+            "e3",
             [(row, "en") for row in bilingual_en] + [(row, "vi") for row in bilingual_vi],
             [en_val, vi_val],
             "Select with a pre-registered macro rule over core EN and VI validation.",
             sampling=bilingual_sampling,
         ),
         ExperimentSpec(
-            "e5",
+            "e4",
             [(row, "en") for row in bilingual_en]
             + [(row, "vi") for row in bilingual_vi]
             + [(row, "vi") for row in custom_train],
@@ -363,19 +355,6 @@ def _make_specs(
             },
         ),
     ]
-    if include_e3:
-        if not general_sft_checkpoint:
-            raise ValueError("E3 requires --general-sft-checkpoint")
-        specs.insert(
-            3,
-            ExperimentSpec(
-                "e3",
-                [(row, "en") for row in controlled_en],
-                [en_val],
-                "Select on core English validation after independent general SFT.",
-                prerequisite={"required": True, "stage": "general_sft"},
-            ),
-        )
     return specs
 
 
@@ -385,11 +364,9 @@ def prepare(
     active_benchmark: Path = DEFAULT_ACTIVE_BENCHMARK,
     revision: str | None = None,
     seed: int = DEFAULT_SEED,
-    include_e3: bool = False,
-    general_sft_checkpoint: str | None = None,
     overwrite: bool = False,
 ) -> str:
-    """Materialize E0, E1, E2, E4 and E5 from one frozen revision."""
+    """Materialize E0, E1, E2, E3 and E4 from one frozen revision."""
     selected_revision, revision_dir = _resolve_revision(benchmark_root, active_benchmark, revision)
     if output.exists():
         if not overwrite:
@@ -429,8 +406,6 @@ def prepare(
         vi_train,
         custom_train,
         revision_dir,
-        include_e3,
-        general_sft_checkpoint,
         seed,
     )
     for spec in specs:
@@ -440,7 +415,6 @@ def prepare(
             selected_revision,
             revision_dir,
             seed,
-            general_sft_checkpoint,
         )
     _write_json(
         output / "manifest.json",
@@ -448,7 +422,6 @@ def prepare(
             "schema_version": "method1-experiment-set-v2",
             "benchmark_revision": selected_revision,
             "experiments": [spec.name for spec in specs],
-            "e3_enabled": include_e3,
             "seed": seed,
         },
     )
@@ -462,8 +435,6 @@ def main() -> None:
     parser.add_argument("--active-benchmark", type=Path, default=DEFAULT_ACTIVE_BENCHMARK)
     parser.add_argument("--revision", default=None)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
-    parser.add_argument("--include-e3", action="store_true")
-    parser.add_argument("--general-sft-checkpoint", default=None)
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     selected_revision = prepare(
@@ -472,8 +443,6 @@ def main() -> None:
         active_benchmark=args.active_benchmark,
         revision=args.revision,
         seed=args.seed,
-        include_e3=args.include_e3,
-        general_sft_checkpoint=args.general_sft_checkpoint,
         overwrite=args.overwrite,
     )
     print(f"[prepare] revision={selected_revision} experiments written to {args.output}")

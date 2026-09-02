@@ -146,7 +146,7 @@ Schema master (data/benchmark_core/<revision>/{en,vi}/*.jsonl)
    │
    ├──► Method 1 (SLM):
    │    src/data/convert_to_instruction.py
-   │    → data/experiments/{e1,e2,e4,e5}/instruction/train_chat.jsonl
+   │    → data/experiments/{e1,e2,e3,e4}/instruction/train_chat.jsonl
    │      native Qwen3.5 messages/tools/tool_calls
    │
    └──► Method 2 (Bi+Cross):
@@ -196,7 +196,7 @@ tool_calling_with_retrieval_extraction/
 │   │   └── <revision>/{en,vi}/{train,val,test}.jsonl + manifests
 │   ├── benchmark_vi/          # Active VI export of the selected revision
 │   ├── experiments/            # Method 1 train-only artifacts (gitignored)
-│   │   └── e0, e1, e2, e4, e5/
+│   │   └── e0, e1, e2, e3, e4/
 │   ├── legacy/                # Read-only archive of generated pilot outputs
 │   ├── translations/          # Qwen-MT logs + QA samples
 │   └── statistics/
@@ -336,6 +336,7 @@ tool_calling_with_retrieval_extraction/
 | `docs/benchmark.md` | Cấu trúc benchmark tiếng Việt |
 | `docs/translation_guidelines.md` | Quy tắc dịch |
 | `docs/references.md` | Papers & resources |
+| `docs/kaggle_data_only_guide.md` | Chạy Kaggle chỉ với Dataset, không cần source repo |
 | `.env.example` | Template biến môi trường |
 | `pyproject.toml` | Project metadata + tool config |
 
@@ -390,19 +391,19 @@ tool_calling_with_retrieval_extraction/
   - Mỗi experiment ghi revision, composition, seed, ID hashes và checkpoint policy vào manifest riêng.
   - Revision có `77,028` paired records, `4,817` negative, `4,421` tools; split `61,615/7,701/7,712`.
 - **[x] Method 1 data budget policy** (2026-08-20):
-  - Main controlled track dùng 60,000 core examples cho E1–E4 và 65,600 cho E5 (thêm toàn bộ `data/custom_vi/train.jsonl`).
+  - Main controlled track dùng 60,000 core examples cho E1–E3 và 65,600 cho E4 (thêm toàn bộ `data/custom_vi/train.jsonl`).
   - Qwen3.5-2B và Qwen3.5-4B phải dùng cùng sample IDs, seed, epoch target và training budget.
   - Full-data runs là robustness/scale-up track riêng, không thay thế main controlled track.
 - **[x] Experiment data materialization** (2026-08-27):
   - Thêm `src/data/prepare_experiments.py` và `scripts/data/prepare_experiments.sh`.
-  - Tạo `data/experiments/e0`, `e1`, `e2`, `e4`, `e5` với manifest và train-only native data; validation/test dùng shared revision.
-  - E1/E2 có 60,000 mẫu, E4 có 60,000 mẫu song ngữ, E5 có 65,600 mẫu gồm CustomTools train; E3 chờ general-SFT prerequisite.
+  - Tạo `data/experiments/e0`, `e1`, `e2`, `e3`, `e4` với manifest và train-only native data; validation/test dùng shared revision.
+  - E1/E2 có 60,000 mẫu, E3 có 60,000 mẫu song ngữ, E4 có 65,600 mẫu gồm CustomTools train; main track không có general-SFT stage riêng.
 - **[x] Kaggle upload helper** (2026-08-27):
   - Thêm `scripts/data/upload_experiments_to_kaggle.py` dùng `kagglehub` để upload train artifacts cùng frozen revision/CustomTools tùy chọn.
   - Kaggle token lấy từ `~/.kaggle/access_token`; không lưu credential trong repo.
 - **[x] Experiment instruction formatting** (2026-08-27):
   - EN và VI dùng system prompt đúng ngôn ngữ; negative samples dùng assistant content bình thường, không có `<no_tool_call>`.
-  - E4/E5 ghép native rows trong `train_chat.jsonl`; source/language vẫn được giữ trong `train.jsonl`.
+  - E3/E4 ghép native rows trong `train_chat.jsonl`; source/language vẫn được giữ trong `train.jsonl`.
 - **[x] Kaggle notebook guide** (2026-09-02):
   - `docs/kaggle_notebook_guide.md` dùng Unsloth, native template, shared validation/test và không copy evaluation vào experiment.
 - **[x] Method 1 trainer migration** (2026-08-31):
@@ -423,7 +424,7 @@ tool_calling_with_retrieval_extraction/
 - **[x] CustomTools-VI dataset strategy** (chốt 2026-08-11):
   - Tạo 8,000 samples đặc trưng VN (4,800 positive + 3,200 negative) thuộc 40 tools / 10 nhóm chức năng.
   - Split 70/10/20: 5,600 train + 800 val + 1,600 test.
-  - Giữ CustomTools độc lập; chỉ `train.jsonl` đưa vào E5, validation/test dùng evaluation view riêng.
+  - Giữ CustomTools độc lập; chỉ `train.jsonl` đưa vào E4, validation/test dùng evaluation view riêng.
   - Plan chi tiết tại `docs/custom_vi_dataset_plan.md`.
 - **[x] Phase 2/3 deferred** (quay lại sau khi data xong):
   - [ ] 4 configs/crossencoder/ (model, heads, losses, training)
@@ -472,4 +473,5 @@ tool_calling_with_retrieval_extraction/
 | 2026-08-11 | **CustomTools-VI Strategy**: Thống nhất kế hoạch xây dựng 8,000 samples (40 tools / 10 nhóm) cho ngữ cảnh Việt Nam, split 70/10/20. Tạo `docs/custom_vi_dataset_plan.md` và `implementation_plan.md`. |
 | 2026-08-20 | **Cập nhật backbone model Method 1**: Chuyển mô hình SLM từ Qwen2.5 (0.5B/1.5B) sang **Qwen3.5 (2B/4B)** theo định hướng thực nghiệm mới. Đồng bộ toàn bộ tài liệu và kế hoạch thực nghiệm. |
 | 2026-08-31 | **Cập nhật trainer Method 1**: Chuyển QLoRA/SFT từ LLaMA-Factory sang **Unsloth**. Training path dùng native Qwen3.5 chat template + response-only loss, không dùng ShareGPT. |
-| 2026-09-02 | **Frozen benchmark + experiment preparation**: Rebuild paired EN/VI revision có negative và group-level dedup, archive pilot, materialize E0/E1/E2/E4/E5 train-only artifacts với native tool calls và manifest reproducibility. |
+| 2026-09-02 | **Frozen benchmark + experiment preparation**: Rebuild paired EN/VI revision có negative và group-level dedup, archive pilot, materialize E0/E1/E2/E3/E4 train-only artifacts với native tool calls và manifest reproducibility. |
+| 2026-09-03 | **Kaggle Multi-GPU DDP Support**: Cập nhật `docs/kaggle_data_only_guide.md` hỗ trợ chạy phân tán trên 2 GPU T4 qua `torchrun` và Unsloth DDP; tự động điều chỉnh `gradient_accumulation_steps = 8` để giữ đúng `effective_batch_size = 16`. |

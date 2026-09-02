@@ -171,7 +171,7 @@ data/benchmark_vi/  (active export của vi split)
     │  │  - Convert master → native messages/tool_calls  │
    │  └─────────────────────────────────────────────────┘
    ▼
-    └── data/experiments/{e1,e2,e4,e5}/instruction/train_chat.jsonl
+    └── data/experiments/{e1,e2,e3,e4}/instruction/train_chat.jsonl
 ```
 
 ## 6. Splits

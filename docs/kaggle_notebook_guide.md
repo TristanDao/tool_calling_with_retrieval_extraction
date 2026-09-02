@@ -17,7 +17,7 @@ python scripts/data/upload_experiments_to_kaggle.py \
 Dataset sau khi upload có cấu trúc:
 
 ```text
-e0/ ... e5/
+e0/ ... e4/
 benchmark_core/2026-09-02-full-dedup-seed42/
   en/{val,test}.jsonl
   vi/{val,test}.jsonl
@@ -29,17 +29,15 @@ Có thể upload repository cùng notebook hoặc clone repository riêng; khôn
 test/validation vào `e*`.
 
 Chạy mỗi cặp `(experiment, model)` trong một notebook riêng. Thứ tự đề xuất:
-E0, E1, E2, E4, E5 với 4B, sau đó lặp E1/E2/E4/E5 với 2B. E3 chỉ chạy khi
-có checkpoint general-SFT độc lập.
+E0, E1, E2, E3, E4 với 4B, sau đó lặp E1/E2/E3/E4 với 2B.
 
 | Experiment | Train | Validation để chọn checkpoint |
 |---|---:|---|
 | E0 | Không SFT | Không dùng |
 | E1 | 60,000 EN | Core EN |
 | E2 | 60,000 VI | Core VI |
-| E3 | 60,000 EN | Core EN, sau general SFT |
-| E4 | 30,000 EN + 30,000 VI | Macro rule trên core EN/VI |
-| E5 | E4 + 5,600 CustomTools VI | Core + CustomTools validation |
+| E3 | 30,000 EN + 30,000 VI | Macro rule trên core EN/VI |
+| E4 | E3 + 5,600 CustomTools VI | Core + CustomTools validation |
 
 ## 2. Khai Báo Run
 
@@ -50,7 +48,7 @@ import sys
 
 PROJECT_ROOT = Path("/kaggle/working/tool-calling-vi")
 DATA_ROOT = Path("/kaggle/input/tool-calling-vi-experiments")
-EXPERIMENT = "e1"                 # e0, e1, e2, e4, e5
+EXPERIMENT = "e1"                 # e0, e1, e2, e3, e4
 MODEL_ID = "unsloth/Qwen3.5-4B"   # hoặc unsloth/Qwen3.5-2B
 REVISION = "2026-09-02-full-dedup-seed42"
 
@@ -121,11 +119,11 @@ from src.data.convert_to_instruction import convert_file
 validation_sources = {
     "e1": [(REVISION_DIR / "en/val.jsonl", "en")],
     "e2": [(REVISION_DIR / "vi/val.jsonl", "vi")],
-    "e4": [
+    "e3": [
         (REVISION_DIR / "en/val.jsonl", "en"),
         (REVISION_DIR / "vi/val.jsonl", "vi"),
     ],
-    "e5": [
+    "e4": [
         (REVISION_DIR / "en/val.jsonl", "en"),
         (REVISION_DIR / "vi/val.jsonl", "vi"),
         (CUSTOM_DIR / "val_seen.jsonl", "vi"),
@@ -145,7 +143,7 @@ with EVAL_FILE.open("w", encoding="utf-8") as output:
         output.write(part.read_text(encoding="utf-8"))
 ```
 
-Không tạo validation view cho E0. E3 cần prerequisite riêng và không được
+Không tạo validation view cho E0. E3 là bilingual tool-calling experiment và không được
 giả lập bằng cách đổi tên E1.
 
 ## 6. Train Với Unsloth

@@ -47,7 +47,7 @@ Thư mục `data/` chứa toàn bộ dữ liệu dự án ở các giai đoạn 
 ### 8. `experiments/` — DỮ LIỆU TRAIN CHO TỪNG EXPERIMENT
 - **Mục đích**: Các train artifacts được materialize tái lập từ canonical inputs để chạy Method 1; validation/test dùng shared evaluation files.
 - **Tạo bằng**: `bash scripts/data/prepare_experiments.sh`.
-- **Thành phần**: `e0`, `e1`, `e2`, `e4`, `e5`; mỗi thư mục có `manifest.json`, E0 không có train file, các E còn lại có `train.jsonl` và native `instruction/train_chat.jsonl`.
+- **Thành phần**: `e0`, `e1`, `e2`, `e3`, `e4`; mỗi thư mục có `manifest.json`, E0 không có train file, các E còn lại có `train.jsonl` và native `instruction/train_chat.jsonl`.
 - **Quản lý**: Được gitignore vì có thể regenerate; manifest phải được lưu cùng log và checkpoint của experiment.
 
 ---

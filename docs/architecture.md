@@ -163,7 +163,7 @@ data/benchmark_vi/  (active export của vi split)
     ├── train.jsonl / val.jsonl / test.jsonl
    │
    ├──► Method 1: convert_to_instruction.py
-    │    → data/experiments/{e1,e2,e4,e5}/instruction/train_chat.jsonl
+    │    → data/experiments/{e1,e2,e3,e4}/instruction/train_chat.jsonl
    │
    └──► Method 2: train trực tiếp trên schema master
         → Bi-Encoder: (query, tool_desc) pairs
