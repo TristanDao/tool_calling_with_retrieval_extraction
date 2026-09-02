@@ -1,27 +1,7 @@
-defaults:
-  - _self_
-
-input_glaive: data/translations/glaive_vi.jsonl
-input_xlam: data/translations/xlam_vi.jsonl
-
-output_dir: data/benchmark_vi
-tool_schema_dir: ${output_dir}/tool_schema
-tool_pool_path: ${output_dir}/tool_pool.json
-train_path: ${output_dir}/train.jsonl
-val_path: ${output_dir}/val.jsonl
-test_path: ${output_dir}/test.jsonl
-metadata_path: ${output_dir}/metadata.json
-
-split:
-  train_ratio: 0.8
-  val_ratio: 0.1
-  test_ratio: 0.1
-  seed: 42
-
-feature_group:
-  cache_path: data/benchmark_vi/.cache/feature_group.json
-  enabled: true
-
-type_normalization:
-  enabled: true
-  default_for_missing: string
+# Input/output reference for `python -m src.data.normalize_en`.
+# Build the frozen paired benchmark with configs/data/benchmark.yaml instead.
+input_glaive: data/raw/glaive_raw.jsonl
+input_xlam: data/raw/xlam_raw.jsonl
+output_dir: data/normalized_en
+source: all
+include_negatives: true

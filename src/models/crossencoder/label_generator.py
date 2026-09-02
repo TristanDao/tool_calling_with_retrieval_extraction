@@ -12,8 +12,6 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from transformers import AutoTokenizer, PreTrainedTokenizerBase
-
 from src.models.crossencoder.data_collator import (
     SCHEMA_TYPE_BOOLEAN,
     SCHEMA_TYPE_ENUM,
@@ -21,7 +19,7 @@ from src.models.crossencoder.data_collator import (
     SCHEMA_TYPE_STRING,
     normalize_schema_type,
 )
-
+from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 SKIP_LABEL = "skip"
 
@@ -106,7 +104,7 @@ class LabelGenerator:
         gold_value: Any,
         is_required: bool = True,
     ) -> dict[str, Any] | str:
-        schema_type = normalize_schema_type(param.get("type", "string"))
+        schema_type = normalize_schema_type(param)
         result: dict[str, Any] = {
             "has_value": 0,
             "span_start": 0,

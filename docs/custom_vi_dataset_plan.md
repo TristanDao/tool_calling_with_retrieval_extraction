@@ -11,9 +11,11 @@ Dữ liệu dịch từ tiếng Anh (Glaive, xLAM) giải quyết được khả
 ### Mục tiêu bộ CustomTools-VI
 - Tạo **8,000 mẫu dữ liệu chuẩn JSON Schema** thuộc 40 tools / 10 nhóm chức năng thuần Việt.
 - Tỉ lệ mẫu: **60% Positive (4,800 mẫu có gọi tool)** + **40% Negative (3,200 mẫu KHÔNG gọi tool)**.
-- Tỉ lệ phân chia: **70% Train (5,600)** / **10% Val (800)** / **20% Test (1,600)**.
+- Tỉ lệ phân chia: **5,600 Train** / **800 Val** (`400 seen + 400 unseen`) /
+  **1,600 Test** (`800 seen + 800 unseen`).
 - **Mục đích đánh giá**:
-  - `Train & Val`: Trộn vào tập huấn luyện tổng để model học ngữ cảnh VN.
+  - `Train (5,600 mẫu)`: Chỉ tập train được đưa vào E5 để model học ngữ cảnh VN.
+  - `Val (800 mẫu)`: Dùng model selection/diagnostic, không trộn vào training.
   - `Test (1,600 mẫu)`: **Giữ riêng** làm bộ benchmark chuyên biệt kiểm chứng năng lực tiếng Việt (đo chỉ số ArgA & Tool Accuracy trước và sau khi thêm data VN).
 
 ---
@@ -81,7 +83,7 @@ Dữ liệu xuất ra ở định dạng **JSON Lines (.jsonl)**, mỗi dòng kh
       }
     }
   ],
-  "has_tool_call": true
+  "metadata": {"split": "train"}
 }
 ```
 
@@ -107,7 +109,7 @@ Dữ liệu xuất ra ở định dạng **JSON Lines (.jsonl)**, mỗi dòng kh
       }
     }
   ],
-  "has_tool_call": false
+  "metadata": {"split": "test_unseen"}
 }
 ```
 
@@ -126,7 +128,7 @@ Dữ liệu xuất ra ở định dạng **JSON Lines (.jsonl)**, mỗi dòng kh
 | `tools[].description` | `string` | Mô tả chức năng hàm bằng tiếng Việt tự nhiên |
 | `tools[].feature_group` | `string` | Tên nhóm chức năng tiếng Việt (1 trong 10 nhóm ở Phần 2) |
 | `tools[].parameters` | `object` | JSON Schema chuẩn (`type: "object"`, `properties`, `required`) |
-| `has_tool_call` | `boolean` | `true` nếu `function_calls` không rỗng; `false` nếu `function_calls` rỗng `[]` |
+| `metadata` | `object` | Metadata dẫn xuất, gồm split/family và thông tin kiểm định |
 
 ---
 
@@ -136,7 +138,7 @@ Dữ liệu xuất ra ở định dạng **JSON Lines (.jsonl)**, mỗi dòng kh
 flowchart LR
     Step1["1. Schema & Seeds\n(Định nghĩa 40 tools + 350 seeds)"] --> Step2["2. LLM Expansion\n(Sinh 8,000 samples)"]
     Step2 --> Step3["3. QC & Dedup\n(Lọc trùng + Check schema)"]
-    Step3 --> Step4["4. Split & Integrate\n(70/10/20 Split & Merge)"]
+    Step3 --> Step4["4. Split & Register\n(70/10/20, eval giữ riêng)"]
 ```
 
 ### Bước 1: Khai báo Tools Schema & Mẫu Seed (Seed Generation)
@@ -148,18 +150,20 @@ flowchart LR
 Dùng LLM (như Gemini Flash hoặc Qwen) chạy tự động nhân bản từ 350 seeds lên 8,000 câu.
 
 - **Prompt cho Positive Samples**: Yêu cầu LLM sinh các câu hỏi phong phú có sử dụng tên người VN, địa danh 63 tỉnh thành, thương hiệu VN kèm trích xuất tham số chính xác.
-- **Prompt cho Negative Samples**: Yêu cầu sinh các câu hỏi không cần tool (chit-chat, hỏi kiến thức chung, câu hỏi mơ hồ, câu hỏi liên quan nhưng không có tool hỗ trợ) và đặt `"has_tool_call": false`, `"function_calls": []`.
+- **Prompt cho Negative Samples**: Yêu cầu sinh các câu hỏi không cần tool (chit-chat, hỏi kiến thức chung, câu hỏi mơ hồ, câu hỏi liên quan nhưng không có tool hỗ trợ) và đặt `"function_calls": []`; trạng thái negative được suy ra từ list rỗng.
 
 ### Bước 3: Lọc trùng & Kiểm định chất lượng (QC & Deduplication)
-- **Check 1 - Structural Validation**: 100% JSON parse được, đủ các trường bắt buộc (`id`, `source`, `query`, `function_calls`, `tools`, `has_tool_call`), argument keys nằm trong tool schema.
+- **Check 1 - Structural Validation**: 100% JSON parse được, đủ các trường bắt buộc (`id`, `source`, `query`, `function_calls`, `tools`, `metadata`), argument keys nằm trong tool schema.
 - **Check 2 - Exact Match Dedup**: Loại bỏ các câu query trùng lặp hoàn toàn chuỗi ký tự.
 - **Check 3 - Semantic Dedup**: Dùng Sentence Embedding (bge-m3 hoặc tương đương) tính Cosine Similarity, loại bỏ các câu có độ tương đồng > 0.90 để giữ dữ liệu đa dạng.
 
 ### Bước 4: Tách Split & Tích hợp vào Benchmark
-- Chia dữ liệu theo tỉ lệ **70% Train (5,600)** / **10% Val (800)** / **20% Test (1,600)**.
-- Trộn Train & Val vào tập dữ liệu chung.
-- Giữ Test riêng để đánh giá khả năng xử lý tình huống Việt Nam.
-- Chuyển đổi dữ liệu sang định dạng Instruction Chat (System Prompt + User + Assistant `<tool_call>...</tool_call>`) để sẵn sàng fine-tune các model SLM (Qwen3.5).
+- Chia dữ liệu thành `5,600 train`, `800 val` (`400 seen + 400 unseen`) và
+  `1,600 test` (`800 seen + 800 unseen`).
+- Chỉ `train.jsonl` được đưa vào E5; validation không được trộn vào training.
+- Giữ toàn bộ validation/test riêng để đánh giá khả năng xử lý tình huống Việt Nam.
+- Chuyển đổi training rows sang native `messages`/`tools`/`tool_calls` bằng
+  chat template của checkpoint Qwen3.5 khi chạy Method 1.
 
 ---
 
@@ -168,4 +172,4 @@ Dùng LLM (như Gemini Flash hoặc Qwen) chạy tự động nhân bản từ 3
 1. **Số lượng**: Đủ 8,000 samples (4,800 positive + 3,200 negative).
 2. **Độ phủ**: Cả 40 tools đều có ít nhất 100+ positive samples.
 3. **Độ đa dạng**: Không có câu query nào có Similarity > 0.90 với câu khác trong dataset.
-4. **Chuẩn Master Schema**: 100% samples chứa đủ 6 key top-level (`id`, `source`, `query`, `function_calls`, `tools`, `has_tool_call`) và field `feature_group` trong `tools[]`.
+4. **Chuẩn Master Schema**: 100% samples chứa đủ 6 key top-level (`id`, `source`, `query`, `function_calls`, `tools`, `metadata`) và field `feature_group` trong `tools[]`.

@@ -21,10 +21,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import yaml
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
+import yaml
 from src.data.build_benchmark import (
     _extract_glaive_tool_from_system,
     _safe_json_loads,
@@ -273,7 +274,6 @@ def main() -> None:
 
     all_stats: dict[str, dict[str, Any]] = {}
 
-    glaive_total = 0
     if args.source in ("glaive", "all"):
         out = args.output_dir / "glaive_normalized.jsonl"
         neg_out = args.output_dir / "glaive_negative.jsonl" if args.include_negatives else None
@@ -283,7 +283,6 @@ def main() -> None:
             negative_parser=neg_parser, negative_output_path=neg_out,
         )
         all_stats["glaive"] = stats
-        glaive_total = stats["parsed_positive"] + stats["parsed_negative"]
         print(f"[normalize] glaive: {stats['total_raw']} raw → {stats['parsed_positive']} positive")
         if args.include_negatives:
             print(f"[normalize] glaive: {stats['parsed_negative']} negative → {neg_out}")

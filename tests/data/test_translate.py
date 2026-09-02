@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 import tempfile
 from pathlib import Path
 
@@ -155,7 +154,7 @@ def test_checkpoint_atomic_overwrites_existing():
 
 
 def test_checkpoint_load_nonexistent_returns_default():
-    from src.data.translation_checkpoint import Checkpoint, load
+    from src.data.translation_checkpoint import load
     with tempfile.TemporaryDirectory() as tmpdir:
         cp = load(Path(tmpdir) / "missing.json", dataset="glaive")
         assert cp.dataset == "glaive"
@@ -273,7 +272,10 @@ def test_check_required_fields_present_glaive_normalized():
 
 
 def test_check_normalized_xlam_schema():
-    from src.data.translate_guidelines import check_identifier_integrity, check_required_fields_present
+    from src.data.translate_guidelines import (
+        check_identifier_integrity,
+        check_required_fields_present,
+    )
     original = {
         "id": "xlam_00001",
         "source": "xlam",
@@ -343,7 +345,7 @@ def test_read_jsonl_generator_respects_start_end():
 
 
 def test_qa_rule_check_pass():
-    from src.data.qa_translation import rule_check_sample, QAConfig
+    from src.data.qa_translation import QAConfig, rule_check_sample
     cfg = QAConfig(
         input_path=Path("/tmp/in"),
         output_path=Path("/tmp/out"),
@@ -371,7 +373,7 @@ def test_qa_rule_check_pass():
 
 
 def test_qa_rule_check_camel_case_function():
-    from src.data.qa_translation import rule_check_sample, QAConfig
+    from src.data.qa_translation import QAConfig, rule_check_sample
     cfg = QAConfig(
         input_path=Path("/tmp/in"),
         output_path=Path("/tmp/out"),
@@ -500,8 +502,9 @@ def test_translation_config_comma_separated_backup_models():
 
 
 def test_resolve_env_placeholder():
-    from src.data.translate import _resolve_env_placeholders
     import os
+
+    from src.data.translate import _resolve_env_placeholders
     os.environ["TEST_XLAM_VAR"] = "hello"
     assert _resolve_env_placeholders("${TEST_XLAM_VAR}") == "hello"
     assert _resolve_env_placeholders("${NONEXISTENT_VAR_XLAM}") == ""
@@ -509,16 +512,17 @@ def test_resolve_env_placeholder():
 
 
 def test_resolve_env_placeholder_double_underscore():
-    from src.data.translate import _resolve_env_placeholders
     import os
+
+    from src.data.translate import _resolve_env_placeholders
     os.environ["FOO__BAR"] = "double_underscore_val"
     assert _resolve_env_placeholders("${FOO_BAR}") == "double_underscore_val"
     del os.environ["FOO__BAR"]
 
 
 def test_is_fallback_worthy_recognizes_rate_limit():
+    from openai import APITimeoutError, RateLimitError
     from src.data.translate import _is_fallback_worthy
-    from openai import RateLimitError, APITimeoutError
     fake_rate = RateLimitError.__new__(RateLimitError)
     fake_rate.status_code = 429
     assert _is_fallback_worthy(fake_rate) is True
@@ -531,12 +535,11 @@ def test_is_fallback_worthy_recognizes_rate_limit():
 
 def test_translate_one_uses_backup_on_rate_limit(monkeypatch):
     """When main model returns RateLimitError, fall back to backup model."""
+    from openai import RateLimitError
     from src.data.translate import (
         TranslationConfig,
         translate_one,
-        _is_fallback_worthy,
     )
-    from openai import RateLimitError
 
     cfg = TranslationConfig(
         input_path=Path("/tmp/in"),
@@ -608,8 +611,8 @@ def test_translate_one_uses_backup_on_rate_limit(monkeypatch):
 
 def test_translate_one_no_backup_just_retries(monkeypatch):
     """When no backup model configured, retry on main only."""
-    from src.data.translate import TranslationConfig, translate_one
     from openai import APITimeoutError
+    from src.data.translate import TranslationConfig, translate_one
 
     cfg = TranslationConfig(
         input_path=Path("/tmp/in"),
@@ -674,9 +677,10 @@ def test_translate_one_no_backup_just_retries(monkeypatch):
 
 
 def test_translate_one_uses_all_backup_models():
-    from src.data.translate import TranslationConfig, translate_one
-    from openai import RateLimitError
     import asyncio
+
+    from openai import RateLimitError
+    from src.data.translate import TranslationConfig, translate_one
 
     cfg = TranslationConfig(
         input_path=Path("/tmp/in"),
@@ -739,9 +743,10 @@ def test_translate_one_uses_all_backup_models():
 
 
 def test_process_batch_flushes_output(tmp_path, monkeypatch):
-    from src.data import translate as module
-    from types import SimpleNamespace
     import asyncio
+    from types import SimpleNamespace
+
+    from src.data import translate as module
 
     async def fake_translate_one(client, sample, source_index, cfg, semaphore, log_callback=None, **kwargs):
         return source_index, {"id": source_index}, None
@@ -776,9 +781,10 @@ def test_process_batch_flushes_output(tmp_path, monkeypatch):
 
 
 def test_feature_group_failure_does_not_raise_after_commit(tmp_path, monkeypatch):
-    from src.data import translate as module
-    from types import SimpleNamespace
     import asyncio
+    from types import SimpleNamespace
+
+    from src.data import translate as module
 
     async def failing_classify_tools(tools, cfg, cache):
         raise RuntimeError("classifier unavailable")

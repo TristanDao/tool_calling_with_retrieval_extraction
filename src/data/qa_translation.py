@@ -12,12 +12,11 @@ import json
 import logging
 import random
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from openai import AsyncOpenAI
-
 from src.data.translate_guidelines import (
     check_identifier_integrity,
     check_required_fields_present,
@@ -47,7 +46,7 @@ class QAConfig:
     fail_on_rule_violation: bool
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "QAConfig":
+    def from_dict(cls, d: dict[str, Any]) -> QAConfig:
         rc = d.get("rule_check", {})
         lj = d.get("llm_judge", {})
         api = lj.get("api", {}) if lj else {}
@@ -310,7 +309,7 @@ async def run_qa(cfg: QAConfig) -> dict[str, Any]:
         tasks = [llm_judge_one(client, original, translated, cfg, semaphore) for _, original, translated in sampled]
         results = await asyncio.gather(*tasks)
 
-        for (idx, _original, _translated), result in zip(sampled, results):
+        for (idx, _original, _translated), result in zip(sampled, results, strict=True):
             verdict = result.get("verdict", "fail")
             judge_verdict[verdict] = judge_verdict.get(verdict, 0) + 1
             judge_results.append({"index": idx, **result})

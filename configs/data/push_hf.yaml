@@ -2,6 +2,7 @@ defaults:
   - _self_
 
 benchmark_dir: data/benchmark_vi
+benchmark_revision_dir: data/benchmark_core/2026-09-02-full-dedup-seed42
 
 repo_id: ${oc.env:HF_REPO_ID,thinh/tool-calling-vi}
 repo_type: dataset
@@ -18,7 +19,8 @@ include:
   - tool_pool.json
   - tool_schema/
   - metadata.json
-  - README.md
+  - manifest.json
+  - split_manifest.json
 
 license: apache-2.0
 language: vi

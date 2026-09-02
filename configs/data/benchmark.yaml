@@ -1,30 +1,24 @@
-defaults:
-  - _self_
+# Configuration consumed by src.data.rebuild_benchmark.
+revision: 2026-09-02-full-dedup-seed42
+benchmark_root: data/benchmark_core
+active_dir: data/benchmark_vi
+feature_group_cache: data/benchmark_vi/.cache/feature_group.json
+feature_group_config: configs/data/feature_group.yaml
 
-input_glaive: data/translations/glaive_normalized_vi.jsonl
-input_xlam: data/translations/xlam_normalized_vi.jsonl
-source_glaive: data/normalized_en/glaive_normalized.jsonl
-source_xlam: data/normalized_en/xlam_normalized.jsonl
-
-output_dir: data/benchmark_vi
-train_path: data/benchmark_vi/train.jsonl
-val_path: data/benchmark_vi/val.jsonl
-test_path: data/benchmark_vi/test.jsonl
-metadata_path: data/benchmark_vi/metadata.json
-tool_pool_path: data/benchmark_vi/tool_pool.json
-tool_schema_dir: data/benchmark_vi/tool_schema
+inputs:
+  en_glaive: data/normalized_en/glaive_normalized.jsonl
+  en_glaive_negative: data/normalized_en/glaive_negative.jsonl
+  en_xlam: data/normalized_en/xlam_normalized.jsonl
+  vi_glaive: data/translations/glaive_normalized_vi.jsonl
+  vi_glaive_negative: data/translations/glaive_negative_vi.jsonl
+  vi_xlam: data/translations/xlam_normalized_vi.jsonl
 
 split:
   train_ratio: 0.8
   val_ratio: 0.1
   test_ratio: 0.1
   seed: 42
-  shuffle: true
 
-source_filter: null
-
-filter:
-  require_min_turns: 1
-  require_min_calls: 1
-  require_non_empty_query: true
-  drop_duplicate_ids: true
+promote: true
+overwrite_revision: false
+force_active: false

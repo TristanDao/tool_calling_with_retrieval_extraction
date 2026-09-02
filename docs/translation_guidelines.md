@@ -15,7 +15,8 @@ với output, checkpoint và QA riêng.
 |---|---|---|---|
 | **Bản dịch normalized** | `data/translations/` | Schema master `{id, source, query, function_calls[], tools[]}` | Input chính cho benchmark |
 | **Raw translation legacy** | `data/translations/` | `system/chat` hoặc `answers/tools` | Giữ để audit, không dùng đường chạy chính |
-| **Benchmark task** | `data/benchmark_vi/` | Schema master + `feature_group` | Train + eval Method 1 (SLM) + Method 2 (Bi+Cross) |
+| **Benchmark task** | `data/benchmark_core/<revision>/` | Paired EN/VI schema master + `feature_group` | Shared train/val/test for all methods |
+| **Active VI export** | `data/benchmark_vi/` | VI split of active revision | Convenience path, not an independent split |
 
 Đường chạy chính tạo bản dịch schema master tại
 `data/translations/glaive_normalized_vi.jsonl` và
@@ -189,7 +190,7 @@ Sau khi dịch, chạy `src/data/qa_translation.py` để kiểm tra:
 
 ## 7. Từ Bộ 1 → Bộ 2
 
-`src/data/build_benchmark.py` parse Bộ 1 (VI) → schema master single-turn:
+`src/data/rebuild_benchmark.py` pair Bộ 1 EN/VI → frozen schema master single-turn:
 
 1. **Glaive Bộ 1** → parse first turn only:
    - Extract `USER: ...` → `query`
@@ -212,9 +213,9 @@ Sau khi dịch, chạy `src/data/qa_translation.py` để kiểm tra:
 
 4. **Feature group**: `src/data/feature_group_classify.py` LLM classify 1 lần/tool, cache.
 
-5. **Split**: 80/10/10, seed=42.
+5. **Dedup + split**: scenario dedup trước split; 80/10/10, seed=42, EN/VI cùng mapping.
 
-6. **Convert cho Method 1**: `src/data/convert_to_instruction.py` chuyển schema master → LLaMA-Factory instruction format.
+6. **Convert cho Method 1**: `src/data/convert_to_instruction.py` chuyển training rows → native `messages`/`tools`/`tool_calls`; template được load lúc train.
 
 ## 8. Trường hợp đặc biệt
 

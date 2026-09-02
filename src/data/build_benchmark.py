@@ -1,42 +1,27 @@
-"""Build Bộ 2 (benchmark_vi) từ Bộ 1 (translations).
+"""Legacy parsing helpers for the pre-revision benchmark builder.
 
-Input:
-  data/translations/glaive_vi.jsonl  (raw VI, multi-turn chat text)
-  data/translations/xlam_vi.jsonl    (raw VI, flat JSON)
+Production builds must use :mod:`src.data.rebuild_benchmark`, which creates a
+frozen paired EN/VI revision and the active Vietnamese export. This module is
+kept for the raw Glaive/xLAM parsers used by the normalization step.
 
-Output (single-turn master schema):
-  data/benchmark_vi/
-    ├── tool_pool.json       (gộp unique tools)
-    ├── tool_schema/         (mỗi tool 1 file)
-    ├── train.jsonl / val.jsonl / test.jsonl  (split 80/10/10, seed=42)
-    └── metadata.json
-
-Master schema per sample:
-  {"id": "...", "source": "glaive|xlam", "query": "VI text",
-   "function_calls": [{"name": "en_func", "arguments": {"en_key": "value"}}],
-   "tools": [{"name": "en_func", "description": "VI text",
-              "feature_group": "VI category", "parameters": {...}}]}
+The old :func:`build_benchmark` implementation is retained only for audit
+and compatibility with existing parser tests; its command-line entrypoint
+delegates to the revision builder.
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 import random
 import re
-import sys
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from src.data.feature_group_classify import load_cache, load_config, run_classify, save_cache
-from src.data.normalize_schema import (
-    is_standard_type,
-    normalize_tool,
-)
+from src.data.feature_group_classify import load_cache, load_config, save_cache
+from src.data.normalize_schema import normalize_tool
 from src.data.translate_guidelines import is_snake_case
-
 
 _GLAIVE_USER_RE = re.compile(
     r"(?:^|\n)\s*(?:USER|NGƯỜI DÙNG|KHÁCH HÀNG)\s*:\s*",
@@ -83,9 +68,8 @@ class BuildConfig:
     feature_group_config: Path
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "BuildConfig":
+    def from_dict(cls, d: dict[str, Any]) -> BuildConfig:
         split = d.get("split", {})
-        feat = d.get("feature_group", {})
         return cls(
             input_glaive=Path(d["input_glaive"]),
             input_xlam=Path(d["input_xlam"]),
@@ -211,8 +195,6 @@ def _split_glaive_chat_turns(chat: str) -> list[dict[str, Any]]:
     text = _ENDOFTOKEN_RE.sub("", text)
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
 
-    function_calls_in_text = _extract_function_calls_from_chat(chat)
-
     markers: list[tuple[int, int, str, str]] = []
     for m in _GLAIVE_USER_RE.finditer(text):
         markers.append((m.start(), m.end(), "user", m.group(0)))
@@ -236,7 +218,7 @@ def _split_glaive_chat_turns(chat: str) -> list[dict[str, Any]]:
     pending_text = ""
 
     def has_functioncall_block(start: int, end: int) -> bool:
-        for m in _FUNCTIONCALL_RE.finditer(text, start, end):
+        for _m in _FUNCTIONCALL_RE.finditer(text, start, end):
             return True
         return False
 
@@ -296,10 +278,6 @@ def _extract_glaive_tool_from_system(system_text: str) -> dict[str, Any] | None:
     try:
         obj = json.loads(candidate)
     except json.JSONDecodeError:
-        try:
-            from src.data.translate import _init_fallback_exc_types
-        except ImportError:
-            pass
         depth = 0
         in_str = False
         escape = False
@@ -779,43 +757,9 @@ def asyncio_run_classify(tools, cfg, cache):
 
 
 def main() -> None:
-    try:
-        from dotenv import load_dotenv
-        load_dotenv()
-    except ImportError:
-        pass
+    from src.data.rebuild_benchmark import main as rebuild_main
 
-    parser = argparse.ArgumentParser(description="Build Bộ 2 (benchmark_vi) from Bộ 1 (translations)")
-    parser.add_argument("--config", type=Path, default=Path("configs/data/benchmark.yaml"))
-    parser.add_argument("--input-glaive", type=Path, default=None)
-    parser.add_argument("--input-xlam", type=Path, default=None)
-    parser.add_argument("--output-dir", type=Path, default=None)
-    parser.add_argument("--no-classify", action="store_true", help="Skip LLM classification, use 'Khác' fallback")
-    args = parser.parse_args()
-
-    import yaml
-    with args.config.open("r", encoding="utf-8") as f:
-        raw = yaml.safe_load(f)
-
-    if args.input_glaive:
-        raw["input_glaive"] = str(args.input_glaive)
-    if args.input_xlam:
-        raw["input_xlam"] = str(args.input_xlam)
-    if args.output_dir:
-        raw["output_dir"] = str(args.output_dir)
-
-    cfg = BuildConfig.from_dict(raw)
-
-    if args.no_classify:
-        original = build_benchmark
-
-        def patched(cfg):
-            print("[build] --no-classify: skipping LLM, all tools get 'Khác'")
-            return _build_benchmark_no_classify(cfg)
-
-        patched(cfg)
-    else:
-        build_benchmark(cfg)
+    rebuild_main()
 
 
 def _build_benchmark_no_classify(cfg: BuildConfig) -> dict[str, Any]:
@@ -882,7 +826,6 @@ def _build_benchmark_no_classify(cfg: BuildConfig) -> dict[str, Any]:
             for s in data:
                 f.write(json.dumps(s, ensure_ascii=False) + "\n")
 
-    from collections import Counter
     metadata = {
         "total_samples": len(valid_samples),
         "train": len(train),

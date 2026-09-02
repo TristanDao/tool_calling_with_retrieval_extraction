@@ -56,7 +56,7 @@ Cả 2 được so sánh với:
 |---|---|
 | Framework chính | **PyTorch + Transformers** |
 | Config | **Hydra** với **structured config** (Python `@dataclass`) |
-| **Method 1: SLM End-to-End** | **Qwen3.5 2B/4B** + **LLaMA-Factory** (instruction tuning) |
+| **Method 1: SLM End-to-End** | **Qwen3.5 2B/4B** + **Unsloth** (QLoRA/SFT) |
 | Method 2: Bi-Encoder (Retrieval) | **BGE-M3** + **FlagEmbedding** + **MultipleNegativesRankingLoss** |
 | Method 2: Cross-Encoder (Extraction) | **BGE-M3** + **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head: span / enum / boolean), format `[CLS] query [SEP] Param=<name>. Desc=... Type=<type>[. Enum=...] [SEP]` (BERT-QA style) |
 | Dịch dataset | **Alibaba OpenAI-compatible API** (qwen3.7-flash / qwen3.7-max) |
@@ -64,7 +64,7 @@ Cả 2 được so sánh với:
 | Baseline 2 | **Google Gemini Function Calling** (gemini-1.5-flash) |
 
 **Lưu ý kiến trúc**:
-- Method 1 SLM: dùng instruction-tuning format (system prompt chứa tool list, user query, assistant sinh `<tool_call>...</tool_call>`). Giống Ersoy et al. (2025).
+- Method 1 SLM: dùng Unsloth để QLoRA/SFT checkpoint `unsloth/Qwen3.5-2B` hoặc `unsloth/Qwen3.5-4B`. Training view dùng native `messages` + `tools` + structured `tool_calls`; render bằng chat template của exact checkpoint với `enable_thinking=False`, loss chỉ tính trên assistant response. Negative dùng assistant content bình thường, không dùng `<no_tool_call>`. Giống Ersoy et al. (2025) ở thiết kế SFT, không ở serialization.
 - Method 2 Bi-Encoder: dùng `FlagEmbedding` (BAAI official) + `MultipleNegativesRankingLoss`.
 - Method 2 Cross-Encoder: **Hierarchical Span Prediction** (BGE-M3 base + custom heads). Schema-driven routing: type lấy từ schema question nên model không cần học/predict type — chỉ activate 1 sub-head phù hợp (span/enum/boolean). 1 binary `has_value` head riêng để phân biệt null (absent) vs có giá trị. Input format BERT-QA: query làm context, param schema làm question.
 
@@ -109,14 +109,14 @@ Schema master dùng chung cho toàn bộ hệ thống. Cả Method 1 và Method 
 |---|---|---|
 | `id` | — | Unique string, format `<source>_<index>` (VD: `glaive_00042`, `xlam_00123`) |
 | `source` | — | `glaive` hoặc `xlam` |
-| `query` | **VI** | User query tiếng Việt |
+| `query` | **EN/VI** | User query theo language split |
 | `function_calls[].name` | **EN** | snake_case identifier, không dấu |
 | `function_calls[].arguments` keys | **EN** | snake_case |
 | `function_calls[].arguments` values | VI/EN | tùy natural language hay identifier |
 | `tools[].name` | **EN** | snake_case identifier |
-| `tools[].description` | **VI** | Mô tả tự nhiên tiếng Việt |
+| `tools[].description` | **EN/VI** | Mô tả tự nhiên theo language split |
 | `tools[].feature_group` | **VI** | Tên nhóm chức năng (do LLM classify, cache theo tool name) |
-| `tools[].parameters` | — | JSON Schema chuẩn (`string`/`integer`/`number`/`boolean`/`array`/`object`) |
+| `tools[].parameters` | — | JSON Schema chuẩn (`string`/`integer`/`number`/`boolean`/`array`/`object`); enum dùng `type: "string"` + `enum` |
 
 **Lưu ý**: `function_calls[]` là list (multi-call) — 1 query có thể gọi 1+ tool.
 
@@ -131,23 +131,23 @@ Schema master dùng chung cho toàn bộ hệ thống. Cả Method 1 và Method 
 | `"array"` | `"list"`, `"List[int]"`, ... | Phải có `items: {type: T}` |
 | `"object"` | — | Nested object hiếm gặp |
 
-### Sample count sau filter single-turn
+### Sample count sau frozen pairing và dedup
 
-| Dataset | Raw | Sau filter | Mất |
+| Dataset | Input paired | Frozen revision | Ghi chú |
 |---|---|---|---|
-| Glaive | 112,960 | **45,593** (40%) | 67,367 multi-turn bị bỏ |
-| xLAM | 60,000 | **60,000** (100%) | 0 (đã flat) |
-| **Total** | 172,960 | **~105,593** | ~39% |
+| Glaive | 60,734 | **18,210** | 45,593 positive + 15,141 negative trước dedup/validation |
+| xLAM | 60,000 | **58,818** | Positive single-turn/multi-call |
+| **Total** | 120,734 | **77,028 paired** | 944 rejected, 42,762 scenario duplicates |
 
-### Data flow: từ master schema → 2 format train
+### Data flow: từ frozen master schema → train views
 
 ```
-Schema master (data/benchmark_vi/*.jsonl)
+Schema master (data/benchmark_core/<revision>/{en,vi}/*.jsonl)
    │
    ├──► Method 1 (SLM):
    │    src/data/convert_to_instruction.py
-   │    → data/benchmark_vi/instruction/
-   │      train_chat.jsonl (LLaMA-Factory format)
+   │    → data/experiments/{e1,e2,e4,e5}/instruction/train_chat.jsonl
+   │      native Qwen3.5 messages/tools/tool_calls
    │
    └──► Method 2 (Bi+Cross):
         Dùng trực tiếp schema master
@@ -192,15 +192,12 @@ tool_calling_with_retrieval_extraction/
 │   │   └── stress_test/       # ← Phase 7
 │   │       ├── anchors.jsonl
 │   │       └── augmented/
-│   ├── benchmark_vi/          # Final Vietnamese benchmark
-│   │   ├── tool_pool.json     # Gộp unique tools từ Glaive + xLAM
-│   │   ├── tool_schema/
-│   │   ├── train.jsonl / val.jsonl / test.jsonl
-│   │   └── instruction/       # ← Method 1: convert sang chat format
-│   │       ├── train_chat.jsonl / val_chat.jsonl / test_chat.jsonl
-│   ├── experiments/           # Materialized Method 1 data (gitignored)
-│   │   ├── e0/ ... e5/
-│   │   └── manifest.json + train/val/test files per experiment
+│   ├── benchmark_core/        # Frozen paired EN/VI revisions (gitignored)
+│   │   └── <revision>/{en,vi}/{train,val,test}.jsonl + manifests
+│   ├── benchmark_vi/          # Active VI export of the selected revision
+│   ├── experiments/            # Method 1 train-only artifacts (gitignored)
+│   │   └── e0, e1, e2, e4, e5/
+│   ├── legacy/                # Read-only archive of generated pilot outputs
 │   ├── translations/          # Qwen-MT logs + QA samples
 │   └── statistics/
 │
@@ -211,14 +208,15 @@ tool_calling_with_retrieval_extraction/
 │   │   ├── translate.py
 │   │   ├── translate_guidelines.py
 │   │   ├── qa_translation.py
-│   │   ├── build_benchmark.py
-│   │   ├── convert_to_instruction.py  # ← Method 1: master → chat format
+│   │   ├── build_benchmark.py          # Legacy raw parser compatibility
+│   │   ├── rebuild_benchmark.py        # Frozen paired revision builder
+│   │   ├── convert_to_instruction.py  # ← Method 1: native Qwen view
 │   │   ├── build_tool_pool.py
 │   │   ├── extract_anchors.py
 │   │   ├── augment_with_distractors.py
 │   │   └── stats.py
 │   ├── models/
-│   │   ├── slm/               # ← Method 1: Qwen3.5 fine-tune (LLaMA-Factory)
+│   │   ├── slm/               # ← Method 1: Qwen3.5 fine-tune (Unsloth)
 │   │   ├── biencoder/         # Method 2: Semantic Tool Retrieval
 │   │   ├── crossencoder/      # Method 2: Schema-aware Parameter Extraction
 │   │   └── baselines/         # OpenAI FC, Gemini FC
@@ -264,8 +262,8 @@ tool_calling_with_retrieval_extraction/
 ### Phase detail
 
 **Phase 1 — Data pipeline**:
-- Collect → normalize → translate (Bộ 1) → QA → build benchmark (Bộ 2/master) → convert instruction format
-- Output: `data/benchmark_vi/` + `data/benchmark_vi/instruction/`
+- Collect → normalize → translate (Bộ 1) → QA → frozen paired revision → native training views
+- Output: frozen `data/benchmark_core/<revision>/`, active `data/benchmark_vi/` và train artifacts trong `data/experiments/`
 
 **Phase 2 — Bi-Encoder** (Method 2):
 - Train BGE-M3 + MNRL cho tool retrieval
@@ -276,8 +274,9 @@ tool_calling_with_retrieval_extraction/
 - Metric: Span F1, Enum accuracy, End-to-end F1
 
 **Phase 4 — SLM** (Method 1):
-- Fine-tune Qwen3.5 2B/4B với LLaMA-Factory trên instruction data
-- Format: system (tool list) + user (query) → assistant (`<tool_call>...</tool_call>`)
+- Fine-tune `unsloth/Qwen3.5-2B/4B` với Unsloth QLoRA/SFT trên native rows
+- Format: `messages` + `tools` → assistant structured `tool_calls` hoặc normal answer
+- Template load trực tiếp từ checkpoint, loss chỉ tính trên assistant response
 - Metric: End-to-end accuracy (giống Ersoy et al. ArgA)
 
 **Phase 5 — Baselines**:
@@ -344,28 +343,28 @@ tool_calling_with_retrieval_extraction/
 
 ## 10. Open Questions / Decisions Pending
 
-- **[x] Single-turn + multi-call**: Đã chốt — chỉ lấy first turn từ Glaive, giữ multi-call từ xLAM. ~105k samples.
-- **[x] Schema master**: Đã chốt — `{id, source, query, function_calls[], tools[]}`. Dùng chung cho cả 2 method.
-- **[x] Method 1 model**: Đã chốt — Qwen3.5 2B/4B (Small LM, đúng tinh thần "SLM"), fine-tune với LLaMA-Factory.
-- **[x] Method 1 data format**: Đã chốt — instruction-tuning (system prompt + user + assistant), convert từ schema master qua `convert_to_instruction.py`.
+- **[x] Single-turn + multi-call**: Đã chốt — chỉ lấy first turn từ Glaive, giữ multi-call từ xLAM. Frozen revision hiện hành có `77,028` paired records sau validation/dedup.
+- **[x] Schema master**: Đã chốt — `{id, source, query, function_calls[], tools[]}`. Dùng chung cho cả 2 method; EN/VI counterpart giữ cùng split.
+- **[x] Method 1 model**: Đã chốt — `unsloth/Qwen3.5-2B` và `unsloth/Qwen3.5-4B` (Small LM), fine-tune với Unsloth.
+- **[x] Method 1 data format**: Đã chốt — native `messages`/`tools`/`tool_calls`, convert từ frozen revision qua `convert_to_instruction.py`, render bằng template exact checkpoint.
 - **[x] Comparison table**: Đã chốt — 4 methods (Method 1 SLM + Method 2 Bi+Cross + OpenAI FC + Gemini FC).
 - **[x] Stress test**: Đã chốt — giữ, so sánh cả 4 methods.
-- **[ ] Số lượng tool trong benchmark**: Chưa quyết (sau khi build tool_pool.json).
-- **[ ] Splits train/val/test ratio**: Đề xuất 80/10/10, seed=42.
+- **[x] Số lượng tool trong benchmark**: `4,421` unique tools trong revision `2026-09-02-full-dedup-seed42`.
+- **[x] Splits train/val/test ratio**: `80/10/10`, seed=`42`; counts mỗi language `61,615/7,701/7,712`.
 - **[ ] Metric chính Method 1**: ArgA (Ersoy et al.) hay dùng metric chung với Method 2?
-- **[ ] Fine-tune Method 1 pipeline**: Dùng LLaMA-Factory CLI hay tích hợp training script trong repo?
+- **[x] Fine-tune Method 1 framework**: Dùng Unsloth cho QLoRA/SFT Qwen3.5. Không dùng LLaMA-Factory hoặc ShareGPT trong training path; training dùng native Qwen3.5 chat template và response-only loss.
 - **[x] Phase 1 in progress** (data pipeline):
   - [x] Download Glaive + xLAM
   - [x] EDA (notebook 01)
   - [x] Decision: single-turn + multi-call
-  - [ ] `src/data/translate.py`
-  - [ ] `src/data/translate_guidelines.py`
-  - [ ] `src/data/translation_checkpoint.py`
-  - [ ] `src/data/qa_translation.py`
-  - [ ] `src/data/normalize_schema.py`
-  - [ ] `src/data/feature_group_classify.py`
-  - [ ] `src/data/build_benchmark.py`
-  - [ ] `src/data/convert_to_instruction.py`
+  - [x] `src/data/translate.py`
+  - [x] `src/data/translate_guidelines.py`
+  - [x] `src/data/translation_checkpoint.py`
+  - [x] `src/data/qa_translation.py`
+  - [x] `src/data/normalize_schema.py`
+  - [x] `src/data/feature_group_classify.py`
+  - [x] `src/data/rebuild_benchmark.py` (production builder)
+  - [x] `src/data/convert_to_instruction.py`
   - [ ] `src/data/stats.py`
   - [ ] `src/data/push_hf.py`
 - **[x] Translation pipeline design** (chốt 2026-07-28):
@@ -373,39 +372,42 @@ tool_calling_with_retrieval_extraction/
   - 3 retry/sample với exp backoff. Fail → `failed/`.
   - Validate per-sample. Output: append JSONL + flush + fsync.
   - Resume: atomic checkpoint JSON.
-  - Pilot: 100+100 → 1k+1k → full ~105k.
+  - Pilot: 100+100 → 1k+1k → frozen revision; full source translation remains pending.
 - **[x] Schema clarification + pilot rebuild** (2026-08-04):
   - `data/translations/` là Bộ 1, giữ format gần raw (`system/chat` cho Glaive; `id/query/answers/tools` cho xLAM) theo thiết kế.
   - `data/benchmark_vi/` là Bộ 2, output schema master `{id, source, query, function_calls[], tools[]}`.
   - Rebuild pilot hiện có: 209 samples, 395 unique tools, split 167/20/22; instruction output đã tạo đủ 3 split.
-  - Full translation vẫn pending: pilot sạch hiện có 10 Glaive + 10 xLAM samples thành công.
+  - Pilot artifacts đã archive; frozen revision mới được ghi riêng dưới `data/benchmark_core/`.
 - **[x] Feature-group API smoke test** (2026-08-04):
   - Chạy một request không ghi cache bằng `bash scripts/data/run_feature_group.sh data/benchmark_vi/tool_pool.json --smoke-test`.
   - `feature_group` dùng `${ALIBABA_MODEL}`; smoke test hiện thành công với `qwen3.7-flash` và trả category hợp lệ.
   - `ALIBABA_BACKUP_MODEL*` chỉ dùng cho translation pipeline, chưa dùng cho feature-group classifier.
 - **[x] Qwen3.5 checkpoint policy** (2026-08-20):
-  - Method 1 chỉ dùng checkpoint Qwen3.5 post-trained `Qwen/Qwen3.5-2B` và `Qwen/Qwen3.5-4B`.
-  - Không dùng `Qwen/Qwen3.5-2B-Base` hoặc `Qwen/Qwen3.5-4B-Base`; Qwen3.5 mới không đặt hậu tố `Instruct` trên checkpoint post-trained.
-- **[x] Benchmark snapshot policy** (2026-08-20):
-  - `data/benchmark_vi/` là canonical benchmark dùng chung, không rebuild/xóa theo từng experiment.
-  - Mỗi experiment phải ghi benchmark manifest, composition dữ liệu, seed và checkpoint vào output riêng.
-  - Snapshot hiện tại có 51,227 positive samples, split 40,981/5,122/5,124, seed=42; không trùng ID nhưng có 1,099 nhóm query trùng giữa split, chưa phải full benchmark cuối.
+  - Method 1 chỉ dùng checkpoint `unsloth/Qwen3.5-2B` và `unsloth/Qwen3.5-4B`.
+  - Không dùng checkpoint `-Base`; exact checkpoint tự cung cấp chat template.
+- **[x] Benchmark revision policy** (2026-09-02):
+  - `data/benchmark_core/2026-09-02-full-dedup-seed42/` là frozen canonical revision; `data/benchmark_vi/` là active VI export.
+  - Mỗi experiment ghi revision, composition, seed, ID hashes và checkpoint policy vào manifest riêng.
+  - Revision có `77,028` paired records, `4,817` negative, `4,421` tools; split `61,615/7,701/7,712`.
 - **[x] Method 1 data budget policy** (2026-08-20):
   - Main controlled track dùng 60,000 core examples cho E1–E4 và 65,600 cho E5 (thêm toàn bộ `data/custom_vi/train.jsonl`).
   - Qwen3.5-2B và Qwen3.5-4B phải dùng cùng sample IDs, seed, epoch target và training budget.
   - Full-data runs là robustness/scale-up track riêng, không thay thế main controlled track.
 - **[x] Experiment data materialization** (2026-08-27):
   - Thêm `src/data/prepare_experiments.py` và `scripts/data/prepare_experiments.sh`.
-  - Tạo `data/experiments/e0` đến `e5` với manifest, EN/VI paired data, validation/test riêng và instruction data.
-  - E1/E2/E3 có 60,000 mẫu, E4 có 60,000 mẫu song ngữ, E5 có 65,600 mẫu gồm CustomTools train.
+  - Tạo `data/experiments/e0`, `e1`, `e2`, `e4`, `e5` với manifest và train-only native data; validation/test dùng shared revision.
+  - E1/E2 có 60,000 mẫu, E4 có 60,000 mẫu song ngữ, E5 có 65,600 mẫu gồm CustomTools train; E3 chờ general-SFT prerequisite.
 - **[x] Kaggle upload helper** (2026-08-27):
-  - Thêm `scripts/data/upload_experiments_to_kaggle.py` dùng `kagglehub` để upload `data/experiments/`.
+  - Thêm `scripts/data/upload_experiments_to_kaggle.py` dùng `kagglehub` để upload train artifacts cùng frozen revision/CustomTools tùy chọn.
   - Kaggle token lấy từ `~/.kaggle/access_token`; không lưu credential trong repo.
 - **[x] Experiment instruction formatting** (2026-08-27):
-  - EN và VI dùng system prompt đúng ngôn ngữ; negative samples được chuyển thành `<no_tool_call>`.
-  - E4/E5 giữ riêng core EN, core VI và CustomTools instruction files, sau đó ghép thành `train_chat.jsonl` không ghi đè dữ liệu.
-- **[x] Kaggle notebook guide** (2026-08-27):
-  - Thêm `docs/kaggle_notebook_guide.md` hướng dẫn setup, QLoRA SFT, E0 zero-shot, artifact và thứ tự chạy E0-E5.
+  - EN và VI dùng system prompt đúng ngôn ngữ; negative samples dùng assistant content bình thường, không có `<no_tool_call>`.
+  - E4/E5 ghép native rows trong `train_chat.jsonl`; source/language vẫn được giữ trong `train.jsonl`.
+- **[x] Kaggle notebook guide** (2026-09-02):
+  - `docs/kaggle_notebook_guide.md` dùng Unsloth, native template, shared validation/test và không copy evaluation vào experiment.
+- **[x] Method 1 trainer migration** (2026-08-31):
+  - Chốt dùng Unsloth cho QLoRA/SFT checkpoint `unsloth/Qwen3.5-2B` và `unsloth/Qwen3.5-4B`.
+  - Không dùng LLaMA-Factory/ShareGPT trong training path; training dùng native Qwen3.5 chat template và chỉ tính loss trên assistant response.
 - **[x] Translation backup chain + API smoke test** (2026-08-04):
   - Translation retry chain: `ALIBABA_MODEL` → `ALIBABA_BACKUP_MODELS` (74 models, comma-separated, ordered by quality tier).
   - Smoke test 1 sample không ghi output/checkpoint bằng `bash scripts/data/run_translate_glaive.sh 175 176 --smoke-test`.
@@ -421,11 +423,15 @@ tool_calling_with_retrieval_extraction/
 - **[x] CustomTools-VI dataset strategy** (chốt 2026-08-11):
   - Tạo 8,000 samples đặc trưng VN (4,800 positive + 3,200 negative) thuộc 40 tools / 10 nhóm chức năng.
   - Split 70/10/20: 5,600 train + 800 val + 1,600 test.
-  - Train/Val merge vào master benchmark; Test giữ riêng `test_custom_vi.jsonl` làm bộ đánh giá VN-specific.
+  - Giữ CustomTools độc lập; chỉ `train.jsonl` đưa vào E5, validation/test dùng evaluation view riêng.
   - Plan chi tiết tại `docs/custom_vi_dataset_plan.md`.
 - **[x] Phase 2/3 deferred** (quay lại sau khi data xong):
   - [ ] 4 configs/crossencoder/ (model, heads, losses, training)
   - [ ] 4 tests/crossencoder/ (heads, losses, label_generator, inference)
+- **[x] Frozen benchmark rebuild + native preparation** (2026-09-02):
+  - Revision `data/benchmark_core/2026-09-02-full-dedup-seed42/` có `77,028` paired records, `4,817` negative và `4,421` unique tools.
+  - Archive pilot tại `data/legacy/pilot_20260902T000000Z/`; source raw/normalized/translation/CustomTools được giữ nguyên.
+  - Native converter, assistant-only collator, Unsloth trainer và output parser đã có; GPU/template smoke test còn pending vì môi trường hiện thiếu PyTorch/Transformers.
 
 ---
 
@@ -465,3 +471,5 @@ tool_calling_with_retrieval_extraction/
 | 2026-08-10 | Chuyển entrypoint dịch Glaive và xLAM sang normalized schema; raw outputs giữ lại để audit, thêm chuyển đổi/resume không gọi API lại cho phần đã dịch. |
 | 2026-08-11 | **CustomTools-VI Strategy**: Thống nhất kế hoạch xây dựng 8,000 samples (40 tools / 10 nhóm) cho ngữ cảnh Việt Nam, split 70/10/20. Tạo `docs/custom_vi_dataset_plan.md` và `implementation_plan.md`. |
 | 2026-08-20 | **Cập nhật backbone model Method 1**: Chuyển mô hình SLM từ Qwen2.5 (0.5B/1.5B) sang **Qwen3.5 (2B/4B)** theo định hướng thực nghiệm mới. Đồng bộ toàn bộ tài liệu và kế hoạch thực nghiệm. |
+| 2026-08-31 | **Cập nhật trainer Method 1**: Chuyển QLoRA/SFT từ LLaMA-Factory sang **Unsloth**. Training path dùng native Qwen3.5 chat template + response-only loss, không dùng ShareGPT. |
+| 2026-09-02 | **Frozen benchmark + experiment preparation**: Rebuild paired EN/VI revision có negative và group-level dedup, archive pilot, materialize E0/E1/E2/E4/E5 train-only artifacts với native tool calls và manifest reproducibility. |

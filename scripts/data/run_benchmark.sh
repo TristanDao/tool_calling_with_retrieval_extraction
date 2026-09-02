@@ -1,11 +1,7 @@
 #!/bin/bash
-# Build Bộ 2 benchmark from Bộ 1 translations
+# Build and freeze a paired core benchmark revision
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
 
-if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
-fi
-
-python -m src.data.build_benchmark --config configs/data/benchmark.yaml "$@"
+python -m src.data.rebuild_benchmark "$@"

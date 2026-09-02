@@ -95,7 +95,9 @@ def convert(
                         translated_call.get("arguments", {}),
                     ),
                 }
-                for original_call, translated_call in zip(expected_calls, translated_calls)
+                for original_call, translated_call in zip(
+                    expected_calls, translated_calls, strict=True
+                )
             ]
             translated_tools = {
                 tool.get("name"): tool

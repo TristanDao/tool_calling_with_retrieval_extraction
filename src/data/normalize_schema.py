@@ -16,8 +16,8 @@ và Glaive system JSON (parameters.properties.{name}.{type,description}).
 from __future__ import annotations
 
 import re
+from copy import deepcopy
 from typing import Any
-
 
 _TYPE_MAP: dict[str, str] = {
     "str": "string",
@@ -28,7 +28,7 @@ _TYPE_MAP: dict[str, str] = {
     "number": "number",
     "bool": "boolean",
     "boolean": "boolean",
-    "enum": "enum",
+    "enum": "string",
     "list": "array",
     "array": "array",
     "object": "object",
@@ -132,7 +132,7 @@ def normalize_parameter_schema(
 
     Output schema (xLAM style — flat per param):
       {
-        "type": "string" | "integer" | "number" | "boolean" | "array" | "object" | "enum",
+        "type": "string" | "integer" | "number" | "boolean" | "array" | "object",
         "description": "...",
         ...(items nếu array, enum nếu enum, default nếu có)...
       }
@@ -150,7 +150,6 @@ def normalize_parameter_schema(
         enum_vals = pschema["enum"]
         if isinstance(enum_vals, list) and all(isinstance(v, (str, int, float, bool)) for v in enum_vals):
             out["enum"] = list(enum_vals)
-            out["type"] = "enum"
 
     if "default" in pschema and pschema["default"] not in (None, ""):
         out["default"] = pschema["default"]
@@ -206,7 +205,7 @@ def normalize_xlam_tool(tool: dict[str, Any]) -> dict[str, Any]:
             pschema = {"type": "string"}
         normalized, is_optional = normalize_parameter_schema(pname, pschema)
         properties[pname] = normalized
-        if not is_optional:
+        if not is_optional and "default" not in pschema:
             required.append(pname)
 
     parameters: dict[str, Any] = {
@@ -220,6 +219,63 @@ def normalize_xlam_tool(tool: dict[str, Any]) -> dict[str, Any]:
         "name": tool.get("name", ""),
         "description": tool.get("description", ""),
         "parameters": parameters,
+    }
+
+
+def _normalize_json_schema(schema: Any, defaults_optional: bool = False) -> Any:
+    if not isinstance(schema, dict):
+        return schema
+
+    result = deepcopy(schema)
+    raw_type = result.get("type")
+    if raw_type is None and isinstance(result.get("properties"), dict):
+        result["type"] = "object"
+    elif raw_type == "enum":
+        result["type"] = "string"
+    elif isinstance(raw_type, str):
+        result["type"] = normalize_type(raw_type)[0]
+
+    properties = result.get("properties")
+    if isinstance(properties, dict):
+        result["properties"] = {
+            name: _normalize_json_schema(child, defaults_optional=defaults_optional)
+            for name, child in properties.items()
+        }
+
+    if "items" in result:
+        result["items"] = _normalize_json_schema(
+            result["items"], defaults_optional=defaults_optional
+        )
+    if isinstance(result.get("additionalProperties"), dict):
+        result["additionalProperties"] = _normalize_json_schema(
+            result["additionalProperties"], defaults_optional=defaults_optional
+        )
+
+    required = result.get("required")
+    if isinstance(required, list) and isinstance(properties, dict) and defaults_optional:
+        result["required"] = [
+            name
+            for name in required
+            if not (
+                isinstance(properties.get(name), dict)
+                and "default" in properties[name]
+            )
+        ]
+        if not result["required"]:
+            result.pop("required")
+    return result
+
+
+def _normalize_standard_tool(
+    tool: dict[str, Any], defaults_optional: bool = False,
+) -> dict[str, Any]:
+    parameters = tool.get("parameters")
+    if not isinstance(parameters, dict):
+        parameters = {"type": "object", "properties": {}}
+    return {
+        "name": tool.get("name", ""),
+        "description": tool.get("description", ""),
+        "parameters": _normalize_json_schema(parameters, defaults_optional=defaults_optional),
     }
 
 
@@ -240,11 +296,7 @@ def normalize_glaive_tool(tool: dict[str, Any]) -> dict[str, Any]:
       }
     → Trả về normalized (giữ nguyên vì đã đúng JSON Schema chuẩn).
     """
-    return {
-        "name": tool.get("name", ""),
-        "description": tool.get("description", ""),
-        "parameters": tool.get("parameters", {"type": "object", "properties": {}}),
-    }
+    return _normalize_standard_tool(tool)
 
 
 def normalize_tool(tool: dict[str, Any], dataset: str = "auto") -> dict[str, Any]:
@@ -260,10 +312,17 @@ def normalize_tool(tool: dict[str, Any], dataset: str = "auto") -> dict[str, Any
             "description": tool.get("description", ""),
             "parameters": {"type": "object", "properties": {}},
         }
-    if "properties" in params:
+    if dataset == "xlam":
+        is_standard = params.get("type") == "object" and isinstance(params.get("properties"), dict)
+        if is_standard:
+            return _normalize_standard_tool(tool, defaults_optional=True)
+        return normalize_xlam_tool(tool)
+    if dataset == "glaive":
         return normalize_glaive_tool(tool)
+    if "properties" in params and params.get("type") == "object":
+        return _normalize_standard_tool(tool, defaults_optional=dataset == "xlam")
     return normalize_xlam_tool(tool)
 
 
 def is_standard_type(t: str) -> bool:
-    return t in {"string", "integer", "number", "boolean", "array", "object", "enum"}
+    return t in {"string", "integer", "number", "boolean", "array", "object"}

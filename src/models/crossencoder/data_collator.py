@@ -11,7 +11,6 @@ from typing import Any
 import torch
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
-
 SCHEMA_TYPE_STRING = "string"
 SCHEMA_TYPE_NUMBER = "number"
 SCHEMA_TYPE_BOOLEAN = "boolean"
@@ -32,8 +31,8 @@ _VALID_TYPES = (
 def build_schema_question(param: dict[str, Any]) -> str:
     name = param["name"]
     desc = param.get("description", "").strip()
-    ptype = param.get("type", "string")
-    if ptype == "enum":
+    ptype = normalize_schema_type(param)
+    if ptype == SCHEMA_TYPE_ENUM:
         enum_values = param.get("enum", [])
         enum_str = "|".join(str(v) for v in enum_values)
         return f"Param={name}. Desc={desc}. Type=enum. Enum={enum_str}"
@@ -60,7 +59,11 @@ _OPTIONAL_SUFFIX_RE = re.compile(r",\s*optional\s*$", re.IGNORECASE)
 _LIST_GENERIC_RE = re.compile(r"^list(\[.*\])?$", re.IGNORECASE)
 
 
-def normalize_schema_type(raw: str) -> str:
+def normalize_schema_type(raw: str | dict[str, Any]) -> str:
+    if isinstance(raw, dict):
+        if isinstance(raw.get("enum"), list) and raw["enum"]:
+            return SCHEMA_TYPE_ENUM
+        raw = raw.get("type", "string")
     if not raw:
         return SCHEMA_TYPE_STRING
     cleaned = _OPTIONAL_SUFFIX_RE.sub("", str(raw).strip()).lower()

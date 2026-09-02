@@ -29,12 +29,12 @@ Phạm vi đề tài: bước 1, 2, 3. (Bước 4 nằm ngoài scope.)
 
 **Theo Ersoy et al. (2025)**: Fine-tune một LLM nhỏ (Small Language Model) làm toàn bộ pipeline tool calling.
 
-- **Format**: instruction-tuning (system prompt + user query + assistant response).
-- **System prompt**: liệt kê các tool có sẵn (name, description, parameters).
+- **Format**: native `messages` + `tools` + structured `tool_calls`.
+- **System prompt**: prompt nền; danh sách tool truyền riêng qua `tools=`.
 - **User**: query tiếng Việt.
-- **Assistant output**: `<tool_call>{"name": "...", "arguments": {...}}</tool_call>` hoặc `<no_tool_call>`.
-- **Model**: checkpoint Qwen3.5 post-trained `Qwen/Qwen3.5-2B` / `Qwen/Qwen3.5-4B`; không dùng checkpoint `-Base`.
-- **Framework**: LLaMA-Factory (SFT).
+- **Assistant output**: checkpoint-native `<tool_call><function=...>...</function></tool_call>` hoặc normal answer.
+- **Model**: checkpoint Qwen3.5 post-trained `unsloth/Qwen3.5-2B` / `unsloth/Qwen3.5-4B`; không dùng checkpoint `-Base`.
+- **Framework**: Unsloth QLoRA/SFT, assistant-only loss.
 - **Metric chính**: **ArgA (Argument Population Accuracy)** — tỉ lệ function call có cả tên tool và toàn bộ tham số chính xác.
 
 **Tại sao chọn SLM**:
@@ -75,6 +75,12 @@ sim(q, t) = cos(E_q(q), E_t(t))
 - **Glaive Function Calling v2** (~113k samples): multi-turn chat, lọc first turn → 45,593.
 - **xLAM** (~60k samples): flat query, multi-call (53%), giữ toàn bộ.
 
+Sau pairing, schema validation và scenario dedup, revision frozen
+`2026-09-02-full-dedup-seed42` có `77,028` paired records: `18,210` Glaive,
+`58,818` xLAM; trong đó `4,817` là negative. Split cố định là
+`61,615/7,701/7,712` theo train/val/test. Các con số chính thức lấy từ
+`data/benchmark_core/<revision>/metadata.json`.
+
 ### 3.2 Schema master (single-turn + multi-call)
 
 ```json
@@ -92,7 +98,7 @@ sim(q, t) = cos(E_q(q), E_t(t))
 ```
 
 Dùng chung cho cả 2 method:
-- **Method 1**: convert sang instruction format (system + user + assistant).
+- **Method 1**: convert sang native `messages`/`tools`/`tool_calls`, sau đó dùng chat template của checkpoint.
 - **Method 2**: dùng trực tiếp (query → Bi-Encoder, query + param_schema → Cross-Encoder).
 
 ### 3.3 Pipeline xây dựng
@@ -101,17 +107,19 @@ Dùng chung cho cả 2 method:
 2. **Translate**: Qwen-MT qua Alibaba OpenAI-compatible API.
 3. **Normalize**: schema về JSON Schema chuẩn, map xLAM types.
 4. **QA**: rule check + LLM judge 5%.
-5. **Build benchmark**: Bộ 1 → schema master, split 80/10/10.
-6. **Convert**: schema master → instruction format cho Method 1.
+5. **Build benchmark**: pairing + validation + dedup → frozen revision, split 80/10/10.
+6. **Convert**: training rows → native `messages`/`tools`/`tool_calls` cho Method 1.
 
 ---
 
 ## 4. Phương pháp huấn luyện
 
-### 4.1 Method 1 — SLM Instruction Tuning
+### 4.1 Method 1 — Native Tool-Call SFT
 
-- **Model**: checkpoint Qwen3.5 post-trained `Qwen/Qwen3.5-2B` / `Qwen/Qwen3.5-4B`; không dùng checkpoint `-Base`.
-- **Framework**: LLaMA-Factory (SFT).
+- **Model**: checkpoint Qwen3.5 post-trained `unsloth/Qwen3.5-2B` / `unsloth/Qwen3.5-4B`; không dùng checkpoint `-Base`.
+- **Framework**: Unsloth QLoRA/SFT.
+- **Serialization**: `apply_chat_template(..., tools=..., enable_thinking=False)` từ exact checkpoint.
+- **Loss**: chỉ assistant response tokens; system/user/tool definitions được mask.
 - **Learning rate**: ~5e-7, cosine schedule.
 - **Metric**: **ArgA** — end-to-end accuracy (tool name + all arguments đúng).
 - **Evaluation**: weighted precision/recall per tool + ArgA.
@@ -159,6 +167,11 @@ Dùng chung cho cả 2 method:
 ### 5.2 Metric riêng Method 1
 
 - **ArgA** (Argument Population Accuracy, Ersoy et al.): tỉ lệ function call có cả tên tool và tất cả arguments chính xác, tính trên positive cases (có tool call).
+
+Negative core records giữ `function_calls=[]`. Native training row không có
+`tool_calls` và dùng assistant content bình thường; không dùng marker
+`<no_tool_call>`. Output parser xem output không có call hợp lệ là negative,
+nhưng output malformed vẫn là invalid.
 
 ### 5.3 Metric riêng Method 2
 

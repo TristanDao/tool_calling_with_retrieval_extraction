@@ -6,8 +6,8 @@ Hệ thống so sánh **2 phương pháp** Tool Calling tiếng Việt + 2 API b
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                     BENCHMARK VI (single-turn + multi-call)                       │
-│                          data/benchmark_vi/{train,val,test}.jsonl                 │
+│             FROZEN CORE BENCHMARK (paired EN/VI, single-turn + multi-call)        │
+│       data/benchmark_core/<revision>/{en,vi}/{train,val,test}.jsonl               │
 └──────────────────────────────────┬──────────────────────────────────────────────┘
                                    │
            ┌───────────────────────┼───────────────────────┐
@@ -18,7 +18,7 @@ Hệ thống so sánh **2 phương pháp** Tool Calling tiếng Việt + 2 API b
 │   End-to-End        │ │  + Cross-Enc        │ │                     │
 │                     │ │                     │ │  OpenAI FC           │
 │  Qwen3.5 2B/4B      │ │  Bi-Encoder         │ │  (gpt-4o-mini)       │
-│  + LLaMA-Factory    │ │  (BGE-M3 + MNRL)    │ │                     │
+│  + Unsloth QLoRA    │ │  (BGE-M3 + MNRL)    │ │                     │
 │                     │ │    │                │ │  Gemini FC           │
 │  ┌───────────────┐  │ │    ▼                │ │  (gemini-1.5-flash)  │
 │  │ Instruction   │  │ │  Cross-Encoder      │ │                     │
@@ -28,7 +28,7 @@ Hệ thống so sánh **2 phương pháp** Tool Calling tiếng Việt + 2 API b
 │  └───────────────┘  │ │  Validator          │
 │    │                 │ │                     │
 │    ▼                 │ │                     │
-│  <tool_call>...</>   │ │  function_call JSON │
+│  native tool calls   │ │  function_call JSON │
 └─────────────────────┘ └─────────────────────┘
            │                       │
            └───────────────────────┴───────────────────────┐
@@ -53,38 +53,34 @@ Hệ thống so sánh **2 phương pháp** Tool Calling tiếng Việt + 2 API b
 
 ## 2. Method 1 — SLM End-to-End
 
-Fine-tune checkpoint Qwen3.5 post-trained nhỏ (`Qwen/Qwen3.5-2B` hoặc `Qwen/Qwen3.5-4B`) làm tool selection + parameter extraction trong 1 model. Dự án không dùng các checkpoint có hậu tố `-Base`.
+Fine-tune checkpoint Qwen3.5 post-trained nhỏ (`unsloth/Qwen3.5-2B` hoặc `unsloth/Qwen3.5-4B`) làm tool selection + parameter extraction trong 1 model. Dự án không dùng các checkpoint có hậu tố `-Base`.
 Theo hướng tiếp cận của Ersoy et al. (2025).
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                    METHOD 1: SLM END-TO-END                       │
 │                                                                   │
-│  Training data: instruction-tuning format                         │
+│  Training data: native messages/tool_calls                         │
 │  ┌─────────────────────────────────────────────┐                  │
-│  │ System: Available tools:                    │                  │
-│  │  [{"name":"search_tutors","description":...}]│                 │
+│  │ System: prompt nền; tools truyền qua tools= │                  │
+│  │  [{"type":"function","function":{...}}]  │                  │
 │  │                                             │                  │
 │  │ User: Tôi muốn tìm gia sư Toán ở Hà Nội.    │                  │
 │  │                                             │                  │
-│  │ Assistant: <tool_call>                      │                  │
-│  │  {"name":"search_tutors",                   │                  │
-│  │   "arguments":{"subject":"Toán",            │                  │
-│  │               "location":"Hà Nội"}}          │                  │
-│  │  </tool_call>                               │                  │
+│  │ Assistant: tool_calls=[{name, arguments}]   │                  │
 │  └─────────────────────────────────────────────┘                  │
 │                                                                   │
 │  Model: Qwen3.5 2B / 4B                                          │
-│  Framework: LLaMA-Factory (SFT)                                   │
-│  Output: <tool_call>JSON</tool_call> hoặc <no_tool_call>          │
+│  Framework: Unsloth QLoRA/SFT                                      │
+│  Output: native XML tool call hoặc normal answer                   │
 │  Metric chính: ArgA (Ersoy et al.) — end-to-end accuracy          │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
 - **Input**: system prompt (tool list) + user query (VI).
-- **Output**: `<tool_call>{"name": "...", "arguments": {...}}</tool_call>` hoặc `<no_tool_call>`.
-- **Train**: LLaMA-Factory instruction tuning, learning rate ~5e-7, cosine schedule.
-- **Data**: convert từ schema master qua `src/data/convert_to_instruction.py`.
+- **Output**: Qwen3.5 native `<tool_call><function=...>...</function></tool_call>` hoặc normal answer.
+- **Train**: Unsloth QLoRA/SFT, assistant-only loss, learning rate ~5e-7, cosine schedule.
+- **Data**: convert master rows thành native `messages`/`tool_calls` qua `src/data/convert_to_instruction.py`; template được load từ checkpoint.
 - **Reference**: Ersoy et al. (2025) — Tool Calling for Arabic LLMs.
 
 ## 3. Method 2 — Bi-Encoder + Cross-Encoder
@@ -153,17 +149,21 @@ data/translations/*_normalized_vi.jsonl (schema master VI)
    ├─ qa_translation.py
    │
    ▼
-src/data/build_benchmark.py  (schema master VI → benchmark + split)
-src/data/feature_group_classify.py  (LLM classify unique tools, cache)
+src/data/rebuild_benchmark.py  (paired revision + split + validation)
+src/data/feature_group_classify.py  (cached labels, fallback Khác)
    │
    ▼
-data/benchmark_vi/
-   ├── tool_pool.json
-   ├── tool_schema/<name>.json
-   ├── train.jsonl / val.jsonl / test.jsonl  (schema master)
+data/benchmark_core/<revision>/
+    ├── en/{train,val,test}.jsonl + vi/{train,val,test}.jsonl
+    ├── split_manifest.json + manifest.json
+    ├── tool_pool.json + tool_schema/<name>.json
+    └── .cache/feature_group.json
+
+data/benchmark_vi/  (active export của vi split)
+    ├── train.jsonl / val.jsonl / test.jsonl
    │
    ├──► Method 1: convert_to_instruction.py
-   │    → data/benchmark_vi/instruction/{train,val,test}_chat.jsonl
+    │    → data/experiments/{e1,e2,e4,e5}/instruction/train_chat.jsonl
    │
    └──► Method 2: train trực tiếp trên schema master
         → Bi-Encoder: (query, tool_desc) pairs

@@ -32,7 +32,7 @@ def _index_for(
     target_types: tuple[str, ...],
     device: torch.device,
 ) -> torch.Tensor:
-    rows = [i for i, t in zip(present_idx, schema_type_present) if t in target_types]
+    rows = [i for i, t in zip(present_idx, schema_type_present, strict=True) if t in target_types]
     if not rows:
         return torch.zeros(0, dtype=torch.long, device=device)
     return torch.tensor(rows, dtype=torch.long, device=device)

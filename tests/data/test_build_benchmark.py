@@ -6,8 +6,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 
 def test_normalize_type_basic():
     from src.data.normalize_schema import normalize_type
@@ -98,7 +96,7 @@ def test_normalize_parameter_schema_enum():
         "enum": ["red", "green", "blue"],
         "description": "color",
     })
-    assert out["type"] == "enum"
+    assert out["type"] == "string"
     assert out["enum"] == ["red", "green", "blue"]
 
 
@@ -335,7 +333,7 @@ def test_parse_xlam_sample_basic():
     assert sample["function_calls"][0]["name"] == "live_giveaways_by_type"
     assert sample["function_calls"][0]["arguments"] == {"type": "beta"}
     assert sample["tools"][0]["parameters"]["properties"]["type"]["type"] == "string"
-    assert sample["tools"][0]["parameters"]["required"] == ["type"]
+    assert "required" not in sample["tools"][0]["parameters"]
 
 
 def test_parse_xlam_sample_invalid_query():

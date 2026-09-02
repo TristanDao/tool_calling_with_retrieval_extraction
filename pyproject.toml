@@ -14,7 +14,7 @@ keywords = ["tool-calling", "function-calling", "vietnamese", "nlp", "llm", "age
 
 dependencies = [
     "torch>=2.1",
-    "transformers>=4.40",
+    "transformers>=5.2.0",
     "flagembedding>=1.2",
     "openai>=1.0",
     "hydra-core>=1.3",
@@ -26,6 +26,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+translate = [
+    "openai>=1.0",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+]
+train = [
+    "unsloth",
+    "trl>=0.15",
+    "accelerate>=1.0",
+    "peft>=0.14",
+    "bitsandbytes>=0.43",
+]
 dev = [
     "pytest>=7.4",
     "pytest-cov",

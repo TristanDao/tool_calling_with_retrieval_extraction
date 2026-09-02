@@ -16,7 +16,9 @@ Xây dựng bộ benchmark tiếng Việt phục vụ:
 
 ## 3. Schema master (canonical — single-turn + multi-call)
 
-Mỗi sample trong `data/benchmark_vi/{train,val,test}.jsonl`:
+Mỗi sample trong `data/benchmark_core/<revision>/{en,vi}/{train,val,test}.jsonl`.
+`data/benchmark_vi/{train,val,test}.jsonl` chỉ là active Vietnamese export của
+revision đã freeze:
 
 ```json
 {
@@ -73,7 +75,7 @@ Mỗi sample trong `data/benchmark_vi/{train,val,test}.jsonl`:
 | `"array"` | `"list"`, `"List[int]"`, `"List[str]"`, ... | Phải có `items: {type: T}` |
 | `"object"` | — | Nested object hiếm gặp |
 
-**Optional flag**: Tách `", optional"` suffix thành top-level `required: []` array (không có trong `required` = optional).
+**Optional flag**: Tách `", optional"` suffix thành top-level `required: []` array (không có trong `required` = optional). Enum dùng JSON Schema hợp lệ: `type: "string"` kèm field `enum`, không dùng `type: "enum"`.
 
 ### 3.3 Tool Schema (file riêng trong `tool_schema/`)
 
@@ -108,13 +110,18 @@ File tổng hợp unique tools từ cả 2 dataset (sau khi dịch + normalize):
 
 Dùng cho: Method 1 system prompt, Method 2 Bi-Encoder index, stress test haystack.
 
-## 4. Sample count sau filter single-turn
+## 4. Sample count sau pairing, validation và dedup
 
-| Dataset | Raw | Sau filter | Mất |
+| Dataset | Raw/normalized input | Frozen revision | Ghi chú |
 |---|---|---|---|
-| Glaive | 112,960 | **45,593** (40%) | 67,367 multi-turn bị bỏ |
-| xLAM | 60,000 | **60,000** (100%) | 0 (đã flat) |
-| **Total** | 172,960 | **~105,593** | ~39% |
+| Glaive | 45,593 positive + 15,141 negative | **18,210** | Sau scenario dedup và schema validation |
+| xLAM | 60,000 positive | **58,818** | Sau scenario dedup và schema validation |
+| **Total** | 120,734 paired inputs | **77,028 paired** | 4,817 negative |
+
+Revision hiện hành là `2026-09-02-full-dedup-seed42`, với split
+`61,615/7,701/7,712` theo train/val/test và `4,421` unique tools. Metadata,
+input hashes và rejected records nằm trong revision manifest; không suy ra số
+liệu chính thức từ các pilot cũ.
 
 ## 5. Pipeline xây dựng
 
@@ -144,29 +151,27 @@ data/translations/
    ▼
 data/translations/qa_samples/         (QC pass/fail)
    │
-   │  ┌─────────────────────────────────────────────────┐
-   │  │  BỘ 2: src/data/build_benchmark.py             │
-   │  │  - Parse Bộ 1 → schema master (single-turn)    │
-   │  │  - src/data/normalize_schema.py (type mapping) │
-   │  │  - src/data/feature_group_classify.py          │
-   │  │  - src/data/build_tool_pool.py                 │
-   │  │  - Split train/val/test (80/10/10, seed=42)    │
+    │  ┌─────────────────────────────────────────────────┐
+    │  │  FROZEN CORE: src/data/rebuild_benchmark.py    │
+    │  │  - Pair EN/VI, giữ positive và negative        │
+    │  │  - Validate schema, arguments và scenario      │
+    │  │  - Split paired 80/10/10 (seed=42)             │
    │  └─────────────────────────────────────────────────┘
    ▼
-data/benchmark_vi/
-   ├── tool_schema/   (mỗi tool 1 file JSON)
-   ├── tool_pool.json (gộp unique tools từ 2 dataset)
-   ├── train.jsonl / val.jsonl / test.jsonl   (schema master)
+data/benchmark_core/<revision>/
+    ├── en/{train,val,test}.jsonl + vi/{train,val,test}.jsonl
+    ├── split_manifest.json + manifest.json
+    ├── tool_schema/ + tool_pool.json
+    └── metadata.json
+data/benchmark_vi/  (active export của vi split)
+    └── train.jsonl / val.jsonl / test.jsonl
    │
    │  ┌─────────────────────────────────────────────────┐
    │  │  Method 1: src/data/convert_to_instruction.py  │
-   │  │  - Convert schema master → LLaMA-Factory format │
+    │  │  - Convert master → native messages/tool_calls  │
    │  └─────────────────────────────────────────────────┘
    ▼
-   ├── instruction/
-   │   ├── train_chat.jsonl / val_chat.jsonl / test_chat.jsonl
-   │
-   └── metadata.json  (số sample, split ratio, statistics)
+    └── data/experiments/{e1,e2,e4,e5}/instruction/train_chat.jsonl
 ```
 
 ## 6. Splits
@@ -177,20 +182,24 @@ data/benchmark_vi/
 | val | 10% | Hyperparameter tuning, model selection |
 | test | 10% | Đánh giá cuối, so sánh 4 methods |
 
-> Seed: `42`. Có thể thay đổi khi build benchmark thực tế.
+> Seed đăng ký: `42`. Split được ghi bất biến trong `split_manifest.json`.
 
 ### 6.1 Trạng thái snapshot hiện tại
 
-`data/benchmark_vi/` là canonical benchmark dùng chung, không phải output riêng cho từng experiment. Không xóa hoặc rebuild thư mục này theo từng model. Khi một experiment thay đổi composition dữ liệu, chỉ cần tạo manifest/snapshot bất biến trong output của experiment và ghi lại input files, split, seed, checkpoint và commit hash.
+`data/benchmark_core/<revision>/` là canonical benchmark dùng chung, không phải
+output riêng cho từng experiment. `data/benchmark_vi/` chỉ export split VI của
+revision active. Không xóa hoặc rebuild benchmark theo từng model; mỗi
+experiment chỉ ghi composition và reference tới revision.
 
-Snapshot hiện tại được build bằng `src/data/build_benchmark.py` với `80/10/10`, `seed=42`, gồm `51,227` positive samples (`40,981/5,122/5,124`). Không có trùng ID giữa các split, nhưng có `1,099` nhóm query trùng giữa các split; do đó snapshot chưa đạt yêu cầu chống leakage. Đây là pilot/rebuild snapshot, chưa phải full benchmark cuối theo mục tiêu khoảng `105k` samples. Builder hiện chỉ nhận sample có `function_calls` không rỗng; các negative samples của CustomTools-VI vẫn nằm ở `data/custom_vi/` và phải được đánh giá qua các split CustomTools tương ứng.
+Revision hiện hành `2026-09-02-full-dedup-seed42` được build bằng
+`src/data/rebuild_benchmark.py`, gồm `77,028` paired records, `4,817`
+negative và `4,421` unique tools. Split là `61,615/7,701/7,712`; EN và VI
+counterpart luôn cùng split. Negative core records có `function_calls=[]`.
 
 Trước khi chạy kết quả chính thức cần:
 
-- Hoàn tất translation và QA của full dataset.
-- Kiểm tra duplicate query/scenario giữa các split.
+- Kiểm tra `manifest.json`, input hashes và rejected records của revision.
 - Kiểm tra integrity của tool unseen và candidate tools.
-- Freeze snapshot và ghi manifest SHA-256.
 - Không dùng `test_seen.jsonl` hoặc `test_unseen.jsonl` trong training.
 
 ## 7. Thống kê cần sinh (`src/data/stats.py`)
@@ -208,21 +217,21 @@ Output lưu `data/statistics/`:
 
 Mỗi sample qua benchmark phải thỏa:
 
-1. **JSON hợp lệ**: parse được, đủ 4 key `id`, `source`, `query`, `function_calls`, `tools`.
+1. **JSON hợp lệ**: parse được, đủ 5 key `id`, `source`, `query`, `function_calls`, `tools`.
 2. **Identifier integrity**: function name, argument keys đều snake_case EN (regex `^[a-z][a-z0-9_]*$`).
-3. **Schema hợp lệ**: JSON Schema parse được, `type` ∈ chuẩn JSON Schema.
+3. **Schema hợp lệ**: JSON Schema parse được, `type` ∈ chuẩn JSON Schema; enum là `type: "string"` + `enum`.
 4. **Tool pool coverage**: Tất cả `function_calls[].name` có trong `tools[]` của sample.
 5. **Feature_group**: 100% tool có `feature_group` non-empty.
 6. **Vietnamese quality** (LLM judge 5%): query/description tự nhiên, không lỗi font.
 
 ## 9. Stress Test Set (Phase 7)
 
-### 9.1 Tool pool — `data/benchmark_vi/tool_pool.json`
+### 9.1 Tool pool — `data/benchmark_core/<revision>/tool_pool.json`
 - Gộp unique tools từ Glaive + xLAM (sau dịch VI, dedupe theo `name`).
 - Mỗi tool: `{name, description_VI, feature_group, parameters}`.
 
 ### 9.2 Anchors — `data/processed/stress_test/anchors.jsonl`
-- 200 samples từ `benchmark_vi/test.jsonl`.
+- 200 samples từ `benchmark_core/<revision>/vi/test.jsonl`.
 - Mỗi sample: `{query, ground_truth_tool, gold_arguments}`.
 - Tiêu chí: đa dạng `feature_group`, query rõ ràng.
 
@@ -240,7 +249,7 @@ Mỗi sample qua benchmark phải thỏa:
 | `train.jsonl` | JSONL | 80% samples (schema master) |
 | `val.jsonl` | JSONL | 10% samples (schema master) |
 | `test.jsonl` | JSONL | 10% samples (schema master) |
-| `instruction/train_chat.jsonl` | JSONL | Method 1: instruction format |
-| `instruction/val_chat.jsonl` | JSONL | Method 1: instruction format |
-| `instruction/test_chat.jsonl` | JSONL | Method 1: instruction format |
-| `metadata.json` | JSON | Stats, split info, dataset card |
+| `split_manifest.json` | JSON | ID → split mapping bất biến |
+| `manifest.json` | JSON | Input/output SHA-256 và build config |
+| `metadata.json` | JSON | Counts, dedup và validation report |
+| `data/experiments/e*/instruction/train_chat.jsonl` | JSONL | Native Method 1 training view |

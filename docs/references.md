@@ -24,7 +24,7 @@
   - **Primary reference cho Method 1 (SLM end-to-end)**:
     - Họ **dịch 2 open-source tool-calling dataset (Glaive + xLAM) sang tiếng Arabic**.
     - Fine-tune open-weight Arabic LLM (Fanar 9B) với instruction-tuning format.
-    - LLM sinh `<tool_call>{"name": "...", "arguments": {...}}</tool_call>` hoặc `<no_tool_call>`.
+     - Trong protocol của bài báo, LLM sinh `<tool_call>{"name": "...", "arguments": {...}}</tool_call>` hoặc `<no_tool_call>`.
     - Metric chính: **ArgA (Argument Population Accuracy)** — end-to-end accuracy.
     - Dùng LLaMA-Factory, lr=5e-7 cosine schedule.
   - **Đề tài làm tương tự cho tiếng Việt** với Qwen3.5 2B/4B (SLM).
@@ -55,7 +55,8 @@
 - **OpenAI Function Calling** — https://platform.openai.com/docs/guides/function-calling.
 - **Google Gemini Function Calling** — https://ai.google.dev/gemini-api/docs/function-calling.
 - **Qwen3.5** (Alibaba) — Dùng làm base model cho Method 1 (SLM fine-tune 2B/4B).
-- **LLaMA-Factory** (Zheng et al., 2024) — *LLaMAFactory: Unified Efficient Fine-Tuning of 100+ Language Models*. ACL 2024. Dùng cho Method 1 instruction tuning.
+- **Unsloth** — Framework hiện dùng cho QLoRA/SFT Method 1 với Qwen3.5.
+- **LLaMA-Factory** (Zheng et al., 2024) — *LLaMAFactory: Unified Efficient Fine-Tuning of 100+ Language Models*. ACL 2024. Chỉ là trainer được bài báo tham khảo sử dụng, không dùng trong training path hiện tại.
 
 ## 6. Translation
 

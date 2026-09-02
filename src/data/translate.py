@@ -25,7 +25,6 @@ from pathlib import Path
 from typing import Any
 
 from openai import AsyncOpenAI
-
 from src.data.feature_group_classify import classify_tools, load_cache, load_config, save_cache
 from src.data.translate_guidelines import (
     TRANSLATE_SYSTEM_PROMPT,
@@ -34,7 +33,8 @@ from src.data.translate_guidelines import (
     check_identifier_integrity,
     check_required_fields_present,
 )
-from src.data.translation_checkpoint import Checkpoint, load as load_checkpoint, save_atomic
+from src.data.translation_checkpoint import load as load_checkpoint
+from src.data.translation_checkpoint import save_atomic
 
 
 @dataclass(kw_only=True)
@@ -66,7 +66,7 @@ class TranslationConfig:
     feature_group_config_path: Path = Path("configs/data/feature_group.yaml")
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "TranslationConfig":
+    def from_dict(cls, d: dict[str, Any]) -> TranslationConfig:
         end = d.get("end_index")
         configured_backups = d["api"].get("backup_models", [])
         if isinstance(configured_backups, str):
@@ -359,7 +359,7 @@ async def process_batch(
     ]
     raw_results = await asyncio.gather(*tasks, return_exceptions=True)
     results: list[tuple[int, dict[str, Any] | None, str | None]] = []
-    for (source_index, _sample), result in zip(batch, raw_results):
+    for (source_index, _sample), result in zip(batch, raw_results, strict=True):
         if isinstance(result, BaseException):
             results.append(
                 (

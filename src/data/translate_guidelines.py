@@ -12,7 +12,6 @@ import json
 import re
 from typing import Any
 
-
 SNAKE_CASE_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 _CAMEL_CASE_RE = re.compile(r"^[a-z][a-zA-Z0-9]*$")
 _LIST_GENERIC_RE = re.compile(r"^List\[.*\]$", re.IGNORECASE)

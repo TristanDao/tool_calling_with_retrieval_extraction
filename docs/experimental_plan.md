@@ -15,7 +15,7 @@ Mục tiêu chính:
 
 | Method | Thành phần | Mục tiêu |
 |---|---|---|
-| Method 1 | `Qwen/Qwen3.5-2B` hoặc `Qwen/Qwen3.5-4B` + SFT | Tool selection và argument extraction trong một model sinh |
+| Method 1 | `unsloth/Qwen3.5-2B` hoặc `unsloth/Qwen3.5-4B` + Unsloth QLoRA/SFT | Tool selection và argument extraction trong một model sinh |
 | Method 2 | BGE-M3 Bi-Encoder + Cross-Encoder | Retrieval tool và extraction parameter chuyên biệt |
 | Baseline 1 | OpenAI Function Calling | Mốc tham chiếu API thương mại |
 | Baseline 2 | Gemini Function Calling | Mốc tham chiếu API thương mại |
@@ -41,7 +41,9 @@ Các file CustomTools hiện có trong `data/custom_vi/` phải được giữ n
 
 ### 3.2 Benchmark canonical và snapshot theo experiment
 
-`data/benchmark_vi/` là benchmark canonical dùng chung cho mọi experiment, không phải thư mục output riêng của từng model. Không xóa hoặc rebuild thư mục này cho mỗi experiment vì sẽ làm mất khả năng so sánh công bằng giữa các phương pháp.
+`data/benchmark_core/<revision>/` là benchmark canonical dùng chung cho mọi
+experiment; `data/benchmark_vi/` chỉ là active Vietnamese export. Không xóa
+hoặc rebuild revision theo từng model vì sẽ làm mất khả năng so sánh công bằng.
 
 Quy tắc quản lý:
 
@@ -49,32 +51,35 @@ Quy tắc quản lý:
 - Ghi `metadata.json` và manifest SHA-256 cho các file input, split và tool schema.
 - Mỗi experiment ghi composition dữ liệu, checkpoint, seed và manifest benchmark vào thư mục kết quả riêng.
 - Nếu thay đổi dữ liệu hoặc split, tạo benchmark revision/snapshot mới; không ghi đè revision đã dùng cho kết quả trước đó.
-- `CustomTools-VI` giữ split riêng: chỉ `train.jsonl` và validation được phép đưa vào training; `test_seen.jsonl` và `test_unseen.jsonl` chỉ dùng đánh giá.
+- `CustomTools-VI` giữ split riêng: chỉ `train.jsonl` đưa vào training; validation dùng
+  cho model selection/diagnostic; `test_seen.jsonl` và `test_unseen.jsonl` chỉ dùng đánh giá.
 
-Artifact hiện có trong workspace là một pilot/rebuild snapshot gồm 51,227 positive samples, split 40,981/5,122/5,124 theo 80/10/10, seed 42. Snapshot không trùng ID giữa các split, nhưng kiểm tra hiện tại phát hiện 1,099 nhóm query trùng giữa các split. Đây chưa phải full benchmark cuối cùng theo quy mô dự kiến ~105k samples và chưa được dùng cho kết luận cuối trước khi hoàn tất translation, deduplication và QA.
+Revision đã freeze `2026-09-02-full-dedup-seed42` gồm `77,028` paired records
+(`18,210` Glaive, `58,818` xLAM), `4,817` negative và `4,421` unique tools.
+Split cố định là `61,615/7,701/7,712`, seed `42`; EN/VI counterpart luôn cùng
+split. Các hash và rejected records nằm trong revision manifest.
 
 ### 3.3 Việc phải hoàn thành trước khi train
 
-- [ ] Freeze phiên bản dataset và ghi manifest SHA-256.
-- [ ] Xác nhận train/validation/test không có duplicate query hoặc duplicate scenario.
+- [x] Freeze phiên bản dataset và ghi manifest SHA-256.
+- [x] Xác nhận train/validation/test không có duplicate query hoặc duplicate scenario.
 - [ ] Xác nhận tool unseen không xuất hiện trong tool schema của training.
-- [ ] Xác nhận mỗi sample dùng master schema thống nhất.
-- [ ] Xác nhận cách biểu diễn negative là `function_calls=[]` hoặc `<no_tool_call>`.
+- [x] Xác nhận mỗi sample dùng master schema thống nhất.
+- [x] Xác nhận negative master là `function_calls=[]`; native row dùng normal assistant content.
 - [ ] Bảo đảm mỗi test set dùng để báo cáo negative recall có negative samples.
 - [ ] Xác nhận quy tắc đánh giá multi-call: không phạt thứ tự với các call độc lập.
-- [ ] Tạo snapshot dataset cho từng experiment, không sửa trực tiếp test data.
+- [x] Tạo manifest training cho từng experiment, không sửa trực tiếp test data.
 
 ### 3.4 Quy mô dữ liệu và nguyên tắc sử dụng
 
 Thiết kế của Ersoy et al. dùng toàn bộ training split cho từng cấu hình, giữ test split cố định, sau đó tăng dữ liệu ở bilingual và tool-specific experiments. Dự án này giữ nguyên nguyên tắc đó nhưng bổ sung một main controlled track để tách ảnh hưởng của ngôn ngữ khỏi ảnh hưởng của số lượng mẫu.
 
-Quy mô dữ liệu hiện có trước final deduplication:
+Quy mô input và evaluation hiện hành:
 
 | Pool | Số mẫu | Trạng thái | Vai trò |
 |---|---:|---|---|
-| Glaive positive | 45,593 | EN và bản dịch VI tương ứng | Core tool-calling |
-| xLAM positive | 60,000 | EN và bản dịch VI tương ứng | Core single-turn/multi-call |
-| Glaive negative | 15,141 | EN và bản dịch VI tương ứng | No-tool-call training/evaluation |
+| Frozen core revision | 77,028 | EN/VI paired, 4,817 negative | Core train/val/test |
+| Frozen core unique tools | 4,421 | Shared EN/VI tool pool | Retrieval và native prompt |
 | CustomTools-VI train | 5,600 | VI, 3,600 positive + 2,000 negative | Tool-specific SFT của E5 |
 | CustomTools-VI validation | 800 | VI, seen/unseen | Model selection và diagnostic |
 | CustomTools-VI test | 1,600 | VI, seen/unseen | Chỉ đánh giá cuối |
@@ -83,15 +88,20 @@ Các con số trên là quy mô input hiện tại, không phải số lượng 
 
 #### Main controlled track
 
-- Mỗi experiment E1–E4 dùng tối đa `60,000` core examples trong training: `54,000` positive và `6,000` negative.
-- Với positive examples, giữ tỷ lệ nguồn gần dữ liệu gốc: `23,000` Glaive và `31,000` xLAM.
+- Revision frozen có `61,615` core train rows. Sau dedup, quota đăng ký lại là
+  `60,000` rows: `56,151` positive (`10,712` Glaive + `45,439` xLAM) và
+  `3,849` negative. Không lấy validation/test để bù quota.
 - E1 dùng 60,000 mẫu tiếng Anh; E2 dùng đúng các sample IDs tương ứng bằng tiếng Việt.
 - E3 nếu chạy dùng cùng 60,000 mẫu tiếng Anh như E1, sau general SFT.
-- E4 dùng `30,000 EN + 30,000 VI`, gồm cùng một tỷ lệ Glaive/xLAM và positive/negative ở mỗi ngôn ngữ.
+- E4 dùng `30,000 EN + 30,000 VI`; mỗi ngôn ngữ gồm `27,000` positive
+  (`10,712` Glaive + `16,288` xLAM) và `3,000` negative.
 - E5 dùng toàn bộ 60,000 mẫu của E4 cộng toàn bộ `5,600` mẫu `CustomTools-VI/train.jsonl`, tổng `65,600` training examples. Không đưa bất kỳ file CustomTools validation/test nào vào training.
 - Lấy mẫu một lần bằng seed cố định và lưu manifest; không lấy lại subset khác cho Qwen3.5-2B.
 
-Cap 60,000 không phải giới hạn lý thuyết của model 2B/4B. Đây là ngân sách chính để các experiment ngôn ngữ có cùng quy mô. Khoảng 60k tool-calling examples là đủ lớn cho SFT pilot, còn dữ liệu đa dạng hơn sẽ được kiểm tra ở full-data track.
+Cap 60,000 không phải giới hạn lý thuyết của model 2B/4B. Đây là ngân sách
+chính để các experiment ngôn ngữ có cùng quy mô. Vì scenario dedup làm pool
+Glaive nhỏ hơn quota ban đầu, manifest ghi rõ composition thực tế thay vì
+đưa sample từ validation/test vào train.
 
 #### Full-data track
 
@@ -121,52 +131,64 @@ Materialize toàn bộ controlled track bằng:
 bash scripts/data/prepare_experiments.sh
 ```
 
-Script tạo `data/experiments/{e0,e1,e2,e3,e4,e5}/`. Mỗi thư mục có `manifest.json`, các file `train_*.jsonl`, `train.jsonl`, `val_{en,vi}.jsonl`, `test_{en,vi}.jsonl`; E5 có thêm các file `custom_{val,test}_*.jsonl`. Method 1 dùng `instruction/train_chat.jsonl`.
+Script tạo `data/experiments/{e0,e1,e2,e4,e5}/`. Mỗi thư mục chỉ có
+`manifest.json`, `train.jsonl` và native `instruction/train_chat.jsonl` khi có
+training data. Validation/test đọc trực tiếp từ frozen revision và
+`data/custom_vi/`; Method 1 dùng `instruction/train_chat.jsonl`.
 
-E0 không có file train vì đây là zero-shot. E1 và E3 train EN, E2 train VI, E4 train song ngữ 30k EN + 30k VI, E5 dùng đúng E4 cộng `data/custom_vi/train.jsonl`. Các file test/validation được materialize riêng và không bao giờ được đưa vào `train.jsonl`.
+E0 không có file train vì đây là zero-shot. E1 và E3 train EN, E2 train VI,
+E4 train song ngữ 30k EN + 30k VI, E5 dùng đúng E4 cộng
+`data/custom_vi/train.jsonl`. E3 không được tạo nếu thiếu general-SFT
+prerequisite. Các file test/validation không được đưa vào training.
 
 ## 4. Chuẩn Output Chung
 
 Mọi model phải được chuyển về cùng một output contract trước khi tính metric.
 
-Tool call hợp lệ:
+Master ground truth dùng `function_calls=[]` cho negative. Tool call native hợp lệ:
 
 ```text
 <tool_call>
-{"name":"tool_name","arguments":{"arg":"value"}}
+<function=tool_name>
+<parameter=arg>
+value
+</parameter>
+</function>
 </tool_call>
 ```
 
-Negative hợp lệ:
+Negative native hợp lệ là assistant content bình thường, không có tool call:
 
 ```text
-<no_tool_call>
+Tôi chưa thể thực hiện yêu cầu này.
 ```
 
 Parser chung phải xử lý và ghi nhận:
 
 - Một hoặc nhiều tool call.
 - JSON thuần và JSON nằm trong code fence.
-- Output thiếu tag.
+- Output thiếu tag hoặc dùng protocol cũ.
 - JSON không parse được.
 - Tool name không tồn tại.
 - Argument thiếu, thừa hoặc sai type.
 - Output chứa text thừa ngoài tool call.
 
-Không dùng parser hoặc quy tắc sửa lỗi riêng cho từng model.
+Parser chung là `src/evaluation/native_output.py`; output malformed không được
+coi là negative. Không dùng parser hoặc quy tắc sửa lỗi riêng cho từng model.
 
 ## 5. Method 1 — SLM End-to-End
 
 ### 5.1 Format huấn luyện
 
-- System: danh sách tool gồm name, description và JSON Schema.
+- System: prompt nền; danh sách tool truyền qua trường native `tools`.
 - User: query tiếng Việt hoặc tiếng Anh tùy experiment.
-- Assistant: `<tool_call>...</tool_call>` hoặc `<no_tool_call>`.
-- Multi-call: assistant sinh danh sách hoặc chuỗi call theo một format đã cố định.
+- Assistant positive: structured `tool_calls` được render bằng template của checkpoint.
+- Assistant negative: normal assistant content, không dùng marker tự chế.
+- Multi-call: nhiều phần tử trong cùng `tool_calls` list; thứ tự không dùng trong metric chính.
 
 ### 5.2 Thí nghiệm bắt buộc
 
-Main result dùng controlled track 60k; full-data track được báo cáo riêng như robustness/scale-up. Mỗi dòng phải chạy độc lập cho cả `Qwen/Qwen3.5-4B` và `Qwen/Qwen3.5-2B` với cùng manifest sample IDs.
+Main result dùng controlled track 60k; full-data track được báo cáo riêng như robustness/scale-up. Mỗi dòng phải chạy độc lập cho cả `unsloth/Qwen3.5-4B` và `unsloth/Qwen3.5-2B` với cùng manifest sample IDs.
 
 | ID | Model state | Core train | Custom train | Validation để chọn checkpoint | Test cố định | Mục đích |
 |---|---|---:|---:|---|---|---|
@@ -179,7 +201,7 @@ Main result dùng controlled track 60k; full-data track được báo cáo riên
 
 E3 chỉ bắt buộc nếu có general instruction dataset độc lập. Nếu chưa có, đánh dấu E3 là optional và không dùng dữ liệu test để thay thế. Nếu chạy E3, general SFT phải được thực hiện trước tool-calling SFT và phải ghi riêng checkpoint trung gian.
 
-Mỗi experiment nên chạy cho `Qwen/Qwen3.5-4B` trước. `Qwen/Qwen3.5-2B` chạy sau để đo ảnh hưởng kích thước model. Dự án chỉ dùng các checkpoint Qwen3.5 post-trained không có hậu tố `-Base`; không dùng `Qwen/Qwen3.5-2B-Base` hoặc `Qwen/Qwen3.5-4B-Base`.
+Mỗi experiment nên chạy cho `unsloth/Qwen3.5-4B` trước. `unsloth/Qwen3.5-2B` chạy sau để đo ảnh hưởng kích thước model. Dự án chỉ dùng các checkpoint Qwen3.5 post-trained không có hậu tố `-Base`; không dùng checkpoint `-Base`.
 
 ### 5.3 Quy tắc huấn luyện
 
@@ -264,7 +286,7 @@ Phải ghi rõ model version, ngày chạy, region và tình trạng warm/cold r
 
 ### 8.1 Tool selection
 
-Xem `<no_tool_call>` là một class riêng và báo cáo:
+Xem output không có tool call hợp lệ là một class riêng và báo cáo:
 
 - Tool accuracy.
 - Weighted precision.
@@ -324,7 +346,7 @@ Lấy mẫu lỗi từ các nhóm sau:
 
 - Đúng tool nhưng sai argument.
 - Sai tool.
-- Đáng lẽ gọi tool nhưng trả `<no_tool_call>`.
+- Đáng lẽ gọi tool nhưng trả normal answer hoặc output rỗng.
 - Đáng lẽ không gọi tool nhưng lại gọi.
 - JSON không hợp lệ.
 - Thiếu required argument.
@@ -398,8 +420,8 @@ Thiết kế đầy đủ:
 
 | Model | Experiment | Test set | Tool P | Tool R | Negative R | ArgA | JSON valid |
 |---|---|---|---:|---:|---:|---:|---:|
-| `Qwen/Qwen3.5-4B` | E0–E5 | | | | | | |
-| `Qwen/Qwen3.5-2B` | E0–E5 | | | | | | |
+| `unsloth/Qwen3.5-4B` | E0, E1, E2, E4, E5 | | | | | | |
+| `unsloth/Qwen3.5-2B` | E0, E1, E2, E4, E5 | | | | | | |
 
 ### Bảng C — Method comparison
 
@@ -430,17 +452,17 @@ Thiết kế đầy đủ:
 
 ## 12. Thứ Tự Triển Khai
 
-- [ ] Freeze dataset, split và manifest.
-- [ ] Hoàn thiện parser output chung.
-- [ ] Hoàn thiện JSON Schema validator.
+- [x] Freeze dataset, split và manifest.
+- [x] Hoàn thiện parser output chung.
+- [x] Hoàn thiện JSON Schema validator.
 - [ ] Hoàn thiện weighted P/R, F1, ArgA và multi-call metrics.
 - [ ] Chạy E0 zero-shot.
-- [ ] Chạy Method 1 với `Qwen/Qwen3.5-4B`.
+- [ ] Chạy Method 1 với `unsloth/Qwen3.5-4B`.
 - [ ] Chạy E1 English-only.
 - [ ] Chạy E2 Vietnamese-only.
 - [ ] Chạy E4 bilingual.
 - [ ] Chạy E5 bilingual + CustomTools.
-- [ ] Lặp lại các experiment chính với `Qwen/Qwen3.5-2B`.
+- [ ] Lặp lại các experiment chính với `unsloth/Qwen3.5-2B`.
 - [ ] Train và đánh giá Bi-Encoder.
 - [ ] Train và đánh giá Cross-Encoder với oracle retrieval.
 - [ ] Đánh giá full Bi+Cross pipeline.
@@ -486,11 +508,11 @@ Bản kết quả cuối phải trả lời được bốn câu hỏi:
 
 ## 15. Quyết Định Cần Chốt Trước Khi Chạy Chính Thức
 
-- [ ] Ghi exact checkpoint ID của Qwen3.5 post-trained cho mỗi experiment; không dùng Base checkpoint.
-- [ ] Có hoặc không có general instruction dataset cho E3.
-- [ ] Chọn LoRA hay full fine-tuning.
-- [ ] Chốt format multi-call duy nhất.
-- [ ] Chốt strict và normalized comparison rules.
+- [x] Ghi exact checkpoint ID của Qwen3.5 post-trained cho mỗi experiment; không dùng Base checkpoint.
+- [ ] Có hoặc không có general instruction dataset cho E3. E3 vẫn optional và chưa materialize.
+- [x] Chọn LoRA QLoRA thay vì full fine-tuning.
+- [x] Chốt format multi-call native `tool_calls` list.
+- [x] Chốt strict và normalized comparison rules.
 - [ ] Chốt số seed cho mỗi experiment; khuyến nghị ít nhất 3 seed cho các kết quả chính nếu tài nguyên cho phép.
 - [ ] Chốt model/API version của OpenAI và Gemini.
 - [ ] Chốt hardware và quy tắc đo latency local/API.

@@ -20,9 +20,6 @@ from typing import Any
 
 from openai import AsyncOpenAI
 
-from src.data.translate_guidelines import is_snake_case
-
-
 DEFAULT_CATEGORIES: list[str] = [
     "Tìm kiếm & Kết nối",
     "Đặt vé & Du lịch",
@@ -169,7 +166,7 @@ async def classify_tools(
         chunk = todo[i:i + chunk_size]
         tasks = [classify_one(client, t, categories, semaphore, cfg) for t in chunk]
         results = await asyncio.gather(*tasks)
-        for tool, group in zip(chunk, results):
+        for tool, group in zip(chunk, results, strict=True):
             cache[tool.get("name", "")] = group
         n_done += len(chunk)
         if n_done % max(chunk_size, 10) == 0 or n_done == len(todo):

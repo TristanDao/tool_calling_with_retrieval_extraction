@@ -6,8 +6,6 @@ Convert (query, tool_schema) → dict of arguments.
 from typing import Any
 
 import torch
-from transformers import AutoTokenizer, PreTrainedTokenizerBase
-
 from src.models.crossencoder.data_collator import (
     SCHEMA_TYPE_BOOLEAN,
     SCHEMA_TYPE_ENUM,
@@ -17,6 +15,7 @@ from src.models.crossencoder.data_collator import (
     normalize_schema_type,
 )
 from src.models.crossencoder.model import CrossEncoderForExtraction
+from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 
 @torch.no_grad()
@@ -69,7 +68,7 @@ def extract_arguments(
         if has_value_prob < has_value_threshold:
             continue
 
-        schema_type = normalize_schema_type(param.get("type", "string"))
+        schema_type = normalize_schema_type(param)
         if schema_type in (SCHEMA_TYPE_STRING, SCHEMA_TYPE_NUMBER):
             start = int(outputs["span_start"][0].argmax().item())
             end = int(outputs["span_end"][0].argmax().item())

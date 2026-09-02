@@ -7,9 +7,8 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
-from transformers import AutoModel, PreTrainedModel
-
 from src.models.crossencoder.heads import CrossEncoderHeads, HeadConfig
+from transformers import AutoModel, PreTrainedModel
 
 
 class CrossEncoderForExtraction(nn.Module):

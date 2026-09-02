@@ -6,8 +6,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from src.data.normalize_en import _parse_glaive, _parse_xlam, normalize_dataset
 
 

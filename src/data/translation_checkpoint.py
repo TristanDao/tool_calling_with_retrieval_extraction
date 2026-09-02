@@ -39,7 +39,7 @@ class Checkpoint:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Checkpoint":
+    def from_dict(cls, data: dict[str, Any]) -> Checkpoint:
         return cls(
             dataset=data.get("dataset", "unknown"),
             last_processed_index=int(data.get("last_processed_index", 0)),
