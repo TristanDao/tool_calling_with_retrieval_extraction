@@ -58,7 +58,8 @@ import hashlib
 import json
 from pathlib import Path
 
-DATA_ROOT = Path("/kaggle/input/tool-calling-vi-experiments")
+DATA_ROOT = Path("/kaggle/input/datasets/phcthnho/tool-calling-vi-experiments")
+
 REVISION = "2026-09-02-full-dedup-seed42"
 REVISION_DIR = DATA_ROOT / "benchmark_core" / REVISION
 CUSTOM_DIR = DATA_ROOT / "custom_vi"
@@ -264,17 +265,33 @@ def tokenize_assistant_only(tokenizer, row: dict, max_seq_length: int) -> dict[s
 ## 8. Cell 6: Tokenizer Smoke Test
 
 ```python
+import unsloth
 from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
-sample_rows = read_jsonl(experiment_dir / "instruction/train_chat.jsonl")[:3]
+train_chat_file = experiment_dir / "instruction/train_chat.jsonl"
+if train_chat_file.exists():
+    sample_rows = read_jsonl(train_chat_file)[:3]
+else:
+    # E0 là zero-shot (không có tập train), dùng 3 mẫu test để smoke-test tokenizer
+    sample_rows = [native_row(record, "vi") for record in read_jsonl(REVISION_DIR / "vi/test.jsonl")[:3]]
+
 for row in sample_rows:
     rendered = tokenizer.apply_chat_template(
         row["messages"], tools=row["tools"], tokenize=False,
         add_generation_prompt=False, enable_thinking=False,
     )
-    expected_calls = len(row["messages"][-1].get("tool_calls", []))
-    assert rendered.count("<tool_call>") == expected_calls
+    expected_calls = sum(
+        len(message.get("tool_calls", []))
+        for message in row["messages"]
+        if message.get("role") == "assistant"
+    )
+    assistant_part = rendered.rsplit("<|im_start|>assistant", 1)[-1]
+    actual_calls = assistant_part.count("<tool_call>")
+    assert actual_calls == expected_calls, (
+        f"tool_call mismatch for {row.get('id')}: "
+        f"expected={expected_calls}, actual={actual_calls}"
+    )
     tokenized = tokenize_assistant_only(tokenizer, row, 4096)
     assert any(label != -100 for label in tokenized["labels"])
 print("native tokenizer smoke test: PASS")
@@ -296,6 +313,7 @@ zero_model, zero_tokenizer = FastLanguageModel.from_pretrained(
     load_in_16bit=False,
     full_finetuning=False,
 )
+zero_tokenizer = getattr(zero_tokenizer, "tokenizer", zero_tokenizer)
 zero_model.eval()
 zero_test = read_jsonl(REVISION_DIR / "vi/test.jsonl")[:20]
 zero_outputs = []
@@ -305,7 +323,10 @@ for record in zero_test:
         row["messages"][:-1], tools=row["tools"], tokenize=True,
         add_generation_prompt=True, enable_thinking=False,
         return_tensors="pt",
-    ).to(zero_model.device)
+    )
+    if isinstance(inputs, dict) or hasattr(inputs, "input_ids"):
+        inputs = inputs["input_ids"]
+    inputs = inputs.to(zero_model.device)
     with torch.no_grad():
         generated = zero_model.generate(
             inputs, max_new_tokens=512, do_sample=False,
@@ -331,6 +352,7 @@ Validation không được lưu vào Dataset experiment.
 
 ```python
 validation_sources = {
+    "e0": [],
     "e1": [(REVISION_DIR / "en/val.jsonl", "en")],
     "e2": [(REVISION_DIR / "vi/val.jsonl", "vi")],
     "e3": [
@@ -465,6 +487,7 @@ def main():
         load_in_16bit=False,
         full_finetuning=False,
     )
+    tokenizer = getattr(tokenizer, "tokenizer", tokenizer)
     model = FastLanguageModel.get_peft_model(
         model,
         r=16,
@@ -589,6 +612,7 @@ model, tokenizer = FastLanguageModel.from_pretrained(
     max_seq_length=4096,
     load_in_4bit=True,
 )
+tokenizer = getattr(tokenizer, "tokenizer", tokenizer)
 FastLanguageModel.for_inference(model)
 
 test_records = read_jsonl(REVISION_DIR / "vi/test.jsonl")[:20]
@@ -598,7 +622,10 @@ for record in test_records[:3]:
         row["messages"][:-1], tools=row["tools"], tokenize=True,
         add_generation_prompt=True, enable_thinking=False,
         return_tensors="pt",
-    ).to(model.device)
+    )
+    if isinstance(prompt, dict) or hasattr(prompt, "input_ids"):
+        prompt = prompt["input_ids"]
+    prompt = prompt.to(model.device)
     with torch.no_grad():
         generated = model.generate(
             prompt, max_new_tokens=512, do_sample=False,
@@ -613,49 +640,195 @@ for record in test_records[:3]:
 Output positive phải có native `<tool_call><function=...>`. Negative phải là câu
 trả lời bình thường, không phải `<no_tool_call>`.
 
-## 14. Cell 12: Parser Và Metric Tối Thiểu
+## 14. Cell 12: Đánh Giá Toàn Diện & Báo Cáo Metric (Full Evaluation)
 
-Đây là metric sanity check trong notebook. Kết quả chính nên dùng evaluator đầy đủ
-của project sau này.
+Cell này tính toán đầy đủ các chỉ số thực nghiệm của đề tài và đối sánh theo chuẩn
+bài báo Ersoy et al. (2025):
+- **Tool Selection Accuracy (Positive)**: Độ chính xác phát hiện đúng tên tool khi query cần gọi công cụ.
+- **Non-FC Recall (Negative)**: Độ chính xác nhận diện câu không cần gọi tool (tránh hallucination).
+- **ArgA (Exact Match End-to-End)**: Độ chính xác tuyệt đối (khớp cả tool name lẫn toàn bộ tham số).
+- **Syntax / Parser Error Rate**: Tỷ lệ lỗi cú pháp XML/JSON không parse được.
+- **Latency**: Độ trễ suy luận trung bình mỗi mẫu (ms).
+
+Tự động lưu file kết quả chi tiết `eval_predictions_{split}.json` và bảng tổng kết
+`eval_metrics.json` vào `RUN_DIR`.
 
 ```python
+import json
+import re
+import time
+from pathlib import Path
+import torch
+
+# 1. Trình phân tích cú pháp Tool Call (XML + JSON fallback)
 TOOL_RE = re.compile(
-    r"<tool_call>\s*<function\s*=\s*([^>\s]+)>(.*?)</function>\s*</tool_call>",
+    r"<tool_call>\s*<function\s*=\s*([^>\s]+)\s*>(.*?)</function>\s*</tool_call>",
     re.DOTALL | re.IGNORECASE,
 )
 PARAM_RE = re.compile(
-    r"<parameter\s*=\s*([^>\s]+)>(.*?)</parameter>",
+    r"<parameter\s*=\s*([^>\s]+)\s*>(.*?)</parameter>",
     re.DOTALL | re.IGNORECASE,
 )
 
-def parse_native_output(text: str) -> list[dict]:
+def parse_native_output(text: str) -> tuple[list[dict], list[str]]:
     calls = []
+    errors = []
+    open_tags = len(re.findall(r"<tool_call\b", text, re.IGNORECASE))
+    close_tags = len(re.findall(r"</tool_call\s*>", text, re.IGNORECASE))
+    if open_tags != close_tags:
+        errors.append("unbalanced_tool_call_tags")
+
     for name, body in TOOL_RE.findall(text):
         arguments = {}
         for parameter, value in PARAM_RE.findall(body):
-            value = value.strip()
+            parameter = parameter.strip()
+            val_str = value.strip()
             try:
-                value = json.loads(value)
-            except json.JSONDecodeError:
-                pass
-            arguments[parameter] = value
-        calls.append({"name": name, "arguments": arguments})
-    return calls
+                arguments[parameter] = json.loads(val_str)
+            except (json.JSONDecodeError, TypeError):
+                arguments[parameter] = val_str
+        calls.append({"name": name.strip(), "arguments": arguments})
 
-def exact_calls(predicted: list[dict], gold: list[dict]) -> bool:
-    return predicted == gold
+    if not calls and open_tags > 0:
+        errors.append("malformed_tool_call")
+    return calls, errors
 
-print(parse_native_output("<tool_call><function=lookup><parameter=x>1</parameter></function></tool_call>"))
+# 2. Hàm đánh giá trên một tập test
+def evaluate_split(eval_model, eval_tokenizer, test_records: list[dict], language: str = "vi", split_name: str = "test"):
+    results = []
+    pos_samples = 0
+    neg_samples = 0
+    pos_tool_match = 0
+    neg_correct = 0
+    exact_match = 0
+    syntax_errors = 0
+    total_latency_ms = 0.0
+
+    print(f"Bắt đầu đánh giá split [{split_name}] với {len(test_records)} mẫu...")
+    start_time_all = time.time()
+
+    for idx, record in enumerate(test_records, start=1):
+        row = native_row(record, language)
+        prompt = eval_tokenizer.apply_chat_template(
+            row["messages"][:-1], tools=row["tools"], tokenize=True,
+            add_generation_prompt=True, enable_thinking=False,
+            return_tensors="pt",
+        )
+        if isinstance(prompt, dict) or hasattr(prompt, "input_ids"):
+            prompt = prompt["input_ids"]
+        prompt = prompt.to(eval_model.device)
+
+        t0 = time.time()
+        with torch.no_grad():
+            generated = eval_model.generate(
+                prompt, max_new_tokens=512, do_sample=False,
+                pad_token_id=eval_tokenizer.eos_token_id,
+            )
+        latency = (time.time() - t0) * 1000.0
+        total_latency_ms += latency
+
+        output = eval_tokenizer.decode(generated[0][prompt.shape[-1]:], skip_special_tokens=False)
+        pred_calls, errors = parse_native_output(output)
+        gold_calls = record.get("function_calls", [])
+
+        is_pos = len(gold_calls) > 0
+        gold_names = [c["name"] for c in gold_calls]
+        pred_names = [c["name"] for c in pred_calls]
+
+        t_match = False
+        n_correct = False
+        e_match = (pred_calls == gold_calls)
+
+        if is_pos:
+            pos_samples += 1
+            t_match = (gold_names == pred_names)
+            if t_match:
+                pos_tool_match += 1
+        else:
+            neg_samples += 1
+            n_correct = (len(pred_calls) == 0 and not errors)
+            if n_correct:
+                neg_correct += 1
+
+        if e_match:
+            exact_match += 1
+        if errors:
+            syntax_errors += 1
+
+        results.append({
+            "id": record["id"],
+            "query": record["query"],
+            "gold": gold_calls,
+            "predicted": pred_calls,
+            "errors": errors,
+            "tool_match": t_match if is_pos else n_correct,
+            "exact_match": e_match,
+            "latency_ms": round(latency, 2),
+            "raw_output": output,
+        })
+
+        if idx % 50 == 0 or idx == len(test_records):
+            print(f"  Đã xử lý {idx}/{len(test_records)} mẫu ({idx/len(test_records)*100:.1f}%)...")
+
+    n_total = len(test_records)
+    tool_acc = (pos_tool_match / pos_samples * 100.0) if pos_samples > 0 else 0.0
+    non_fc_recall = (neg_correct / neg_samples * 100.0) if neg_samples > 0 else 0.0
+    arga = (exact_match / n_total * 100.0) if n_total > 0 else 0.0
+    err_rate = (syntax_errors / n_total * 100.0) if n_total > 0 else 0.0
+    avg_latency = (total_latency_ms / n_total) if n_total > 0 else 0.0
+
+    summary = {
+        "split": split_name,
+        "total_samples": n_total,
+        "positive_samples": pos_samples,
+        "negative_samples": neg_samples,
+        "tool_accuracy_pos_pct": round(tool_acc, 2),
+        "non_fc_recall_pct": round(non_fc_recall, 2),
+        "arga_exact_match_pct": round(arga, 2),
+        "syntax_error_rate_pct": round(err_rate, 2),
+        "avg_latency_ms": round(avg_latency, 2),
+        "elapsed_seconds": round(time.time() - start_time_all, 2),
+    }
+
+    print("\n" + "=" * 60)
+    print(f"=== BÁO CÁO KẾT QUẢ ĐÁNH GIÁ: {split_name.upper()} ===")
+    print(f"Tổng số mẫu:                   {n_total} (Dương tính: {pos_samples}, Âm tính: {neg_samples})")
+    print(f"Tool Selection (Positive):     {pos_tool_match}/{pos_samples} ({tool_acc:.2f}%)")
+    print(f"Non-FC Recall (Negative):      {neg_correct}/{neg_samples} ({non_fc_recall:.2f}%)")
+    print(f"ArgA (Exact Match End-to-End): {exact_match}/{n_total} ({arga:.2f}%)")
+    print(f"Tỷ lệ lỗi cú pháp (XML/JSON):   {syntax_errors}/{n_total} ({err_rate:.2f}%)")
+    print(f"Độ trễ trung bình / mẫu:        {avg_latency:.2f} ms")
+    print("=" * 60 + "\n")
+
+    # Lưu chi tiết dự đoán
+    (RUN_DIR / f"eval_predictions_{split_name}.json").write_text(
+        json.dumps(results, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    return summary
+
+# 3. Kích hoạt đánh giá (Tự động nhận diện 'model' sau khi train hoặc 'zero_model' khi chạy E0)
+eval_target_model = model if "model" in globals() else zero_model
+eval_target_tokenizer = tokenizer if "tokenizer" in globals() else zero_tokenizer
+
+# Chọn tập test muốn chạy (có thể đặt EVAL_LIMIT = 100 để test nhanh)
+EVAL_LIMIT = None
+vi_test_data = read_jsonl(REVISION_DIR / "vi/test.jsonl")
+if EVAL_LIMIT is not None:
+    vi_test_data = vi_test_data[:EVAL_LIMIT]
+
+metrics_summary = evaluate_split(
+    eval_model=eval_target_model,
+    eval_tokenizer=eval_target_tokenizer,
+    test_records=vi_test_data,
+    language="vi",
+    split_name=f"{RUN_NAME}_vi_test",
+)
+
+(RUN_DIR / "eval_metrics.json").write_text(
+    json.dumps(metrics_summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+)
+print("Đã lưu kết quả đánh giá vào:", RUN_DIR / "eval_metrics.json")
 ```
-
-Khi chạy evaluation, lưu cho mỗi mẫu:
-
-- `id`, query và gold calls;
-- raw model output;
-- parsed calls;
-- parser error nếu có;
-- latency;
-- model, experiment, revision và seed.
 
 ## 15. Lưu Kết Quả Kaggle
 
