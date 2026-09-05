@@ -1,0 +1,39 @@
+defaults:
+  - _self_
+
+output_dir: data/custom_vi/v1
+dataset_version: 1.0.0
+as_of: "2026-08-12"
+reference_datetime: "2026-08-12T08:00:00+07:00"
+seed: 42
+candidate_count: 10
+
+splits:
+  train: {positive: 3600, negative: 2000, track: train}
+  val_seen: {positive: 200, negative: 200, track: seen}
+  val_unseen: {positive: 200, negative: 200, track: unseen}
+  test_seen: {positive: 400, negative: 400, track: seen}
+  test_unseen: {positive: 400, negative: 400, track: unseen}
+
+multi_call_ratio: 0.15
+negative_distribution:
+  hard_near_miss: 0.40
+  non_action: 0.25
+  out_of_scope: 0.20
+  negated_hypothetical: 0.15
+
+query_style_distribution:
+  neutral: 0.35
+  polite: 0.20
+  conversational: 0.20
+  noisy: 0.15
+  code_mixed: 0.10
+
+quality:
+  max_distribution_deviation: 0.02
+  forbid_real_pii: true
+  require_exact_candidate_count: true
+  require_argument_mentions: true
+  require_argument_mention_reconstruction: true
+  require_no_cross_split_family_leakage: true
+  require_no_normalized_duplicates: true
