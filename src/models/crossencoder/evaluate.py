@@ -54,7 +54,17 @@ class ComponentMetrics:
         schema_types = labels.get("schema_type") or []
         start_pred = outputs["span_start"].detach().float().cpu().argmax(dim=-1)
         end_pred = outputs["span_end"].detach().float().cpu().argmax(dim=-1)
-        enum_pred = outputs["enum_logits"].detach().float().cpu().argmax(dim=-1)
+        enum_logits = outputs["enum_logits"].detach().float().cpu()
+        # `inference.py` cắt logits về `len(param["enum"])` trước khi argmax, nên
+        # metric phải cắt y hệt. Không cắt thì head 20 chiều được argmax trên cả
+        # những vị trí schema KHÔNG có (custom_vi: enum chỉ 2-5 giá trị → 85%
+        # không gian output là vô nghĩa) và metric bị phạt cho lỗi mà pipeline
+        # thật không thể mắc.
+        enum_sizes = labels.get("enum_size") or []
+        for row, size in enumerate(enum_sizes):
+            if 0 < int(size) < enum_logits.shape[1]:
+                enum_logits[row, int(size):] = float("-inf")
+        enum_pred = enum_logits.argmax(dim=-1)
         bool_pred = outputs["boolean_logits"].detach().float().cpu().argmax(dim=-1)
 
         for i, schema_type in enumerate(schema_types):
@@ -101,6 +111,19 @@ class ComponentMetrics:
             "n_enum": c["enum_total"],
             "n_boolean": c["bool_total"],
         }
+
+
+def _take(data: dict[str, Any], rows: list[int]) -> dict[str, Any]:
+    """Lấy đúng `rows` khỏi dict tensor/list — tensor theo dim 0, list theo index."""
+    picked: dict[str, Any] = {}
+    for key, value in data.items():
+        if isinstance(value, torch.Tensor):
+            picked[key] = value[rows]
+        elif isinstance(value, list):
+            picked[key] = [value[i] for i in rows]
+        else:
+            picked[key] = value
+    return picked
 
 
 def _ratio(numerator: int, denominator: int) -> float:
@@ -154,11 +177,17 @@ def evaluate_file(
     model.eval()
     overall = ComponentMetrics()
     by_source: dict[str, ComponentMetrics] = defaultdict(ComponentMetrics)
+    # Tách theo tool_split giống gate Bi-Encoder §Phase 2. Bắt buộc phải có:
+    # 72% dòng enum của custom val đến từ tool `unseen`, mà train có 0 dòng
+    # unseen — gộp chung là đem ngưỡng của seen đi chấm bài zero-shot.
+    by_tool_split: dict[str, ComponentMetrics] = defaultdict(ComponentMetrics)
     row_index = 0
     for batch in loader:
-        sources = [
-            dataset.rows[i]["source"]
-            for i in range(row_index, min(row_index + batch_size, len(dataset.rows)))
+        window = range(row_index, min(row_index + batch_size, len(dataset.rows)))
+        sources = [dataset.rows[i]["source"] for i in window]
+        splits = [
+            f'{dataset.rows[i]["source"]}/{dataset.rows[i].get("tool_split", "mixed")}'
+            for i in window
         ]
         row_index += batch_size
         moved = move_batch(batch, device_obj)
@@ -168,12 +197,24 @@ def evaluate_file(
             for k, v in moved["labels"].items()
         }
         overall.update(outputs, cpu_labels)
+        # Mỗi source chỉ được nhận ĐÚNG các dòng của nó. Truyền cả batch vào
+        # từng source làm val.jsonl (xen kẽ xlam/glaive từng dòng) bị đếm chéo:
+        # xlam có 0 enum vẫn báo 24, và glaive == xlam y hệt nhau.
         for source in set(sources):
-            by_source[source].update(outputs, cpu_labels)
+            rows = [i for i, name in enumerate(sources) if name == source]
+            by_source[source].update(
+                _take(outputs, rows), _take(cpu_labels, rows)
+            )
+        for split in set(splits):
+            rows = [i for i, name in enumerate(splits) if name == split]
+            by_tool_split[split].update(
+                _take(outputs, rows), _take(cpu_labels, rows)
+            )
 
     return {
         "overall": overall.compute(),
         "by_source": {source: m.compute() for source, m in sorted(by_source.items())},
+        "by_tool_split": {key: m.compute() for key, m in sorted(by_tool_split.items())},
         "n_pairs": len(dataset),
         "n_dropped_unalignable": dataset.n_dropped_unalignable,
     }
@@ -196,7 +237,13 @@ def main() -> None:
         max_length=int(raw.get("data", {}).get("max_length", 256)),
         batch_size=int(raw.get("train", {}).get("eval_batch_size", 16)),
     )
-    report["gates"] = check_gates(report["overall"], raw.get("gates", {}))
+    # Plan §Phase 3 chốt gate trên **custom val**, không phải toàn bộ val.
+    # `overall` bị xLAM (14,452/17,769 cặp) chi phối nên đo ở đó là đo nhầm tập.
+    gates = raw.get("gates", {})
+    gate_slice = report["by_source"].get("custom_vi")
+    report["gates"] = check_gates(gate_slice if gate_slice else report["overall"], gates)
+    report["gates"]["measured_on"] = "custom_vi" if gate_slice else "overall (thiếu custom_vi)"
+    report["gates_overall"] = check_gates(report["overall"], gates)
 
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -129,3 +129,174 @@ def test_thresholds_roundtrip(tmp_path):
     assert loaded.tau == 0.42
     assert loaded.strategy == "gap"
     assert loaded.k_max == 2
+
+
+def test_calibrate_thresholds_auto_uses_the_actual_winner():
+    """`strategy: auto` phải đọc `selection["winner"]`, không mặc định absolute."""
+    from unittest.mock import patch
+
+    from src.models.biencoder.evaluate import calibrate_thresholds
+
+    rankings = [
+        _ranking("m1", ["a", "b"], [("a", 0.9), ("b", 0.88), ("c", 0.2)]),
+        _ranking("s1", ["a"], [("a", 0.9), ("b", 0.3), ("c", 0.1)]),
+    ]
+
+    with (
+        patch("src.models.biencoder.evaluate.group_rows_by_sample", return_value=[]),
+        patch("src.models.biencoder.evaluate.rank_samples", return_value=rankings),
+    ):
+        thresholds = calibrate_thresholds(
+            retriever=None,
+            val_path="unused.jsonl",
+            config={"strategy": "auto"},
+        )
+
+    assert thresholds.strategy == thresholds.metrics["call_selection"]["winner"]
+
+
+def test_calibrate_thresholds_non_auto_string_is_used_verbatim():
+    """`strategy` khai rõ (không phải "auto") thì giữ nguyên, kể cả khi thua."""
+    from unittest.mock import patch
+
+    from src.models.biencoder.evaluate import calibrate_thresholds
+
+    rankings = [_ranking("s1", ["a"], [("a", 0.9), ("b", 0.3)])]
+
+    with (
+        patch("src.models.biencoder.evaluate.group_rows_by_sample", return_value=[]),
+        patch("src.models.biencoder.evaluate.rank_samples", return_value=rankings),
+    ):
+        thresholds = calibrate_thresholds(
+            retriever=None,
+            val_path="unused.jsonl",
+            config={"strategy": "absolute"},
+        )
+
+    assert thresholds.strategy == "absolute"
+
+
+def test_reconcile_strategy_fixes_mismatch_using_data_already_in_the_file():
+    """Bug thật: config cũ hardcode "absolute" dù calibration tự chọn "gap".
+
+    `thresholds.json` khi đó đã có sẵn `gap_delta` đúng — sửa chỉ cần đổi lại
+    field `strategy`, không cần GPU, không cần chạy lại calibration.
+    """
+    from src.models.biencoder.evaluate import reconcile_strategy
+
+    raw = {
+        "strategy": "absolute",
+        "gap_delta": 0.2,
+        "metrics": {"call_selection": {"winner": "gap"}},
+    }
+
+    fixed, changed = reconcile_strategy(raw)
+
+    assert changed
+    assert fixed["strategy"] == "gap"
+    assert fixed["gap_delta"] == 0.2
+    assert raw["strategy"] == "absolute", "không được sửa in-place bản gốc"
+
+
+def test_reconcile_strategy_leaves_already_correct_file_alone():
+    from src.models.biencoder.evaluate import reconcile_strategy
+
+    raw = {"strategy": "gap", "metrics": {"call_selection": {"winner": "gap"}}}
+
+    fixed, changed = reconcile_strategy(raw)
+
+    assert not changed
+    assert fixed is raw
+
+
+def test_reconcile_strategy_is_a_noop_without_a_recorded_winner():
+    """File cũ (trước khi calibrate ghi `winner`) không được sửa mù quáng."""
+    from src.models.biencoder.evaluate import reconcile_strategy
+
+    raw = {"strategy": "absolute", "metrics": {}}
+
+    fixed, changed = reconcile_strategy(raw)
+
+    assert not changed
+    assert fixed is raw
+
+
+def _raw(sample_id: str, ranked: list[tuple[str, float]]) -> dict:
+    return {
+        "id": sample_id,
+        "ranked_tools": [{"name": n, "score": s} for n, s in ranked],
+    }
+
+
+def _gold(sample_id: str, tools: list[str]) -> dict:
+    return {"id": sample_id, "function_calls": [{"name": t} for t in tools]}
+
+
+def test_replay_selection_reproduces_selection_without_a_model():
+    """`ranked_tools` đã lưu kèm score nên đổi ngưỡng là tính lại được offline."""
+    from src.models.biencoder.evaluate import replay_selection
+
+    gold = [_gold("s1", ["a"]), _gold("s2", ["a", "b"])]
+    raw = [
+        _raw("s1", [("a", 0.90), ("b", 0.40)]),
+        _raw("s2", [("a", 0.90), ("b", 0.85), ("c", 0.20)]),
+    ]
+
+    # gap 0.25: s1 giữ 1 tool (khoảng cách 0.50 > 0.25), s2 lấy cả 2 (0.05).
+    result = replay_selection(
+        gold, raw, RetrievalThresholds(tau=0.0, gap_delta=0.25, k_max=3, strategy="gap")
+    )
+
+    assert result["tool_set_accuracy_positive"] == 1.0
+    assert result["n_positive"] == 2
+
+
+def test_replay_selection_exposes_absolute_over_selection():
+    """Đúng cơ chế nghi ngờ: τ_call thấp thì mọi candidate đều lọt.
+
+    Hard negative của CustomTools-VI cùng `feature_group` nên điểm sát nhau —
+    `absolute` gom cả cụm, `gap` thì không.
+    """
+    from src.models.biencoder.evaluate import replay_selection
+
+    gold = [_gold("s1", ["a"])]
+    raw = [_raw("s1", [("a", 0.80), ("b", 0.55), ("c", 0.50)])]
+
+    absolute = replay_selection(
+        gold, raw, RetrievalThresholds(tau=0.0, tau_call=0.34, k_max=3, strategy="absolute")
+    )
+    gap = replay_selection(
+        gold, raw, RetrievalThresholds(tau=0.0, gap_delta=0.20, k_max=3, strategy="gap")
+    )
+
+    assert absolute["mean_selected_positive"] == 3.0
+    assert absolute["tool_set_accuracy_positive"] == 0.0
+    assert gap["mean_selected_positive"] == 1.0
+    assert gap["tool_set_accuracy_positive"] == 1.0
+
+
+def test_replay_selection_counts_abstention_on_negatives():
+    from src.models.biencoder.evaluate import replay_selection
+
+    gold = [_gold("n1", []), _gold("n2", [])]
+    raw = [_raw("n1", [("a", 0.10)]), _raw("n2", [("a", 0.90)])]
+
+    result = replay_selection(
+        gold, raw, RetrievalThresholds(tau=0.35, gap_delta=0.2, strategy="gap")
+    )
+
+    assert result["negative_recall"] == 0.5
+    assert result["n_negative"] == 2
+
+
+def test_replay_selection_reports_samples_missing_from_raw():
+    from src.models.biencoder.evaluate import replay_selection
+
+    result = replay_selection(
+        [_gold("s1", ["a"]), _gold("s2", ["b"])],
+        [_raw("s1", [("a", 0.9)])],
+        RetrievalThresholds(tau=0.0, gap_delta=0.2, strategy="gap"),
+    )
+
+    assert result["n_missing_raw"] == 1
+    assert result["n_positive"] == 1

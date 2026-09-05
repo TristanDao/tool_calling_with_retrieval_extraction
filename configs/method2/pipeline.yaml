@@ -2,10 +2,13 @@
 # Xuất predictions.jsonl theo prediction contract của docs/evaluation.md §3.
 
 models:
-  biencoder: artifacts/method2/biencoder/run01/final
+  # run02 = Round 2 (mine hard negative + train lại từ base). run01 chỉ là máy
+  # đào negative, KHÔNG phải model cuối — trỏ nhầm vào run01 là đánh giá bằng
+  # checkpoint yếu hơn hẳn (pool-scope ndcg@10 0.715 so với 0.752).
+  biencoder: artifacts/method2/biencoder/run02/final
   crossencoder: artifacts/method2/crossencoder/run01/final
   # Ngưỡng đã hiệu chỉnh trên val và FREEZE — không được tune lại trên test.
-  thresholds: artifacts/method2/biencoder/run01/thresholds.json
+  thresholds: artifacts/method2/biencoder/run02/thresholds.json
   max_seq_length: 192
 
 index:
@@ -17,12 +20,25 @@ index:
 # pool       = xếp hạng trên toàn bộ ~4,4k tool (thiết lập stress test)
 retrieval_scope: candidates
 
+# Cơ chế abstention (ablation §6.1):
+#   tau         = ngưỡng cosine top-1 của Bi-Encoder (§5.1) — BASELINE
+#   should_call = head nhị phân của Cross-Encoder trên (query, tool top-1)
+# `should_call` đòi checkpoint có head đó; không có thì pipeline DỪNG chứ không
+# lặng lẽ quay về tau — quay lặng lẽ là báo cáo số baseline dưới tên ablation.
+abstention: tau
+# Hiệu chỉnh trên val bằng scripts/method2/calibrate_should_call.py rồi FREEZE,
+# đúng như τ. 0.5 chỉ là mặc định để chạy được vòng val đầu tiên.
+should_call_threshold: 0.5
+
 extraction:
   max_length: 256
   has_value_threshold: 0.5
   fallback_has_value_threshold: 0.3
   max_answer_len: 30
   batch_size: 64
+  # PHẢI khớp `model.max_question_tokens` của crossencoder.yaml. Lệch nhau là
+  # train/serve skew: model học trên question đã cắt, chạy thật trên bản đầy đủ.
+  max_question_tokens: 96
   use_normalizer: true          # ablation §6.2
   normalizer:
     reference_date: null        # ISO date, vd 2026-08-23

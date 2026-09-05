@@ -10,9 +10,20 @@ n_values: [3, 10, 50, 100, 500, 1000]
 # same_domain = distractor cùng feature_group với gold (khó hơn)
 #
 # TRẠNG THÁI: same_domain = temporarily unavailable — pending feature-group
-# enrichment. Chỉ 40 tool CustomTools-VI có nhãn thật; 4,424 tool glaive/xLAM
-# đang là "Khác" nên slice này sẽ suy biến thành random. Bật lại sau khi chạy
-# feature_group_classify và rebuild tool pool.
+# enrichment. Chỉ 40 tool CustomTools-VI có nhãn thật (10 nhóm × 4 tool); 4,424
+# tool glaive/xLAM đang là "Khác".
+#
+# Đo thật trên 200 query của test_seen (`src.models.pipeline.stress`), tỉ lệ
+# distractor THẬT SỰ cùng nhóm khi bật same_domain:
+#
+#   N        3      10      50     100     500    1000
+#   purity  1.00   0.359   0.069   0.034   0.007   0.003
+#
+# Mỗi nhóm chỉ có 4 tool nên từ N≥10 phần dư buộc phải lấp bằng tool ngẫu
+# nhiên; từ N≥50 slice này CHÍNH LÀ random, chỉ khác cái tên. Bật nó lúc này
+# là báo cáo hai đường cong trùng nhau như thể chúng đo hai thứ khác nhau.
+# Runner vẫn cài sẵn mode này và ghi `same_domain_purity` vào report — bật lại
+# chỉ là sửa dòng dưới, sau khi chạy feature_group_classify và rebuild pool.
 distractor_modes: [random]
 
 n_queries: 200            # 6 N × 1 mode × 200 = 1,200 instance (2,400 khi bật lại same_domain)

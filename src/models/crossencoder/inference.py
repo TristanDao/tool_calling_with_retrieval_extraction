@@ -23,9 +23,12 @@ from src.models.crossencoder.data_collator import (
     SCHEMA_TYPE_BOOLEAN,
     SCHEMA_TYPE_ENUM,
     SCHEMA_TYPE_NUMBER,
+    SCHEMA_TYPE_SHOULD_CALL,
     SCHEMA_TYPE_STRING,
+    DEFAULT_MAX_QUESTION_TOKENS,
     UNSUPPORTED_TYPES,
     build_schema_question,
+    cap_question,
     iter_parameters,
 )
 from src.models.crossencoder.label_generator import BOOLEAN_LABEL_TRUE
@@ -41,6 +44,10 @@ class ExtractionConfig:
     fallback_has_value_threshold: float = 0.3
     max_answer_len: int = 30
     batch_size: int = 64
+    #: PHẢI khớp giá trị lúc train, nếu không model thấy question dài hơn hẳn
+    #: những gì nó từng học (và tokenizer ném "Sequence to truncate too short"
+    #: với param có description ~900 ký tự trong glaive/xLAM).
+    max_question_tokens: int = DEFAULT_MAX_QUESTION_TOKENS
     use_normalizer: bool = True
     normalizer: NormalizerConfig = field(default_factory=NormalizerConfig)
 
@@ -103,9 +110,70 @@ class CrossEncoderExtractor:
         self.tokenizer = tokenizer
         self.config = config or ExtractionConfig()
         self.device = torch.device(device)
+        # Một schema question lặp lại ở rất nhiều tool/param; cache để không
+        # tokenize lại mỗi chunk.
+        self._question_cache: dict[str, tuple[str, int]] = {}
         self.model.to(self.device)
         self.model.eval()
         self.normalizer = SpanNormalizer(self.config.normalizer)
+
+    @property
+    def has_should_call(self) -> bool:
+        """Checkpoint này có head `should_call` không (ablation §6.1).
+
+        Kiểm bằng head thật chứ không bằng config: một checkpoint cũ nạp qua
+        `from_pretrained` sẽ dựng `HeadConfig` từ dict đã lưu, ở đó khoá này
+        không tồn tại nên head không được tạo — pipeline phải quay về ngưỡng τ,
+        và phải biết điều đó mà không cần ai truyền cờ.
+        """
+        return getattr(getattr(self.model, "heads", None), "should_call", None) is not None
+
+    @torch.no_grad()
+    def should_call_prob(self, query: str, tool_schema: dict[str, Any]) -> float | None:
+        """P(query này cần gọi tool này). `None` nếu checkpoint không có head.
+
+        Một forward pass cấp tool, đúng khuôn question mà `dataset` đã dạy —
+        `Tool=... Desc=... Params=...`. Lệch khuôn ở đây là train/serve skew,
+        loại lỗi không báo mà chỉ làm điểm số tệ đi.
+        """
+        if not self.has_should_call:
+            return None
+        pseudo_param = {
+            "name": tool_schema.get("name", ""),
+            "description": tool_schema.get("description", ""),
+            "param_names": [p["name"] for p in iter_parameters(tool_schema)],
+            "routing_type": SCHEMA_TYPE_SHOULD_CALL,
+        }
+        question = cap_question(
+            self.tokenizer,
+            build_schema_question(pseudo_param),
+            self.config.max_question_tokens,
+            self._question_cache,
+        )[0]
+        # Gọi dạng batch (list 1 phần tử) chứ không dạng chuỗi đơn: đi đúng
+        # nhánh mà `_predict_chunk` đi, nên pad và `sequence_ids` hành xử giống
+        # hệt. Cũng để ngỏ đường hỏi nhiều tool trong một lượt về sau.
+        encoded = self.tokenizer(
+            [query],
+            [question],
+            max_length=self.config.max_length,
+            padding=True,
+            truncation="only_first",
+            return_tensors="pt",
+        )
+        query_mask = torch.zeros_like(encoded["attention_mask"], dtype=torch.bool)
+        for col, sid in enumerate(encoded.sequence_ids(0)):
+            if sid == 0:
+                query_mask[0, col] = True
+        model_inputs = {
+            "input_ids": encoded["input_ids"].to(self.device),
+            "attention_mask": encoded["attention_mask"].to(self.device),
+            "query_token_mask": query_mask.to(self.device),
+        }
+        if "token_type_ids" in encoded:
+            model_inputs["token_type_ids"] = encoded["token_type_ids"].to(self.device)
+        outputs = self.model(**model_inputs)
+        return float(torch.sigmoid(outputs["should_call"])[0].item())
 
     @torch.no_grad()
     def predict(self, query: str, tool_schema: dict[str, Any]) -> list[ParamPrediction]:
@@ -137,7 +205,15 @@ class CrossEncoderExtractor:
     def _predict_chunk(
         self, query: str, params: list[dict[str, Any]]
     ) -> list[ParamPrediction]:
-        questions = [build_schema_question(p) for p in params]
+        questions = [
+            cap_question(
+                self.tokenizer,
+                build_schema_question(p),
+                self.config.max_question_tokens,
+                self._question_cache,
+            )[0]
+            for p in params
+        ]
         encoded = self.tokenizer(
             [query] * len(params),
             questions,

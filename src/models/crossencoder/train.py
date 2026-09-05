@@ -29,7 +29,11 @@ from typing import Any, Sequence
 import torch
 from torch.utils.data import DataLoader, Subset
 
-from src.models.crossencoder.data_collator import CollatorConfig, CrossEncoderCollator
+from src.models.crossencoder.data_collator import (
+    DEFAULT_MAX_QUESTION_TOKENS,
+    CollatorConfig,
+    CrossEncoderCollator,
+)
 from src.models.crossencoder.dataset import CrossEncoderDataset
 from src.models.crossencoder.heads import HeadConfig
 from src.models.crossencoder.losses import HierarchicalLoss, LossConfig
@@ -50,7 +54,14 @@ class Stage:
 class CrossEncoderTrainConfig:
     model_name: str = "xlm-roberta-base"
     max_enum_size: int = 20
+    #: Trần token của schema question. PHẢI khớp `extraction.max_question_tokens`
+    #: bên pipeline.yaml — lệch là train/serve skew.
+    max_question_tokens: int = DEFAULT_MAX_QUESTION_TOKENS
     dropout: float = 0.1
+    #: Ablation §6.1 — bật head `should_call`. PHẢI bật cùng lúc với
+    #: `pairs.should_call.enabled`, nếu không head được tạo mà không có
+    #: hàng nào dạy nó (hoặc ngược lại, có nhãn mà không có head để học).
+    enable_should_call: bool = False
 
     train_path: Path = Path("data/method2/crossencoder/train.jsonl")
     val_path: Path = Path("data/method2/crossencoder/val.jsonl")
@@ -76,6 +87,8 @@ class CrossEncoderTrainConfig:
     save_total_limit: int = 2
     seed: int = 42
     resume_from: str | None = None
+    #: >0 để dừng sớm (smoke run) — đo throughput trước khi tiêu nhiều giờ GPU.
+    max_steps: int | None = None
 
     loss: LossConfig = field(default_factory=LossConfig)
     curriculum_enabled: bool = True
@@ -92,7 +105,13 @@ class CrossEncoderTrainConfig:
         return cls(
             model_name=str(model_raw.get("name", defaults.model_name)),
             max_enum_size=int(model_raw.get("max_enum_size", defaults.max_enum_size)),
+            max_question_tokens=int(
+                model_raw.get("max_question_tokens", defaults.max_question_tokens)
+            ),
             dropout=float(model_raw.get("dropout", defaults.dropout)),
+            enable_should_call=bool(
+                model_raw.get("enable_should_call", defaults.enable_should_call)
+            ),
             train_path=Path(data_raw.get("train_path", defaults.train_path)),
             val_path=Path(data_raw.get("val_path", defaults.val_path)),
             max_length=int(data_raw.get("max_length", defaults.max_length)),
@@ -121,6 +140,7 @@ class CrossEncoderTrainConfig:
                 span_weight=float(loss_raw.get("span_weight", 1.0)),
                 enum_weight=float(loss_raw.get("enum_weight", 1.0)),
                 boolean_weight=float(loss_raw.get("boolean_weight", 1.0)),
+                should_call_weight=float(loss_raw.get("should_call_weight", 1.0)),
                 span_loss_combiner=str(loss_raw.get("span_loss_combiner", "sum")),
             ),
             curriculum_enabled=bool(curriculum_raw.get("enabled", True)),
@@ -185,14 +205,26 @@ def save_checkpoint(
     step: int,
     config: CrossEncoderTrainConfig,
     tag: str | None = None,
+    stage_index: int = 0,
+    epoch: int = 0,
 ) -> Path:
     path = config.output_dir / (tag or f"checkpoint-{step}")
     path.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(path)
     tokenizer.save_pretrained(path)
+    # progress.json tách khỏi trainer_state.pt: đọc vị trí không cần torch.load
+    # ~3 GB optimizer state, và thấy được cả checkpoint gắn tag `stage-*`.
+    (path / "progress.json").write_text(
+        json.dumps({"step": step, "stage_index": stage_index, "epoch": epoch}),
+        encoding="utf-8",
+    )
     torch.save(
         {
             "step": step,
+            # Vị trí trong curriculum: thiếu hai trường này thì resume luôn quay
+            # về giai đoạn đầu và train lại từ epoch 0.
+            "stage_index": stage_index,
+            "epoch": epoch,
             "optimizer": optimizer.state_dict(),
             "scheduler": scheduler.state_dict() if scheduler else None,
             "scaler": scaler.state_dict() if scaler else None,
@@ -215,13 +247,30 @@ def _prune_checkpoints(config: CrossEncoderTrainConfig) -> None:
 
 
 def find_last_checkpoint(output_dir: str | Path) -> str | None:
+    """Checkpoint mới nhất theo `step`, tính cả bản gắn tag `stage-*`.
+
+    Sắp theo tên là sai với `stage-warmup` (không parse được số) và cũng sai với
+    'checkpoint-1000' < 'checkpoint-500' khi so chuỗi — nên đọc `step` thật từ
+    progress.json.
+    """
     output_dir = Path(output_dir)
     if not output_dir.exists():
         return None
-    checkpoints = [p for p in output_dir.glob("checkpoint-*") if (p / "trainer_state.pt").exists()]
-    if not checkpoints:
+    candidates: list[tuple[int, Path]] = []
+    for path in list(output_dir.glob("checkpoint-*")) + list(output_dir.glob("stage-*")):
+        if not (path / "trainer_state.pt").exists():
+            continue
+        progress = path / "progress.json"
+        if progress.exists():
+            step = int(json.loads(progress.read_text(encoding="utf-8")).get("step", 0))
+        else:
+            # Checkpoint sinh trước khi có progress.json.
+            tail = path.name.split("-")[-1]
+            step = int(tail) if tail.isdigit() else 0
+        candidates.append((step, path))
+    if not candidates:
         return None
-    return str(max(checkpoints, key=lambda p: int(p.name.split("-")[-1])))
+    return str(max(candidates, key=lambda item: item[0])[1])
 
 
 # ----------------------------------------------------------------------- eval
@@ -265,12 +314,14 @@ def train(config: CrossEncoderTrainConfig) -> dict[str, Any]:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config.output_dir.mkdir(parents=True, exist_ok=True)
 
+    dataset_started = time.perf_counter()
     tokenizer = AutoTokenizer.from_pretrained(config.model_name, use_fast=True)
     collator = CrossEncoderCollator(
         CollatorConfig(
             tokenizer_name=config.model_name,
             max_length=config.max_length,
             padding=config.padding,
+            max_question_tokens=config.max_question_tokens,
         ),
         tokenizer=tokenizer,
     )
@@ -280,6 +331,10 @@ def train(config: CrossEncoderTrainConfig) -> dict[str, Any]:
         if config.val_path.exists()
         else None
     )
+    dataset_seconds = time.perf_counter() - dataset_started
+    logger.info(
+        "dựng dataset mất %.1f s", dataset_seconds
+    )
     logger.info(
         "train=%d val=%d (bỏ %d cặp không căn được span trong cửa sổ %d token)",
         len(train_dataset),
@@ -288,10 +343,22 @@ def train(config: CrossEncoderTrainConfig) -> dict[str, Any]:
         config.max_length,
     )
 
-    model = CrossEncoderForExtraction(
-        model_name=config.model_name,
-        head_config=HeadConfig(max_enum_size=config.max_enum_size, dropout=config.dropout),
-    ).to(device)
+    # PHẢI xác định checkpoint TRƯỚC khi dựng model: `from_pretrained` nạp cả
+    # encoder lẫn 4 head đã train. Dựng model mới rồi chỉ nạp optimizer state là
+    # mất sạch trọng số — resume khi đó còn tệ hơn train lại từ đầu.
+    resume_path = config.resume_from or find_last_checkpoint(config.output_dir)
+    if resume_path:
+        model = CrossEncoderForExtraction.from_pretrained(resume_path).to(device)
+        logger.info("nạp lại trọng số từ %s", resume_path)
+    else:
+        model = CrossEncoderForExtraction(
+            model_name=config.model_name,
+            head_config=HeadConfig(
+                max_enum_size=config.max_enum_size,
+                dropout=config.dropout,
+                enable_should_call=config.enable_should_call,
+            ),
+        ).to(device)
     if config.gradient_checkpointing and hasattr(model.encoder, "gradient_checkpointing_enable"):
         model.encoder.gradient_checkpointing_enable()
 
@@ -316,9 +383,25 @@ def train(config: CrossEncoderTrainConfig) -> dict[str, Any]:
 
     history: list[dict[str, Any]] = []
     global_step = 0
-    resume_from = config.resume_from or find_last_checkpoint(config.output_dir)
+    resume_stage, resume_epoch = 0, 0
+    if resume_path:
+        position = _read_trainer_state(resume_path)
+        global_step = position["step"]
+        resume_stage, resume_epoch = position["stage_index"], position["epoch"]
+        logger.info(
+            "resume: step=%d, giai đoạn #%d, epoch %d", global_step, resume_stage, resume_epoch
+        )
 
-    for stage in stages:
+    started_all = time.perf_counter()
+    n_optimizer_steps = 0
+    stop_early = False
+
+    for stage_index, stage in enumerate(stages):
+        if stage_index < resume_stage:
+            logger.info("bỏ qua giai đoạn %s — đã xong ở lần chạy trước", stage.name)
+            continue
+        if stop_early:
+            break
         data = subset_by_sources(train_dataset, stage.sources) if stage.sources else train_dataset
         if len(data) == 0:
             logger.warning("giai đoạn %s không có sample nào — bỏ qua", stage.name)
@@ -338,16 +421,19 @@ def train(config: CrossEncoderTrainConfig) -> dict[str, Any]:
         )
         scaler = torch.amp.GradScaler("cuda", enabled=config.fp16 and device.type == "cuda")
 
-        if resume_from:
-            global_step = _load_trainer_state(resume_from, optimizer, scheduler, scaler)
-            logger.info("resume từ %s tại step %d", resume_from, global_step)
-            resume_from = None
+        if resume_path and stage_index == resume_stage:
+            _load_trainer_state(resume_path, optimizer, scheduler, scaler)
+            resume_path = None
 
-        logger.info("giai đoạn %s: %d sample, %d step", stage.name, len(data), total_steps)
+        first_epoch = resume_epoch if stage_index == resume_stage else 0
+        logger.info(
+            "giai đoạn %s: %d sample, %d step, epoch %d..%d",
+            stage.name, len(data), total_steps, first_epoch, stage.epochs - 1,
+        )
         model.train()
         started = time.perf_counter()
 
-        for epoch in range(stage.epochs):
+        for epoch in range(first_epoch, stage.epochs):
             for micro_step, batch in enumerate(loader):
                 batch = move_batch(batch, device)
                 with torch.autocast("cuda", dtype=torch.float16, enabled=scaler.is_enabled()):
@@ -364,13 +450,15 @@ def train(config: CrossEncoderTrainConfig) -> dict[str, Any]:
                     optimizer.zero_grad(set_to_none=True)
                     scheduler.step()
                     global_step += 1
+                    n_optimizer_steps += 1
 
                     if global_step % config.logging_steps == 0:
                         logger.info(
                             "stage=%s epoch=%d step=%d loss=%.4f has_value=%.4f sub=%.4f",
                             stage.name, epoch, global_step,
-                            float(losses["loss"]), float(losses["loss_has_value"]),
-                            float(losses["loss_sub"]),
+                            losses["loss"].detach().item(),
+                            losses["loss_has_value"].detach().item(),
+                            losses["loss_sub"].detach().item(),
                         )
                     if val_loader and global_step % config.eval_steps == 0:
                         metrics = evaluate(model, val_loader, loss_fn, device, config.fp16)
@@ -379,24 +467,88 @@ def train(config: CrossEncoderTrainConfig) -> dict[str, Any]:
                         logger.info("eval @%d: %s", global_step, json.dumps(metrics))
                     if global_step % config.save_steps == 0:
                         save_checkpoint(
-                            model, tokenizer, optimizer, scheduler, scaler, global_step, config
+                            model, tokenizer, optimizer, scheduler, scaler, global_step, config,
+                            stage_index=stage_index, epoch=epoch,
                         )
+                    if config.max_steps and n_optimizer_steps >= config.max_steps:
+                        logger.info("SMOKE: dừng ở %d optimizer step", n_optimizer_steps)
+                        stop_early = True
+                        break
+            if stop_early:
+                break
+
+        # `eval_steps=500` không bao giờ chạm trong giai đoạn finetune (chỉ 384
+        # step) — cả giai đoạn quan trọng nhất sẽ không có số đo nào. Eval một
+        # lần ở cuối mỗi giai đoạn để history luôn có mốc so sánh.
+        # `not config.max_steps`: smoke chỉ đo throughput, mà eval 17,769 cặp nằm
+        # trong cửa sổ tính `sec_per_step` sẽ thổi số đo lên (0.87 -> 1.44 s/step,
+        # ước tính 1.1 -> 1.78 h) và làm hỏng chính cái guard rail này.
+        if val_loader and not config.max_steps:
+            metrics = evaluate(model, val_loader, loss_fn, device, config.fp16)
+            metrics.update({"step": global_step, "stage": stage.name, "at": "end_of_stage"})
+            history.append(metrics)
+            logger.info("eval cuối giai đoạn %s: %s", stage.name, json.dumps(metrics))
 
         logger.info("giai đoạn %s xong sau %.1f phút", stage.name, (time.perf_counter() - started) / 60)
         save_checkpoint(
             model, tokenizer, optimizer, scheduler, scaler, global_step, config,
             tag=f"stage-{stage.name}",
+            # epoch = stage.epochs → lần resume sau biết giai đoạn này đã xong.
+            stage_index=stage_index, epoch=stage.epochs,
         )
+        if stop_early:
+            break
 
     final_dir = config.output_dir / "final"
     final_dir.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(final_dir)
     tokenizer.save_pretrained(final_dir)
 
-    final_metrics = evaluate(model, val_loader, loss_fn, device, config.fp16) if val_loader else {}
+    elapsed = time.perf_counter() - started_all
+    smoke = bool(config.max_steps)
+    # Smoke chỉ đo throughput; eval đầy đủ ở đây tốn vài phút mà không dùng vào việc gì.
+    final_metrics = (
+        evaluate(model, val_loader, loss_fn, device, config.fp16)
+        if val_loader and not smoke
+        else {}
+    )
+    sec_per_step = elapsed / n_optimizer_steps if n_optimizer_steps else None
+    planned_steps = sum(
+        math.ceil(
+            math.ceil(
+                len(subset_by_sources(train_dataset, st.sources) if st.sources else train_dataset)
+                / config.batch_size
+            )
+            / config.grad_accum
+        )
+        * st.epochs
+        for st in stages
+    )
+    # Chọn checkpoint: chỉ BÁO CÁO, không tự nạp lại — cùng quy ước với
+    # Bi-Encoder để hai stage đọc được bằng một mắt.
+    scored = [h for h in history if "has_value_f1" in h]
+    best = max(scored, key=lambda h: h["has_value_f1"]) if scored else None
     report = {
         "final_metrics": final_metrics,
         "history": history,
+        "final_checkpoint": str(final_dir),
+        "training_duration_hours": round(elapsed / 3600, 3),
+        "sec_per_step": round(sec_per_step, 2) if sec_per_step else None,
+        "n_optimizer_steps": n_optimizer_steps,
+        "planned_optimizer_steps": planned_steps,
+        "estimated_hours_full_run": (
+            round(sec_per_step * planned_steps / 3600, 2) if sec_per_step else None
+        ),
+        "stopped_early": smoke and n_optimizer_steps >= config.max_steps,
+        "dataset_build_seconds": round(dataset_seconds, 1),
+        "checkpoint_selection": {
+            "metric": "has_value_f1",
+            "best_value": best.get("has_value_f1") if best else None,
+            "best_step": best.get("step") if best else None,
+            "best_stage": best.get("stage") if best else None,
+            "n_evaluations": len(scored),
+            "note": "Chỉ báo cáo — model cuối là checkpoint cuối, không nạp lại best.",
+        },
         "n_train_pairs": len(train_dataset),
         "n_dropped_unalignable": train_dataset.n_dropped_unalignable,
         "peak_vram_mb": (
@@ -434,6 +586,26 @@ def _build_optimizer(model: CrossEncoderForExtraction, lr: float, config: CrossE
     return torch.optim.AdamW(groups)
 
 
+def _read_trainer_state(path: str) -> dict[str, int]:
+    """Vị trí đã train tới, đọc trước khi dựng optimizer của giai đoạn."""
+    progress = Path(path) / "progress.json"
+    if progress.exists():
+        data = json.loads(progress.read_text(encoding="utf-8"))
+        return {
+            "step": int(data.get("step", 0)),
+            "stage_index": int(data.get("stage_index", 0)),
+            "epoch": int(data.get("epoch", 0)),
+        }
+    state = torch.load(Path(path) / "trainer_state.pt", map_location="cpu")
+    return {
+        "step": int(state.get("step", 0)),
+        # Checkpoint cũ (trước khi vá) không có hai khoá này → coi như giai đoạn
+        # đầu, đúng hành vi cũ, không vỡ.
+        "stage_index": int(state.get("stage_index", 0)),
+        "epoch": int(state.get("epoch", 0)),
+    }
+
+
 def _load_trainer_state(path: str, optimizer, scheduler, scaler) -> int:
     state = torch.load(Path(path) / "trainer_state.pt", map_location="cpu")
     optimizer.load_state_dict(state["optimizer"])
@@ -451,6 +623,16 @@ def main() -> None:
     parser.add_argument("--resume-from", type=str, default=None)
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--no-curriculum", action="store_true")
+    parser.add_argument(
+        "--smoke",
+        nargs="?",
+        type=int,
+        const=50,
+        default=None,
+        metavar="STEPS",
+        help="Dừng sau N optimizer step (mặc định 50) để đo s/step và VRAM. "
+             "Ghi vào output_dir riêng để không lẫn với run thật.",
+    )
     parser.add_argument("--show-config", action="store_true")
     args = parser.parse_args()
 
@@ -462,6 +644,17 @@ def main() -> None:
         config.output_dir = args.output_dir
     if args.no_curriculum:
         config.curriculum_enabled = False
+    if args.smoke is not None:
+        config.max_steps = args.smoke
+        config.output_dir = config.output_dir.parent / "smoke_run01"
+        # Eval trên 17.7k cặp val mất vài phút — với 50 step thì nó lấn át hoàn
+        # toàn số đo throughput. Save một lần ở cuối là đủ để kiểm tra resume.
+        config.eval_steps = 10**9
+        config.save_steps = max(args.smoke // 2, 1)
+        config.logging_steps = max(args.smoke // 5, 1)
+        logging.getLogger(__name__).info(
+            "SMOKE: %d step, output %s", config.max_steps, config.output_dir
+        )
 
     if args.show_config:
         print(json.dumps({k: str(v) for k, v in config.__dict__.items()}, indent=2, ensure_ascii=False))

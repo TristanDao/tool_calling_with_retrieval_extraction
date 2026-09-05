@@ -42,6 +42,18 @@ from typing import Any
 
 from src.models.sources import sha256_file
 
+#: Artifact bắt buộc của một run ĐÁNH GIÁ (§11 method2_plan). Khác hẳn run
+#: train: không có checkpoint/VRAM/duration mà có predictions + latency + lỗi.
+EVAL_ARTIFACTS: dict[str, str] = {
+    "predictions": "predictions.jsonl",
+    "oracle_predictions": "oracle_predictions.jsonl",
+    "raw_predictions": "raw_predictions_pipeline.jsonl",
+    "errors": "errors_pipeline.jsonl",
+    "latency": "latency_pipeline.json",
+}
+
+STAGE_EVALUATION = "evaluation"
+
 DEFAULT_DATA_REPORTS: dict[str, Path] = {
     "dataset_manifest": Path("data/method2/manifest.json"),
     "tool_pool_stats": Path("data/method2/tool_pool_stats.json"),
@@ -213,12 +225,48 @@ def build_run_manifest(
     if "retrieval" in manifest["reports"]:
         manifest["retrieval_gate"] = retrieval_gate(manifest["reports"]["retrieval"])
 
+    if stage == STAGE_EVALUATION:
+        manifest["evaluation"] = _evaluation_state(run_dir, manifest["reports"])
+
     manifest["audit_complete"] = _audit_complete(manifest)
     return manifest
 
 
+def _evaluation_state(run_dir: Path, reports: dict[str, Any]) -> dict[str, Any]:
+    """Gom artifact + seed của một run đánh giá.
+
+    Seed lấy từ `config.seed` trong report của evaluator — đó là seed thật sự
+    có ảnh hưởng ở Phase 5 (bootstrap CI). Pipeline suy luận bằng argmax, không
+    lấy mẫu, nên bản thân nó không có seed để ghi.
+    """
+    artifacts = {
+        name: str(run_dir / filename)
+        for name, filename in EVAL_ARTIFACTS.items()
+        if (run_dir / filename).exists()
+    }
+    latency = _read_json(run_dir / EVAL_ARTIFACTS["latency"])
+    metrics_report = reports.get("metrics")
+    seed = None
+    if isinstance(metrics_report, dict):
+        seed = (metrics_report.get("config") or {}).get("seed")
+    return {
+        "artifacts": artifacts,
+        "missing_artifacts": sorted(set(EVAL_ARTIFACTS) - set(artifacts)),
+        "seed": seed,
+        "latency_p50_ms": (latency.get("total") or {}).get("p50_ms")
+        if isinstance(latency, dict) else None,
+        "peak_vram_mb": latency.get("gpu_peak_memory_mb")
+        if isinstance(latency, dict) else None,
+    }
+
+
 def _audit_complete(manifest: dict[str, Any]) -> dict[str, Any]:
-    """Liệt kê mục nào còn thiếu — để không train xong mới phát hiện thiếu."""
+    """Liệt kê mục nào còn thiếu — để không train xong mới phát hiện thiếu.
+
+    Bộ check phụ thuộc stage. Run đánh giá không có checkpoint/VRAM/duration
+    nên dùng bộ train cho nó sẽ báo thiếu giả và làm `missing` mất hết ý nghĩa
+    cảnh báo.
+    """
     checks = {
         "git_commit": bool(manifest["git"]["commit"]),
         "config_resolved": manifest["config"]["resolved"] is not None,
@@ -229,13 +277,43 @@ def _audit_complete(manifest: dict[str, Any]) -> dict[str, Any]:
         "split_counts_and_overlap": manifest["split_audit"].get("available", False),
         "split_overlap_clean": manifest["split_audit"].get("overlap_clean", False),
         "pair_counts": manifest["split_audit"].get("positive_pairs") is not None,
-        "checkpoint": bool(manifest["train"]["final_checkpoint"]),
-        "checkpoint_selection": bool(manifest["train"]["checkpoint_selection"]),
-        "peak_vram": manifest["train"]["peak_vram_mb"] is not None,
-        "duration": manifest["train"]["duration_hours"] is not None,
-        "retrieval_metrics": manifest.get("retrieval_gate", {}).get("available", False),
     }
+
+    if manifest["stage"] == STAGE_EVALUATION:
+        evaluation = manifest.get("evaluation") or {}
+        artifacts = evaluation.get("artifacts") or {}
+        metrics = manifest["reports"].get("metrics")
+        checks.update(
+            {
+                # §11: raw + parsed predictions, metrics, latency, errors, seed.
+                "predictions": "predictions" in artifacts,
+                "raw_predictions": "raw_predictions" in artifacts,
+                "errors_classified": "errors" in artifacts,
+                "latency_stages": evaluation.get("latency_p50_ms") is not None,
+                "peak_vram": evaluation.get("peak_vram_mb") is not None,
+                "seed": evaluation.get("seed") is not None,
+                "metrics_normalized": _has_metric(metrics, "extraction"),
+                "metrics_strict": _has_metric(metrics, "strict_extraction"),
+            }
+        )
+    else:
+        checks.update(
+            {
+                "checkpoint": bool(manifest["train"]["final_checkpoint"]),
+                "checkpoint_selection": bool(manifest["train"]["checkpoint_selection"]),
+                "peak_vram": manifest["train"]["peak_vram_mb"] is not None,
+                "duration": manifest["train"]["duration_hours"] is not None,
+                "retrieval_metrics": manifest.get("retrieval_gate", {}).get(
+                    "available", False
+                ),
+            }
+        )
+
     return {"checks": checks, "missing": sorted(k for k, ok in checks.items() if not ok)}
+
+
+def _has_metric(report: Any, key: str) -> bool:
+    return isinstance(report, dict) and (report.get("metrics") or {}).get(key) is not None
 
 
 def main() -> None:

@@ -22,6 +22,30 @@ class NormalizationConfig:
     unordered_array_paths: tuple[str, ...] = ()
 
     @classmethod
+    def strict(cls) -> NormalizationConfig:
+        """Biến thể strict: tắt mọi nới lỏng ở mức GIÁ TRỊ.
+
+        §11 `method2_plan.md` yêu cầu báo cáo cả strict lẫn normalized. Bản
+        normalized trả lời "model có lấy đúng thông tin không", bản strict trả
+        lời "chuỗi sinh ra có dùng được ngay không cần hậu xử lý" — chênh lệch
+        giữa hai bản chính là phần công mà normalizer đang gánh.
+
+        `unicode_form` giữ NFC: đó là vệ sinh mã hoá, không phải nới lỏng ngữ
+        nghĩa — so sánh NFC với NFD chỉ tạo nhiễu chứ không đo được gì. Alias
+        bị bỏ vì chúng là tương đương do dataset khai báo, đúng thứ mà strict
+        cần loại ra.
+        """
+        return cls(
+            unicode_form="NFC",
+            collapse_whitespace=False,
+            casefold_strings=False,
+            coerce_numbers=False,
+            coerce_booleans=False,
+            normalize_dates=False,
+            casefold_identifiers=False,
+        )
+
+    @classmethod
     def from_alias_file(cls, path: Path, base: NormalizationConfig | None = None) -> NormalizationConfig:
         current = asdict(base or cls())
         with path.open("r", encoding="utf-8") as handle:

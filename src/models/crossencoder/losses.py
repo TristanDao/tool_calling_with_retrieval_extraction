@@ -4,6 +4,14 @@ L = BCE(has_value)
   + I[has_value=1, type in {string,number}] * (CE(span_start) + CE(span_end))
   + I[has_value=1, type=enum]            * CE(enum)
   + I[has_value=1, type=boolean]         * CE(boolean)
+  + BCE(should_call)                       [chỉ trên hàng cấp tool]
+
+Một batch trộn hai loại hàng: hàng cấp **parameter** (query, param) và hàng cấp
+**tool** (query, tool) của ablation §6.1. Chúng phải được tách theo `schema_type`
+trước khi tính bất cứ thứ gì — hàng cấp tool không có nhãn `has_value`/span/enum,
+để lọt vào các head đó là dạy nhãn rác; và ngược lại hàng parameter không có nhãn
+`should_call`. Khi head `should_call` tắt, batch chỉ có một loại hàng và công
+thức thu về đúng bản cũ.
 """
 
 from dataclasses import dataclass
@@ -15,6 +23,7 @@ import torch.nn.functional as F
 SPAN_TYPES = ("string", "number")
 ENUM_TYPE = "enum"
 BOOLEAN_TYPE = "boolean"
+SHOULD_CALL_TYPE = "should_call"
 
 
 @dataclass
@@ -23,6 +32,7 @@ class LossConfig:
     span_weight: float = 1.0
     enum_weight: float = 1.0
     boolean_weight: float = 1.0
+    should_call_weight: float = 1.0
     span_loss_combiner: str = "sum"
 
 
@@ -49,27 +59,50 @@ class HierarchicalLoss(nn.Module):
         labels: dict[str, torch.Tensor],
     ) -> dict[str, torch.Tensor]:
         device = outputs["has_value"].device
-        has_value_label = labels["has_value"].float()
-        l_has = F.binary_cross_entropy_with_logits(
-            outputs["has_value"], has_value_label
-        ) * self.config.has_value_weight
-
-        present_idx = (labels["has_value"] == 1).nonzero(as_tuple=True)[0].tolist()
-        if not present_idx:
-            l_sub = torch.zeros((), device=device)
-            total = l_has + l_sub
-            return {
-                "loss": total,
-                "loss_has_value": l_has.detach(),
-                "loss_sub": l_sub.detach(),
-            }
-
         batch_size = int(labels["has_value"].shape[0])
         schema_type_list: list[str] = labels.get("schema_type") or ["string"] * batch_size
         if len(schema_type_list) != batch_size:
             raise ValueError(
                 f"schema_type has {len(schema_type_list)} entries but batch is {batch_size}"
             )
+
+        param_rows = [i for i, t in enumerate(schema_type_list) if t != SHOULD_CALL_TYPE]
+        tool_rows = [i for i, t in enumerate(schema_type_list) if t == SHOULD_CALL_TYPE]
+
+        l_should = torch.zeros((), device=device)
+        should_parts: dict[str, torch.Tensor] = {}
+        if tool_rows and "should_call" in outputs and "should_call" in labels:
+            idx = torch.tensor(tool_rows, dtype=torch.long, device=device)
+            l_should = F.binary_cross_entropy_with_logits(
+                outputs["should_call"][idx], labels["should_call"][idx].float()
+            ) * self.config.should_call_weight
+            should_parts["loss_should_call"] = l_should.detach()
+
+        if not param_rows:
+            # Batch toàn hàng cấp tool. BCE trên tensor rỗng trả NaN, nên phải
+            # thoát trước chứ không để nó lan vào `loss`.
+            return {
+                "loss": l_should,
+                "loss_has_value": torch.zeros((), device=device),
+                "loss_sub": torch.zeros((), device=device),
+                **should_parts,
+            }
+
+        param_idx = torch.tensor(param_rows, dtype=torch.long, device=device)
+        l_has = F.binary_cross_entropy_with_logits(
+            outputs["has_value"][param_idx], labels["has_value"][param_idx].float()
+        ) * self.config.has_value_weight
+
+        present_idx = [i for i in param_rows if int(labels["has_value"][i]) == 1]
+        if not present_idx:
+            l_sub = torch.zeros((), device=device)
+            return {
+                "loss": l_has + l_sub + l_should,
+                "loss_has_value": l_has.detach(),
+                "loss_sub": l_sub.detach(),
+                **should_parts,
+            }
+
         # Phải index theo vị trí thật trong batch, không phải 0..len(present_idx).
         schema_type_present = [schema_type_list[i] for i in present_idx]
 
@@ -105,10 +138,11 @@ class HierarchicalLoss(nn.Module):
             l_sub = l_sub + l_bool * self.config.boolean_weight
             parts["loss_boolean"] = l_bool.detach()
 
-        total = l_has + l_sub
+        total = l_has + l_sub + l_should
         return {
             "loss": total,
             "loss_has_value": l_has.detach(),
             "loss_sub": l_sub.detach(),
             **parts,
+            **should_parts,
         }

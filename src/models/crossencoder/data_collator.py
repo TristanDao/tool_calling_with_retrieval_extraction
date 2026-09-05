@@ -22,6 +22,11 @@ SCHEMA_TYPE_ENUM = "enum"
 SCHEMA_TYPE_ARRAY = "array"
 SCHEMA_TYPE_OBJECT = "object"
 
+#: Hàng cấp TOOL, không phải cấp parameter (ablation §6.1: `should_call` head).
+#: Đi chung batch với hàng parameter và được `HierarchicalLoss` tách ra — hai
+#: loại hàng không được huấn luyện chéo head của nhau.
+SCHEMA_TYPE_SHOULD_CALL = "should_call"
+
 _VALID_TYPES = (
     SCHEMA_TYPE_STRING,
     SCHEMA_TYPE_NUMBER,
@@ -149,7 +154,23 @@ def iter_parameters(tool_schema: dict[str, Any]) -> Iterator[dict[str, Any]]:
         yield param
 
 
+def build_should_call_question(tool: dict[str, Any]) -> str:
+    """Question cấp tool cho head `should_call`.
+
+    Cùng khuôn `Khoá=giá trị. ` với question cấp parameter để encoder không phải
+    học hai văn phong. Liệt kê tên parameter chứ không liệt kê mô tả của chúng:
+    tên đủ để nhận ra tool làm gì, còn mô tả đầy đủ thì tràn `max_question_tokens`
+    và đẩy query ra khỏi cửa sổ.
+    """
+    name = tool.get("name", "")
+    desc = str(tool.get("description", "") or "").strip()
+    params = "|".join(str(p) for p in (tool.get("param_names") or []))
+    return f"Tool={name}. Desc={desc}. Params={params}"
+
+
 def build_schema_question(param: dict[str, Any]) -> str:
+    if param.get("routing_type") == SCHEMA_TYPE_SHOULD_CALL:
+        return build_should_call_question(param)
     name = param["name"]
     desc = str(param.get("description", "") or "").strip()
     routing_type = param.get("routing_type") or resolve_param_type(param)
@@ -161,12 +182,51 @@ def build_schema_question(param: dict[str, Any]) -> str:
     return f"Param={name}. Desc={desc}. Type={declared}"
 
 
+#: Trần token mặc định cho schema question. Dùng chung giữa training
+#: (`CrossEncoderCollator`) và inference (`inference.py`) — hai bên phải cắt
+#: GIỐNG HỆT nhau, nếu không model được train trên question đã cắt mà lúc chạy
+#: thật lại thấy question đầy đủ (train/serve skew).
+DEFAULT_MAX_QUESTION_TOKENS = 96
+
+
+def cap_question(
+    tokenizer: PreTrainedTokenizerBase,
+    question: str,
+    max_question_tokens: int = DEFAULT_MAX_QUESTION_TOKENS,
+    cache: dict[str, tuple[str, int]] | None = None,
+) -> tuple[str, int]:
+    """(question đã cắt xuống trần, số token thật của nó).
+
+    `truncation="only_first"` chỉ cắt query, nên question dài hơn `max_length`
+    làm tokenizer ném "Sequence to truncate too short". Đo trên dữ liệu: p99 =
+    198 ký tự (~66 token) nhưng dài nhất 883 ký tự (461 token) — chỉ 23/142k
+    dòng, đủ để giết cả job giữa chừng.
+    """
+    if cache is not None and question in cache:
+        return cache[question]
+    ids = tokenizer(question, add_special_tokens=False)["input_ids"]
+    if len(ids) > max_question_tokens:
+        text = tokenizer.decode(ids[:max_question_tokens])
+        # Decode rồi encode lại có thể lệch vài token, nên đếm lại cho đúng.
+        ids = tokenizer(text, add_special_tokens=False)["input_ids"]
+    else:
+        text = question
+    entry = (text, len(ids))
+    if cache is not None:
+        cache[question] = entry
+    return entry
+
+
 @dataclass
 class CollatorConfig:
     tokenizer_name: str = "xlm-roberta-base"
     max_length: int = 256
     padding: str = "longest"
     truncation: str = "only_first"
+    #: Trần token cho phần schema question. `only_first` chỉ cắt query, nên
+    #: question dài hơn `max_length` làm tokenizer ném "Sequence to truncate too
+    #: short". Đo thực tế: p99 = 198 ký tự (~66 token), dài nhất 883 ký tự.
+    max_question_tokens: int = DEFAULT_MAX_QUESTION_TOKENS
 
 
 class CrossEncoderCollator:
@@ -179,6 +239,34 @@ class CrossEncoderCollator:
         self.tokenizer: PreTrainedTokenizerBase = tokenizer or AutoTokenizer.from_pretrained(
             config.tokenizer_name, use_fast=True
         )
+        # Một schema question lặp lại ở rất nhiều dòng (cùng tool, cùng param),
+        # nên cache theo chuỗi gốc để không tokenize 142k lần.
+        self._question_cache: dict[str, tuple[str, int]] = {}
+
+    def _n_special_pair(self) -> int:
+        """Số special token khi encode cặp — XLM-R: `<s> A </s> </s> B </s>` = 4."""
+        try:
+            return int(self.tokenizer.num_special_tokens_to_add(pair=True))
+        except (AttributeError, TypeError):
+            return 4
+
+    def _question_entry(self, param: dict[str, Any]) -> tuple[str, int]:
+        return cap_question(
+            self.tokenizer,
+            build_schema_question(param),
+            self.config.max_question_tokens,
+            self._question_cache,
+        )
+
+    def query_token_budget(self, param: dict[str, Any]) -> int:
+        """Số token query CÒN LẠI sau khi trừ question và special token.
+
+        Đây là con số `dataset` phải dùng để căn span. Căn theo `max_length`
+        rồi để collator cắt query ngắn hơn thì nhãn span trỏ ra ngoài chuỗi và
+        bị `_collate_labels._clip` kẹp về vị trí sai — hỏng nhãn mà không báo.
+        """
+        _, n_question = self._question_entry(param)
+        return self.config.max_length - n_question - self._n_special_pair()
 
     def encode_one(
         self,
@@ -187,7 +275,7 @@ class CrossEncoderCollator:
         labels: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Tokenize 1 cặp (query, param). Không pad — pad ở `__call__`."""
-        question = build_schema_question(param)
+        question, _ = self._question_entry(param)
         encoded = self.tokenizer(
             query,
             question,
@@ -206,6 +294,10 @@ class CrossEncoderCollator:
             "token_type_ids": token_type_ids,
             "query_token_mask": query_token_mask,
             "schema_type": param.get("routing_type") or resolve_param_type(param),
+            # Số giá trị enum hợp lệ. `inference.py` cắt logits về đúng khoảng
+            # này; metric phải làm y hệt, nếu không nó chấm một thứ mà pipeline
+            # thật không bao giờ sinh ra.
+            "enum_size": len(param.get("enum") or []),
         }
         if labels is not None:
             item["labels"] = labels
@@ -253,9 +345,11 @@ class CrossEncoderCollator:
                 [_pad(b["query_token_mask"], False) for b in batch], dtype=torch.bool
             ),
             "schema_type": [b["schema_type"] for b in batch],
+            "enum_size": self._enum_sizes(batch),
         }
         if "labels" in batch[0]:
             out["labels"] = self._collate_labels([b["labels"] for b in batch], max_len)
+            out["labels"]["enum_size"] = out["enum_size"]
         return out
 
     def _collate_labels(
@@ -264,21 +358,32 @@ class CrossEncoderCollator:
         def _clip(idx: Any) -> int:
             return min(max(int(idx), 0), max_len - 1)
 
+        # `.get(..., 0)` chứ không `[...]`: hàng cấp tool (`should_call`) không
+        # có nhãn span/enum/boolean. Số 0 ở đây là chỗ giữ tensor cho đúng hình,
+        # `HierarchicalLoss` đã loại hẳn những hàng đó khỏi các head tương ứng
+        # nên giá trị không bao giờ được học.
         return {
             "has_value": torch.tensor(
-                [lbl["has_value"] for lbl in labels_list], dtype=torch.long
+                [lbl.get("has_value", 0) for lbl in labels_list], dtype=torch.long
             ),
             "span_start": torch.tensor(
-                [_clip(lbl["span_start"]) for lbl in labels_list], dtype=torch.long
+                [_clip(lbl.get("span_start", 0)) for lbl in labels_list], dtype=torch.long
             ),
             "span_end": torch.tensor(
-                [_clip(lbl["span_end"]) for lbl in labels_list], dtype=torch.long
+                [_clip(lbl.get("span_end", 0)) for lbl in labels_list], dtype=torch.long
             ),
             "enum_label": torch.tensor(
-                [lbl["enum_label"] for lbl in labels_list], dtype=torch.long
+                [lbl.get("enum_label", 0) for lbl in labels_list], dtype=torch.long
             ),
             "boolean_label": torch.tensor(
-                [lbl["boolean_label"] for lbl in labels_list], dtype=torch.long
+                [lbl.get("boolean_label", 0) for lbl in labels_list], dtype=torch.long
+            ),
+            "should_call": torch.tensor(
+                [lbl.get("should_call", 0) for lbl in labels_list], dtype=torch.long
             ),
             "schema_type": [lbl["schema_type"] for lbl in labels_list],
         }
+
+    @staticmethod
+    def _enum_sizes(batch: list[dict[str, Any]]) -> list[int]:
+        return [int(b.get("enum_size", 0)) for b in batch]

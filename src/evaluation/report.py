@@ -24,11 +24,19 @@ def summary_markdown(report: dict[str, Any]) -> str:
     end_to_end = report["metrics"]["end_to_end"]
     efficiency = report["metrics"]["efficiency"]
     oracle_extraction = report["metrics"]["oracle_extraction"]
+    # Bản strict là tuỳ chọn: report cũ (trước khi §11 được đóng) không có key này.
+    strict_extraction = report["metrics"].get("strict_extraction")
     rows = [
         ("Call F1", detection["f1"]),
         ("Recall@5", retrieval.get("recall_at_5")),
         ("Tool Set Accuracy", selection["tool_set_accuracy_positive"]),
         ("Normalized ArgEM given tool", extraction["normalized_arg_em_given_correct_tool"]),
+        (
+            "Strict ArgEM given tool",
+            strict_extraction["normalized_arg_em_given_correct_tool"]
+            if strict_extraction is not None
+            else None,
+        ),
         (
             "Oracle-tool ArgEM",
             oracle_extraction["normalized_arg_em_given_correct_tool"]

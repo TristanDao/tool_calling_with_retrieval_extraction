@@ -81,7 +81,10 @@ DATA_ITEMS: tuple[tuple[Path, str], ...] = (
 #: Không mang lên Kaggle: cache Python và checkpoint HF cũ.
 EXCLUDE_PATTERNS = ("__pycache__", ".pytest_cache", ".ipynb_checkpoints", "*.pyc")
 
-HF_MODELS = ("BAAI/bge-m3", "xlm-roberta-base")
+# `multilingual-e5-base` chỉ dùng cho nhánh ablation §6.5 (backbone
+# Cross-Encoder). Để sẵn ở đây vì Kaggle chạy offline: thiếu nó thì nhánh
+# đó chết lúc nạp model, sau khi session đã tiêu giờ dựng dataset.
+HF_MODELS = ("BAAI/bge-m3", "xlm-roberta-base", "intfloat/multilingual-e5-base")
 
 #: Thiếu file này thì Run 0 fail — và nó không có trong git.
 CRITICAL_FILES = ("method2/decontamination.json", "method2/manifest.json")

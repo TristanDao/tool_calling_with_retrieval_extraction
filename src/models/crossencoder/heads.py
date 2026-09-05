@@ -6,6 +6,8 @@ Output structure:
 - span_end: (B, L) — tương tự span_start.
 - enum_logits: (B, max_enum_size) — N-way classification; dùng khi schema type=enum.
 - boolean_logits: (B, 2) — true/false; dùng khi schema type=boolean.
+- should_call: (B,) — binary logit cấp TOOL; CHỈ có khi bật ở config
+  (ablation §6.1). Mặc định tắt để state dict trùng khít checkpoint cũ.
 
 Type routing dựa trên schema question, không phải output head.
 """
@@ -21,6 +23,12 @@ class HeadConfig:
     hidden_size: int = 1024
     max_enum_size: int = 20
     dropout: float = 0.1
+    #: Ablation §6.1 — thay ngưỡng cosine của Bi-Encoder bằng một head học được.
+    #: Mặc định False, và khi False thì head KHÔNG được tạo: state dict giữ
+    #: nguyên đúng 5 tensor như checkpoint run01, nên bản cũ vẫn nạp bằng
+    #: `load_state_dict` strict. `from_pretrained` dựng lại `HeadConfig` từ dict
+    #: lưu trong checkpoint, mà dict cũ không có khoá này → nhận default.
+    enable_should_call: bool = False
 
 
 class CrossEncoderHeads(nn.Module):
@@ -33,6 +41,9 @@ class CrossEncoderHeads(nn.Module):
         self.span_end = nn.Linear(config.hidden_size, 1)
         self.enum_head = nn.Linear(config.hidden_size, config.max_enum_size)
         self.boolean_head = nn.Linear(config.hidden_size, 2)
+        self.should_call = (
+            nn.Linear(config.hidden_size, 1) if config.enable_should_call else None
+        )
 
     def forward(
         self,
@@ -49,10 +60,13 @@ class CrossEncoderHeads(nn.Module):
         if query_token_mask is not None:
             span_start = span_start.masked_fill(~query_token_mask, -1e4)
             span_end = span_end.masked_fill(~query_token_mask, -1e4)
-        return {
+        outputs = {
             "has_value": has_value_logit,
             "span_start": span_start,
             "span_end": span_end,
             "enum_logits": enum_logits,
             "boolean_logits": boolean_logits,
         }
+        if self.should_call is not None:
+            outputs["should_call"] = self.should_call(cls_hidden).squeeze(-1)
+        return outputs

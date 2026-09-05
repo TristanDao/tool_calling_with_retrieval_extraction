@@ -6,11 +6,10 @@ pairs:
   tool_pool_path: data/method2/tool_pool.json
   output_dir: data/method2/biencoder
   stats_path: data/method2/biencoder/pairs_stats.json
-  # 4 -> 2 để vừa quota: mỗi sample encode 4 văn bản thay vì 6, cắt ~33%
-  # compute. ĐỔI CHẤT LƯỢNG chứ không chỉ tốc độ (MNRL mạnh lên theo số
-  # negative), phải ghi vào báo cáo. File pairs vẫn có sẵn 4 negative nên
-  # nâng lại chỉ cần sửa số này, không phải sinh lại dữ liệu.
-  n_hard_negatives: 2        # ablation §6.4: 0 / 2 / 4 / 8
+  # Trả về đúng plan §Phase 1.3 sau khi Run 1 (n_neg=2) đã xong: mỗi sample
+  # encode 6 văn bản thay vì 4, +50% compute nhưng MNRL mạnh lên theo số
+  # negative. Dữ liệu trên đĩa vốn đã có sẵn 4 negative/dòng.
+  n_hard_negatives: 4        # = plan; ablation §6.4: 0 / 2 / 4 / 8
   bm25_top_k: 20
   use_bm25: true
   seed: 42
@@ -32,7 +31,9 @@ model:
 train:
   train_path: data/method2/biencoder/train.jsonl
   val_path: data/method2/biencoder/val.jsonl
-  output_dir: artifacts/method2/biencoder/run01
+  # run02 = Round 2 (plan §Phase 2 bước 3). Round 1 nằm ở run01 và chỉ còn vai
+  # trò máy đào negative — `mine` PHẢI được truyền `--model .../run01/final`.
+  output_dir: artifacts/method2/biencoder/run02
   loss: CachedMultipleNegativesRankingLoss   # GradCache, không phải grad accum
   scale: 20.0                # = 1/τ, mặc định sentence-transformers
   # Cấu hình case E của benchmark (xem docs/method2.md §7.7): 36.4 s/step ở
@@ -40,7 +41,7 @@ train:
   # GradCache gọi model 384 lần/step, mỗi lần chỉ 8x192 token.
   batch_size: 256            # effective, nhờ GradCache — GIỮ NGUYÊN, quyết định chất lượng
   mini_batch_size: 32        # thực tế đưa vào GPU
-  epochs: 2                  # 3 -> 2 để vừa quota
+  epochs: 3                  # = plan. 307 step/epoch x 3 = 921 step ~ 9.7 h
   lr: 2.0e-5
   warmup_ratio: 0.1
   scheduler: cosine
@@ -67,9 +68,10 @@ train:
 
 # --------------------------------------------------------- hard negative mining
 mining:
-  # TẮT vì quota: Round 2 là một lần train đầy đủ nữa (~4 h). Ghi rõ trong
-  # báo cáo là kết quả Bi-Encoder chỉ có Round 1, chưa mine hard negative.
-  enabled: false             # round 2 sau khi có checkpoint round 1
+  # BẬT. Plan §Phase 2 liệt kê mine + Round 2 là bước 2-3 bắt buộc, không phải
+  # tuỳ chọn. Chạy được trong 11 h vì Round 1 đã xong ở session trước và Round 2
+  # train LẠI TỪ BASE — Round 1 chỉ cần đủ tốt để xếp hạng negative.
+  enabled: true              # round 2 sau khi có checkpoint round 1
   top_k: 20
   skip_top: 1                # bỏ top-1 để tránh false negative
   n_negatives: 4
@@ -85,7 +87,7 @@ index:
 # --------------------------------------------------------------- thresholds
 # Hiệu chỉnh trên validation rồi FREEZE trước khi chạy test (§5.1).
 thresholds:
-  output_path: artifacts/method2/biencoder/run01/thresholds.json
+  output_path: artifacts/method2/biencoder/run02/thresholds.json
   # Abstention: max sim < tau → <no_tool_call>
   tau_grid: {start: 0.0, stop: 1.0, step: 0.01}
   # Multi-call: chọn mọi tool có sim >= tau_call, tối đa k_max
@@ -93,7 +95,12 @@ thresholds:
   k_max: 3
   # Ablation Q4: gap-based thay cho ngưỡng tuyệt đối
   gap_delta_grid: {start: 0.0, stop: 0.3, step: 0.01}
-  strategy: absolute          # absolute | gap
+  # "auto" = tu chon chien luoc thang calibration (so theo F1, xem `winner`
+  # trong thresholds.json). Hardcode "absolute"/"gap" tung khien file chot
+  # ghi "absolute" du calibration da tu chon "gap" tot hon - Phase 5 chay
+  # bang chien luoc thua ma khong ai biet, vi `calibrate_thresholds()` chi
+  # doc `selection["winner"]` khi gia tri dung bang "auto".
+  strategy: auto               # auto | absolute | gap
 
 # ------------------------------------------------------------------ evaluate
 evaluate:

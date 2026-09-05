@@ -10,12 +10,41 @@ pairs:
   require_boolean_cue: false # true = bỏ sample boolean mà query không có manh mối
   limit_per_source: null
 
+  # ---- Ablation §6.1: head `should_call` thay ngưỡng cosine τ --------------
+  # Sinh thêm hàng cấp TOOL (query, tool) với nhãn nhị phân, nằm chung file với
+  # hàng cấp parameter. PHẢI bật cùng `model.enable_should_call` — bật một bên
+  # là có nhãn mà không có head, hoặc có head mà không có gì dạy nó.
+  #
+  # Bật cờ này làm ĐỔI nội dung pair, mà `crossencoder/train.jsonl` bị preflight
+  # khoá SHA-256. ĐỪNG ghi đè nó: đổi luôn ba đường dẫn dưới đây sang thư mục
+  # riêng thì artefact gốc còn nguyên, manifest không đổi, preflight vẫn pass và
+  # baseline chạy lại được — cùng nguyên tắc mà ablation Bi-Encoder dùng (§7.16 D).
+  #
+  #   pairs.output_dir : data/method2/crossencoder_should_call
+  #   data.train_path  : data/method2/crossencoder_should_call/train.jsonl
+  #   data.val_path    : data/method2/crossencoder_should_call/val.jsonl
+  #
+  # Sinh pair phải chạy ở LOCAL (`benchmark_vi/train.jsonl` không nằm trong
+  # dataset upload), rồi bump version dataset data hiện có — không cần dataset mới.
+  should_call:
+    enabled: false
+    tools_per_negative: 1     # train chỉ có ~2,11 candidate/sample no-call
+    positive_rate: 0.5        # 59.130 positive vs 16.199 no-call → phải cân
+    seed: 42
+
 # -------------------------------------------------------------------- model
 model:
   name: xlm-roberta-base
   # Fallback: intfloat/multilingual-e5-base | so sánh: BAAI/bge-m3
   max_enum_size: 20          # enum lớn nhất đo được = 12
+  # `truncation="only_first"` chỉ cắt query, nên question dài hơn max_length làm
+  # tokenizer ném "Sequence to truncate too short". Đo thật: p99 = 66 token,
+  # dài nhất 461 token (param `country` của xLAM, description 883 ký tự).
+  # PHẢI khớp `extraction.max_question_tokens` của pipeline.yaml.
+  max_question_tokens: 96
   dropout: 0.1
+  # Ablation §6.1. False = state dict trùng khít checkpoint run01.
+  enable_should_call: false
 
 # ---------------------------------------------------------------- tokenizer
 data:
@@ -64,6 +93,8 @@ loss:
   span_weight: 1.0
   enum_weight: 1.0
   boolean_weight: 1.0
+  # Chỉ có tác dụng khi head được bật; hàng cấp tool không đi vào head khác.
+  should_call_weight: 1.0
   span_loss_combiner: sum
 
 # ----------------------------------------------------------------- inference

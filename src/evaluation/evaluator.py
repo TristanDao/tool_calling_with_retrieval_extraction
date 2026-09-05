@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from src.evaluation.config import EvaluationConfig
+from src.evaluation.config import EvaluationConfig, NormalizationConfig
 from src.evaluation.detection_metrics import compute_detection_metrics
 from src.evaluation.efficiency_metrics import compute_efficiency_metrics
 from src.evaluation.end_to_end_metrics import compute_end_to_end_metrics
@@ -42,6 +42,18 @@ def evaluate_records(
     if aligned_oracle is not None:
         oracle_extraction, _ = compute_extraction_metrics(gold, aligned_oracle, normalizer)
     end_to_end, end_rows = compute_end_to_end_metrics(gold, aligned, normalizer)
+
+    # Bản strict: cùng dữ liệu, tắt mọi nới lỏng mức giá trị. Chênh lệch giữa
+    # `extraction` và `strict_extraction` = phần công normalizer đang gánh
+    # (§11 method2_plan yêu cầu báo cáo cả hai).
+    strict_normalizer = ArgumentNormalizer(NormalizationConfig.strict())
+    strict_extraction, _ = compute_extraction_metrics(gold, aligned, strict_normalizer)
+    strict_end_to_end, _ = compute_end_to_end_metrics(gold, aligned, strict_normalizer)
+    strict_oracle_extraction = (
+        compute_extraction_metrics(gold, aligned_oracle, strict_normalizer)[0]
+        if aligned_oracle is not None
+        else None
+    )
     schema_rows = [
         validate_prediction_schema(record, prediction)
         for record, prediction in zip(gold, aligned, strict=True)
@@ -108,6 +120,9 @@ def evaluate_records(
             "selection": selection,
             "extraction": extraction,
             "oracle_extraction": oracle_extraction,
+            "strict_extraction": strict_extraction,
+            "strict_oracle_extraction": strict_oracle_extraction,
+            "strict_end_to_end": strict_end_to_end,
             "schema_validity": schema_validity,
             "end_to_end": end_to_end,
             "robustness": robustness,

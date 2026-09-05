@@ -271,6 +271,85 @@ def _grid(spec: dict[str, Any]) -> list[float]:
     return [round(start + i * step, 6) for i in range(max(n, 1))]
 
 
+def replay_selection(
+    gold_rows: Sequence[dict[str, Any]],
+    raw_rows: Sequence[dict[str, Any]],
+    thresholds: RetrievalThresholds,
+) -> dict[str, Any]:
+    """Phat lai buoc chon tool tu `raw_predictions_*.jsonl` — KHONG can model.
+
+    `ranked_tools` (top-20 kem score) da duoc luu san khi chay pipeline, nen
+    doi nguong hay doi chien luoc la tinh lai duoc offline. Dung de tra loi
+    "sua strategy thi tool set accuracy len bao nhieu" TRUOC khi tieu gio GPU.
+
+    Cong thuc khop `selection_metrics.tool_set_accuracy_positive`: chi tinh
+    tren sample duong, so khop da-tap ten tool (Counter), khong ke thu tu.
+    """
+    from collections import Counter
+
+    by_id = {row.get("id"): row for row in raw_rows}
+    n_positive = n_exact = n_negative = n_no_call = 0
+    selected_sizes: list[int] = []
+    missing = 0
+
+    for gold in gold_rows:
+        raw = by_id.get(gold.get("id"))
+        if raw is None:
+            missing += 1
+            continue
+        ranked = [(t["name"], float(t["score"])) for t in raw.get("ranked_tools") or []]
+        if not ranked or ranked[0][1] < thresholds.tau:
+            selected: list[str] = []
+        else:
+            selected = select_tools(ranked, thresholds)
+
+        gold_names = Counter(c["name"] for c in (gold.get("function_calls") or []))
+        if gold_names:
+            n_positive += 1
+            selected_sizes.append(len(selected))
+            n_exact += int(Counter(selected) == gold_names)
+        else:
+            n_negative += 1
+            n_no_call += int(not selected)
+
+    return {
+        "strategy": thresholds.strategy,
+        "tau": thresholds.tau,
+        "tau_call": thresholds.tau_call,
+        "gap_delta": thresholds.gap_delta,
+        "k_max": thresholds.k_max,
+        "tool_set_accuracy_positive": (n_exact / n_positive) if n_positive else None,
+        "mean_selected_positive": (
+            sum(selected_sizes) / len(selected_sizes) if selected_sizes else None
+        ),
+        "negative_recall": (n_no_call / n_negative) if n_negative else None,
+        "n_positive": n_positive,
+        "n_negative": n_negative,
+        "n_missing_raw": missing,
+    }
+
+
+def reconcile_strategy(raw: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    """Sua `strategy` neu no LECH voi `winner` da tinh san trong chinh file.
+
+    Bug tung xay ra: `configs/method2/biencoder.yaml` hardcode
+    `thresholds.strategy: absolute`, nen `calibrate_thresholds()` luon ghi
+    "absolute" vao thresholds.json du calibration cua chinh no chon "gap" tot
+    hon (F1 va tool_set_accuracy deu cao hon). Moi gia tri can thiet
+    (`gap_delta`) da co san trong file duoc calibrate mot lan - sua o day chi
+    la doi lai dung field `strategy`, KHONG can chay lai calibration tren GPU.
+
+    Tra `(dict, da_sua)`. Khong sua tai cho neu thieu `winner` (file cu, hoac
+    strategy da khop san).
+    """
+    winner = ((raw.get("metrics") or {}).get("call_selection") or {}).get("winner")
+    if winner and raw.get("strategy") != winner:
+        fixed = dict(raw)
+        fixed["strategy"] = winner
+        return fixed, True
+    return raw, False
+
+
 def calibrate_thresholds(
     retriever: ToolRetriever,
     val_path: str | Path,

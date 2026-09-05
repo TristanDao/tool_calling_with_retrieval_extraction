@@ -79,6 +79,26 @@ def test_marker_check_catches_a_dropped_block(tmp_path):
     assert "biencoder.index" in missing
 
 
+def _subprocess_train_blocks(source: str, module: str) -> list[str]:
+    """Gom lệnh dạng list `[sys.executable, '-m', <module>, 'train', ...]`.
+
+    Round 1/Round 2 gọi bằng `subprocess.run` chứ không phải `!python`, nên nếu
+    chỉ quét dạng shell thì test tưởng là "không có lệnh train nào" và pass rỗng.
+    """
+    needle = f"'{module}', 'train'"
+    blocks, lines = [], source.split(chr(10))
+    for i, line in enumerate(lines):
+        if needle not in line:
+            continue
+        window = []
+        for nxt in lines[i:]:
+            window.append(nxt)
+            if "]" in nxt:
+                break
+        blocks.append(chr(10).join(window))
+    return blocks
+
+
 def _train_commands(source: str, module: str) -> list[str]:
     r"""Gom lệnh `!python -m <module>`, ghép cả dòng nối bằng `\`."""
     blocks, current = [], None
@@ -109,6 +129,7 @@ def test_every_biencoder_train_command_forces_single_gpu():
     )
 
     commands = _train_commands(source, "src.models.biencoder.train train")
+    commands += _subprocess_train_blocks(source, "src.models.biencoder.train")
 
     assert commands, "không tìm thấy lệnh train nào"
     missing = [c for c in commands if "--single-gpu" not in c]
@@ -152,3 +173,18 @@ def test_clean_resume_treats_none_string_as_no_resume():
     assert clean_resume("  ") is None
     assert clean_resume(None) is None
     assert clean_resume("artifacts/run01/checkpoint-500") == "artifacts/run01/checkpoint-500"
+
+
+def test_required_markers_khong_co_muc_trung():
+    """Mỗi marker khai một lần.
+
+    Trùng lặp đã xảy ra ba lần khi chèn khối cell bằng script: helper chạy lại
+    sau một lần hỏng giữa chừng và cộng thêm dòng marker cũ. Vô hại về chức năng
+    nhưng là dấu hiệu file đã bị sửa hai lần chồng nhau — chỗ đó đáng để bắt.
+    """
+    module = _load_generator()
+
+    for name, markers in module.REQUIRED_MARKERS.items():
+        assert len(markers) == len(set(markers)), (
+            f"{name}: marker trùng {sorted({m for m in markers if markers.count(m) > 1})}"
+        )

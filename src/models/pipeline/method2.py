@@ -29,13 +29,19 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
-from src.models.biencoder.retrieve import RetrievalThresholds, ToolRetriever
+from src.models.biencoder.retrieve import RetrievalThresholds, ToolRetriever, select_tools
+from src.models.crossencoder.data_collator import DEFAULT_MAX_QUESTION_TOKENS
 from src.models.crossencoder.inference import CrossEncoderExtractor, ExtractionConfig
 from src.models.pipeline.validator import STATUS_INCOMPLETE, ArgumentValidator
 from src.models.sources import load_jsonl, write_jsonl
 
 MODE_PIPELINE = "pipeline"
 MODE_ORACLE = "oracle"
+
+#: Cơ chế abstention. `tau` = ngưỡng cosine của Bi-Encoder (§5.1, mặc định);
+#: `should_call` = head nhị phân của Cross-Encoder (ablation §6.1).
+ABSTENTION_TAU = "tau"
+ABSTENTION_SHOULD_CALL = "should_call"
 
 # Bốn nhóm lỗi của §9 experimental_plan (Ersoy et al.).
 ERROR_WRONG_VALUE = "W"
@@ -73,6 +79,10 @@ class Method2Config:
     extraction: ExtractionConfig = field(default_factory=ExtractionConfig)
     #: `candidates` = xếp hạng trong candidate pool của sample; `pool` = toàn bộ.
     retrieval_scope: str = "candidates"
+    #: `tau` | `should_call` — xem ABSTENTION_*.
+    abstention: str = ABSTENTION_TAU
+    #: Ngưỡng cho `should_call`, hiệu chỉnh trên val rồi FREEZE như τ.
+    should_call_threshold: float = 0.5
     device: str | None = None
 
     @classmethod
@@ -105,6 +115,10 @@ class Method2Config:
             ),
             max_seq_length=int(models.get("max_seq_length", defaults.max_seq_length)),
             retrieval_scope=str(raw.get("retrieval_scope", defaults.retrieval_scope)),
+            abstention=str(raw.get("abstention", defaults.abstention)),
+            should_call_threshold=float(
+                raw.get("should_call_threshold", defaults.should_call_threshold)
+            ),
             extraction=ExtractionConfig(
                 max_length=int(extraction_raw.get("max_length", 256)),
                 has_value_threshold=float(extraction_raw.get("has_value_threshold", 0.5)),
@@ -113,6 +127,9 @@ class Method2Config:
                 ),
                 max_answer_len=int(extraction_raw.get("max_answer_len", 30)),
                 batch_size=int(extraction_raw.get("batch_size", 64)),
+                max_question_tokens=int(
+                    extraction_raw.get("max_question_tokens", DEFAULT_MAX_QUESTION_TOKENS)
+                ),
                 use_normalizer=bool(extraction_raw.get("use_normalizer", True)),
                 normalizer=NormalizerConfig(
                     enabled=bool(extraction_raw.get("use_normalizer", True)),
@@ -132,6 +149,8 @@ class Method2Pipeline:
         tool_pool: dict[str, dict[str, Any]],
         thresholds: RetrievalThresholds | None = None,
         retrieval_scope: str = "candidates",
+        abstention: str = ABSTENTION_TAU,
+        should_call_threshold: float = 0.5,
     ) -> None:
         self.retriever = retriever
         self.extractor = extractor
@@ -139,6 +158,17 @@ class Method2Pipeline:
         self.tool_pool = tool_pool
         self.thresholds = thresholds or retriever.thresholds
         self.retrieval_scope = retrieval_scope
+        self.abstention = abstention
+        self.should_call_threshold = should_call_threshold
+        if abstention == ABSTENTION_SHOULD_CALL and not extractor.has_should_call:
+            # Quay lặng lẽ về τ là hỏng cả ablation: báo cáo sẽ ghi
+            # "should_call" trong khi con số đo được là của baseline. Đúng lớp
+            # lỗi đã xảy ra với `strategy` ở §7.10b — lần này chặn ngay.
+            raise ValueError(
+                "abstention='should_call' nhưng checkpoint Cross-Encoder không có "
+                "head đó. Train lại với model.enable_should_call=true, hoặc để "
+                "abstention='tau'."
+            )
 
     @classmethod
     def from_config(cls, config: Method2Config) -> "Method2Pipeline":
@@ -175,6 +205,8 @@ class Method2Pipeline:
             validator,
             load_tool_pool(config.tool_pool_path),
             retrieval_scope=config.retrieval_scope,
+            abstention=config.abstention,
+            should_call_threshold=config.should_call_threshold,
         )
 
     # ------------------------------------------------------------- inference
@@ -183,6 +215,7 @@ class Method2Pipeline:
         query = str(sample.get("query", ""))
         timings = StageTimings()
         schemas = self._sample_schemas(sample)
+        should_call_prob: float | None = None
 
         if mode == MODE_ORACLE:
             selected = list(
@@ -200,8 +233,22 @@ class Method2Pipeline:
             started = time.perf_counter()
             candidates = list(schemas) if self.retrieval_scope == "candidates" and schemas else None
             ranked = self.retriever.score(embedding, candidates)
-            selected, abstained = self.retriever.select(ranked, self.thresholds)
             timings.t_retrieve = time.perf_counter() - started
+
+            if self.abstention == ABSTENTION_SHOULD_CALL:
+                # Một forward Cross-Encoder cấp tool trên top-1. Tính vào
+                # `t_cross_encode` vì đó đúng là compute của Cross-Encoder; dồn
+                # vào `t_retrieve` sẽ đổ chi phí này lên Bi-Encoder.
+                started = time.perf_counter()
+                should_call_prob = self._should_call_prob(query, ranked, schemas)
+                timings.t_cross_encode += time.perf_counter() - started
+                abstained = (
+                    should_call_prob is None
+                    or should_call_prob < self.should_call_threshold
+                )
+                selected = [] if abstained else select_tools(ranked, self.thresholds)
+            else:
+                selected, abstained = self.retriever.select(ranked, self.thresholds)
 
         function_calls: list[dict[str, Any]] = []
         raw_calls: list[dict[str, Any]] = []
@@ -255,6 +302,13 @@ class Method2Pipeline:
                 "mode": mode,
                 "abstained": abstained,
                 "validation_status": statuses,
+                # Ghi lại xác suất thô để quét lại ngưỡng OFFLINE, không cần
+                # GPU — đúng cách `replay_selection.py` đã dò ra bug §7.10b.
+                **(
+                    {"should_call_prob": round(should_call_prob, 6)}
+                    if should_call_prob is not None
+                    else {}
+                ),
             },
         }
         raw = {
@@ -301,6 +355,26 @@ class Method2Pipeline:
             "latency": latency,
             "output_dir": str(output_dir),
         }
+
+    def _should_call_prob(
+        self,
+        query: str,
+        ranked: list[tuple[str, float]],
+        schemas: dict[str, dict[str, Any]],
+    ) -> float | None:
+        """P(cần gọi) đo trên tool đứng đầu ranking — đúng như plan §5.1 mô tả.
+
+        Không có ranking thì không có tool nào để hỏi, và câu trả lời đúng là
+        abstain: trả `None` để nơi gọi xử lý, chứ không trả 0.0 (0.0 là một câu
+        trả lời của model, `None` là "model chưa được hỏi").
+        """
+        if not ranked:
+            return None
+        top_name = ranked[0][0]
+        schema = schemas.get(top_name) or self.tool_pool.get(top_name)
+        if schema is None:
+            return None
+        return self.extractor.should_call_prob(query, schema)
 
     def _sample_schemas(self, sample: dict[str, Any]) -> dict[str, dict[str, Any]]:
         return {t["name"]: t for t in (sample.get("tools") or []) if t.get("name")}
@@ -408,9 +482,43 @@ def main() -> None:
     parser.add_argument("--mode", choices=[MODE_PIPELINE, MODE_ORACLE], default=MODE_PIPELINE)
     parser.add_argument("--output-dir", type=Path, default=Path("results/method2/predictions"))
     parser.add_argument("--limit", type=int, default=None)
+    # Hai cờ dưới đây để chạy nhánh ablation §6.1 mà KHÔNG phải sửa file config:
+    # config trong dataset upload đã bị khoá SHA, sửa nó là phải đóng gói lại.
+    parser.add_argument(
+        "--abstention",
+        choices=[ABSTENTION_TAU, ABSTENTION_SHOULD_CALL],
+        default=None,
+        help="Ghi đè `abstention` của config.",
+    )
+    parser.add_argument(
+        "--should-call-threshold",
+        type=float,
+        default=None,
+        help="Ngưỡng đã FREEZE từ val (scripts/method2/calibrate_should_call.py).",
+    )
+    parser.add_argument(
+        "--crossencoder",
+        type=str,
+        default=None,
+        help="Checkpoint Cross-Encoder khác (nhánh ablation ghi ra thư mục riêng).",
+    )
+    parser.add_argument(
+        "--biencoder",
+        type=str,
+        default=None,
+        help="Checkpoint Bi-Encoder khác.",
+    )
     args = parser.parse_args()
 
     config = Method2Config.from_yaml(args.config)
+    if args.abstention:
+        config.abstention = args.abstention
+    if args.should_call_threshold is not None:
+        config.should_call_threshold = args.should_call_threshold
+    if args.crossencoder:
+        config.crossencoder_path = args.crossencoder
+    if args.biencoder:
+        config.biencoder_path = args.biencoder
     pipeline = Method2Pipeline.from_config(config)
 
     samples = list(load_jsonl(args.gold))
