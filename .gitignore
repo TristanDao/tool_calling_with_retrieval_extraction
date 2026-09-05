@@ -93,3 +93,8 @@ Thumbs.db
 outputs/
 multirun/
 kaggle_upload/
+
+# Thư mục nháp của công cụ render docx và scratch tạm
+.codex_docx_render*/
+tmp/
+*.rar
