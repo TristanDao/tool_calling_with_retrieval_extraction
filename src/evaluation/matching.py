@@ -31,7 +31,7 @@ def calls_exact(gold: tuple[FunctionCall, ...], prediction: tuple[FunctionCall, 
 def _pair_score(gold: FunctionCall, prediction: FunctionCall) -> int:
     gold_flat = flatten_arguments(gold.arguments)
     pred_flat = flatten_arguments(prediction.arguments)
-    exact = int(gold.arguments == prediction.arguments)
+    exact = int(canonical_json(gold.arguments) == canonical_json(prediction.arguments))
     pair_overlap = sum(
         canonical_json(value) == canonical_json(pred_flat.get(key))
         for key, value in gold_flat.items()

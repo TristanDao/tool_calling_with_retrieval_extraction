@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 ACCURACY_SERIES: tuple[tuple[str, str], ...] = (
+    ("n_fcem_positive", "N-FCEM positive"),
     ("tool_set_accuracy", "Tool Set Accuracy"),
     ("recall_at_1", "Recall@1"),
     ("arg_em_given_correct_tool", "ArgEM | tool đúng"),
@@ -101,8 +102,9 @@ def plot_report(report: dict[str, Any], output_dir: Path) -> list[Path]:
     written: list[Path] = []
     for mode in dict.fromkeys(row["mode"] for row in report["rows"]):
         rows = _rows_for_mode(report, mode)
-        written.append(plot_accuracy(rows, mode, output_dir / f"stress_accuracy_{mode}.png"))
-        written.append(plot_latency(rows, mode, output_dir / f"stress_latency_{mode}.png"))
+        label = rows[0].get("distractor_label", mode)
+        written.append(plot_accuracy(rows, label, output_dir / f"stress_accuracy_{mode}.png"))
+        written.append(plot_latency(rows, label, output_dir / f"stress_latency_{mode}.png"))
     return written
 
 

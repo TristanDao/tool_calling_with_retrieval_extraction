@@ -126,6 +126,8 @@ Dùng chung cho cả 2 method:
 
 ### 4.3 Method 2 — Cross-Encoder (Parameter Extraction)
 
+Run hiện tại dùng `xlm-roberta-base` theo `method2_plan.md`, thay backbone BGE-M3 ban đầu vì ngân sách T4. Bi-Encoder thực chạy dùng LoRA + CachedMNRL. Từ 2026-09-06, user yêu cầu strict unseen: không đưa test-unseen tool descriptions vào training negatives; phải train lại hai round Bi-Encoder. Xem `method2_completion.md`. Ablation inference normalizer bật/tắt khác với strict/normalized scoring của cùng một output.
+
 - **Base model**: `BAAI/bge-m3` + custom Hierarchical heads.
 - **Input format** (BERT-QA): `[CLS] query [SEP] Param=<name>. Desc=<desc>. Type=<type>[. Enum=...] [SEP]`
 - **Heads**: `has_value` (BCE) + span/enum/boolean sub-heads (schema-driven routing).
@@ -205,6 +207,8 @@ Dùng chung cho cả 2 method:
 ---
 
 ## 8. Hạn chế & hướng phát triển
+
+CE supervision repair (2026-09-07): CustomTools span labels use validated argument_mentions tied to call_index and parameter_path; offsets refer to the exact original query, not an NFC-rewritten string. Component Span EM measures annotated surface extraction, while oracle Argument EM still measures canonical values from unchanged gold. Aliases unsupported by the normalizer remain errors in canonical evaluation. The repair experiment holds XLM-R architecture, inference thresholds, and 2+2 curriculum fixed; checkpoint selection uses validation Argument EM followed by enum accuracy, not test results.
 
 ### Hạn chế
 - Chưa xử lý multi-turn conversation.

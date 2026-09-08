@@ -1,0 +1,18 @@
+{
+  "stage": "round2",
+  "completed": true,
+  "bundle_hashes_verified": 114,
+  "artifact_hashes_verified": 24,
+  "train_steps": 921,
+  "epochs": 3,
+  "training_hours": 11.31,
+  "strict_mined_rows": 94634,
+  "heldout_exposure": 0,
+  "ce_validation_pairs_missing_gold_by_type": {
+    "integer": 72,
+    "number": 47,
+    "string": 131
+  },
+  "ce_gate_status": "failed_enum_and_argument_em",
+  "next_action": "repair_and_validate_ce_before_final_evaluation"
+}

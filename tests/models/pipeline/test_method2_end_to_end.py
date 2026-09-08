@@ -134,9 +134,11 @@ def test_pipeline_produces_prediction_contract(pipeline):
     assert [c["name"] for c in prediction["function_calls"]] == [TOOL["name"]]
     assert prediction["ranked_tools"][0]["name"] == TOOL["name"]
     assert set(prediction["telemetry"]) >= {
-        "latency_ms", "input_tokens", "output_tokens", "cost_usd",
+        "latency_ms",
         "t_query_embed", "t_retrieve", "t_cross_encode", "t_validate",
     }
+    assert "cost_usd" not in prediction["telemetry"]
+    assert prediction["metadata"]["cost_basis"] == "unavailable_gpu_cost"
     assert prediction["metadata"]["abstained"] is False
 
 

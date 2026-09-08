@@ -98,3 +98,20 @@ kaggle_upload/
 .codex_docx_render*/
 tmp/
 *.rar
+
+# Saved experiment outputs: retain notebooks/reviews, exclude copied datasets and weights.
+/output_train/*
+!/output_train/*.ipynb
+!/output_train/*.md
+
+# Completion bundles contain datasets and duplicated artifacts; retain compact audit evidence.
+/artifacts/method2_completion/*
+!/artifacts/method2_completion/*.json
+!/artifacts/method2_completion/legacy_review/
+/artifacts/method2_completion/legacy_review/*
+!/artifacts/method2_completion/legacy_review/tables.json
+!/artifacts/method2_completion/legacy_review/report.md
+!/artifacts/method2_completion/report_20260908/
+/artifacts/method2_completion/report_20260908/*
+!/artifacts/method2_completion/report_20260908/*.py
+!/artifacts/method2_completion/report_20260908/evidence.json

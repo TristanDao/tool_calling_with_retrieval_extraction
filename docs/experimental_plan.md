@@ -114,6 +114,8 @@ Mỗi experiment nên chạy cho Qwen2.5-1.5B trước. Qwen2.5-0.5B chạy sau 
 
 ## 6. Method 2 — Bi-Encoder + Cross-Encoder
 
+Implementation/protocol cập nhật 2026-09-06: Bi-Encoder BGE-M3 + LoRA + CachedMNRL; CE XLM-R base theo `method2_plan.md`. User xác nhận strict unseen: loại test-unseen tools khỏi training positives, negatives và mining; train lại hai round từ base. Hướng dẫn nghiệm thu riêng Method 2 ở `method2_completion.md`. Phase 6 ablation tùy quota; strict/normalized scoring không thay thế ablation normalizer khi inference. Stress pure same-domain phải kiểm tra đủ distractor cùng nhóm; phần thiếu phải báo pending, không tự gọi mixed/random là same-domain.
+
 ### 6.1 Bi-Encoder
 
 Input training pair:

@@ -140,14 +140,19 @@ def check_gates(metrics: dict[str, float], gates: dict[str, float]) -> dict[str,
         "argument_em": "argument_em",
     }
     failures = []
+    missing = []
     for gate_key, metric_key in mapping.items():
-        if gate_key not in gates or metric_key not in metrics:
+        if gate_key not in gates:
+            continue
+        if metric_key not in metrics or metrics[metric_key] is None:
+            missing.append(metric_key)
             continue
         if metrics[metric_key] < gates[gate_key]:
             failures.append(
                 {"metric": metric_key, "value": metrics[metric_key], "required": gates[gate_key]}
             )
-    return {"passed": not failures, "failures": failures}
+    return {"passed": not failures and not missing, "failures": failures,
+            "missing_metrics": missing, "complete": not missing}
 
 
 @torch.no_grad()

@@ -119,7 +119,7 @@ def _metric_from_pairs(
             if alignment.gold is None or alignment.prediction is None:
                 all_aligned_exact = False
                 continue
-            if alignment.gold.arguments != alignment.prediction.arguments:
+            if canonical_json(alignment.gold.arguments) != canonical_json(alignment.prediction.arguments):
                 all_aligned_exact = False
         arg_exact = all_aligned_exact if tool_correct else False
         arg_exact_count += int(arg_exact)

@@ -1,0 +1,379 @@
+{
+  "source": "output_train\\output_method2-completion-05-stress",
+  "bundle_files_verified": 114,
+  "artifact_hashes_verified": 29,
+  "checkpoint_and_threshold_match_evaluation04": true,
+  "notebook_error_count": 0,
+  "unique_anchors": 200,
+  "anchors_match_test_seen": true,
+  "positive_anchors": 100,
+  "negative_anchors": 100,
+  "predictions_and_raw_count_by_n": {
+    "3": 200,
+    "10": 200,
+    "50": 200,
+    "100": 200,
+    "500": 200,
+    "1000": 200
+  },
+  "quality_gate_passed": false,
+  "scope": "random distractors only; pure same-domain pending",
+  "results": {
+    "config": {
+      "n_values": [
+        3,
+        10,
+        50,
+        100,
+        500,
+        1000
+      ],
+      "distractor_modes": [
+        "random"
+      ],
+      "n_queries": 200,
+      "seed": 42,
+      "gold_path": "data/custom_vi/v1/test_seen.jsonl",
+      "tool_pool_path": "data/method2/tool_pool.json",
+      "pool_size": 4464
+    },
+    "rows": [
+      {
+        "mode": "random",
+        "distractor_label": "random",
+        "n": 3,
+        "n_queries": 200,
+        "truncated_gold": 0,
+        "same_domain_purity": null,
+        "latency": {
+          "n": 200,
+          "t_query_embed": {
+            "mean_ms": 50.235,
+            "p50_ms": 48.796,
+            "p95_ms": 59.307,
+            "p99_ms": 64.855
+          },
+          "t_retrieve": {
+            "mean_ms": 0.078,
+            "p50_ms": 0.079,
+            "p95_ms": 0.104,
+            "p99_ms": 0.13
+          },
+          "t_cross_encode": {
+            "mean_ms": 10.008,
+            "p50_ms": 6.366,
+            "p95_ms": 32.347,
+            "p99_ms": 44.482
+          },
+          "t_validate": {
+            "mean_ms": 0.098,
+            "p50_ms": 0.06,
+            "p95_ms": 0.304,
+            "p99_ms": 0.345
+          },
+          "total": {
+            "mean_ms": 60.42,
+            "p50_ms": 58.162,
+            "p95_ms": 84.499,
+            "p99_ms": 93.648
+          },
+          "gpu_peak_memory_mb": 3279.5
+        },
+        "n_fcem_positive": 0.81,
+        "strict_arga": 0.81,
+        "overall_success": 0.905,
+        "json_validity": 1.0,
+        "schema_validity": 1.0,
+        "cost_usd_per_1k": null,
+        "tool_set_accuracy": 1.0,
+        "recall_at_1": 0.847457627118644,
+        "recall_at_3": 1.0,
+        "mrr": 1.0,
+        "negative_recall": 1.0,
+        "arg_em_given_correct_tool": 0.81,
+        "positive_count": 100,
+        "negative_count": 100
+      },
+      {
+        "mode": "random",
+        "distractor_label": "random",
+        "n": 10,
+        "n_queries": 200,
+        "truncated_gold": 0,
+        "same_domain_purity": null,
+        "latency": {
+          "n": 200,
+          "t_query_embed": {
+            "mean_ms": 50.193,
+            "p50_ms": 50.269,
+            "p95_ms": 53.454,
+            "p99_ms": 55.404
+          },
+          "t_retrieve": {
+            "mean_ms": 0.105,
+            "p50_ms": 0.103,
+            "p95_ms": 0.127,
+            "p99_ms": 0.144
+          },
+          "t_cross_encode": {
+            "mean_ms": 9.616,
+            "p50_ms": 5.632,
+            "p95_ms": 35.361,
+            "p99_ms": 42.288
+          },
+          "t_validate": {
+            "mean_ms": 0.095,
+            "p50_ms": 0.068,
+            "p95_ms": 0.245,
+            "p99_ms": 0.355
+          },
+          "total": {
+            "mean_ms": 60.009,
+            "p50_ms": 57.149,
+            "p95_ms": 87.379,
+            "p99_ms": 92.43
+          },
+          "gpu_peak_memory_mb": 3288.3
+        },
+        "n_fcem_positive": 0.79,
+        "strict_arga": 0.79,
+        "overall_success": 0.895,
+        "json_validity": 1.0,
+        "schema_validity": 0.9916666666666667,
+        "cost_usd_per_1k": null,
+        "tool_set_accuracy": 0.98,
+        "recall_at_1": 0.847457627118644,
+        "recall_at_3": 1.0,
+        "mrr": 1.0,
+        "negative_recall": 1.0,
+        "arg_em_given_correct_tool": 0.8061224489795918,
+        "positive_count": 100,
+        "negative_count": 100
+      },
+      {
+        "mode": "random",
+        "distractor_label": "random",
+        "n": 50,
+        "n_queries": 200,
+        "truncated_gold": 0,
+        "same_domain_purity": null,
+        "latency": {
+          "n": 200,
+          "t_query_embed": {
+            "mean_ms": 46.754,
+            "p50_ms": 46.419,
+            "p95_ms": 51.749,
+            "p99_ms": 53.148
+          },
+          "t_retrieve": {
+            "mean_ms": 0.202,
+            "p50_ms": 0.206,
+            "p95_ms": 0.25,
+            "p99_ms": 0.304
+          },
+          "t_cross_encode": {
+            "mean_ms": 10.555,
+            "p50_ms": 12.026,
+            "p95_ms": 38.361,
+            "p99_ms": 48.007
+          },
+          "t_validate": {
+            "mean_ms": 0.094,
+            "p50_ms": 0.109,
+            "p95_ms": 0.296,
+            "p99_ms": 0.342
+          },
+          "total": {
+            "mean_ms": 57.605,
+            "p50_ms": 55.823,
+            "p95_ms": 87.677,
+            "p99_ms": 100.676
+          },
+          "gpu_peak_memory_mb": 3295.5
+        },
+        "n_fcem_positive": 0.78,
+        "strict_arga": 0.78,
+        "overall_success": 0.87,
+        "json_validity": 1.0,
+        "schema_validity": 0.9312977099236641,
+        "cost_usd_per_1k": null,
+        "tool_set_accuracy": 0.96,
+        "recall_at_1": 0.847457627118644,
+        "recall_at_3": 1.0,
+        "mrr": 1.0,
+        "negative_recall": 0.96,
+        "arg_em_given_correct_tool": 0.8125,
+        "positive_count": 100,
+        "negative_count": 100
+      },
+      {
+        "mode": "random",
+        "distractor_label": "random",
+        "n": 100,
+        "n_queries": 200,
+        "truncated_gold": 0,
+        "same_domain_purity": null,
+        "latency": {
+          "n": 200,
+          "t_query_embed": {
+            "mean_ms": 48.191,
+            "p50_ms": 47.692,
+            "p95_ms": 54.067,
+            "p99_ms": 55.892
+          },
+          "t_retrieve": {
+            "mean_ms": 0.332,
+            "p50_ms": 0.339,
+            "p95_ms": 0.384,
+            "p99_ms": 0.415
+          },
+          "t_cross_encode": {
+            "mean_ms": 11.835,
+            "p50_ms": 11.672,
+            "p95_ms": 41.958,
+            "p99_ms": 76.19
+          },
+          "t_validate": {
+            "mean_ms": 0.101,
+            "p50_ms": 0.105,
+            "p95_ms": 0.332,
+            "p99_ms": 0.45
+          },
+          "total": {
+            "mean_ms": 60.458,
+            "p50_ms": 58.55,
+            "p95_ms": 93.826,
+            "p99_ms": 120.451
+          },
+          "gpu_peak_memory_mb": 3331.6
+        },
+        "n_fcem_positive": 0.77,
+        "strict_arga": 0.77,
+        "overall_success": 0.86,
+        "json_validity": 1.0,
+        "schema_validity": 0.9264705882352942,
+        "cost_usd_per_1k": null,
+        "tool_set_accuracy": 0.95,
+        "recall_at_1": 0.847457627118644,
+        "recall_at_3": 1.0,
+        "mrr": 1.0,
+        "negative_recall": 0.95,
+        "arg_em_given_correct_tool": 0.8105263157894737,
+        "positive_count": 100,
+        "negative_count": 100
+      },
+      {
+        "mode": "random",
+        "distractor_label": "random",
+        "n": 500,
+        "n_queries": 200,
+        "truncated_gold": 0,
+        "same_domain_purity": null,
+        "latency": {
+          "n": 200,
+          "t_query_embed": {
+            "mean_ms": 67.392,
+            "p50_ms": 67.312,
+            "p95_ms": 73.955,
+            "p99_ms": 82.413
+          },
+          "t_retrieve": {
+            "mean_ms": 1.653,
+            "p50_ms": 1.637,
+            "p95_ms": 1.775,
+            "p99_ms": 2.979
+          },
+          "t_cross_encode": {
+            "mean_ms": 21.883,
+            "p50_ms": 17.828,
+            "p95_ms": 71.931,
+            "p99_ms": 94.111
+          },
+          "t_validate": {
+            "mean_ms": 0.191,
+            "p50_ms": 0.191,
+            "p95_ms": 0.522,
+            "p99_ms": 0.653
+          },
+          "total": {
+            "mean_ms": 91.119,
+            "p50_ms": 87.436,
+            "p95_ms": 144.972,
+            "p99_ms": 160.329
+          },
+          "gpu_peak_memory_mb": 3331.6
+        },
+        "n_fcem_positive": 0.62,
+        "strict_arga": 0.62,
+        "overall_success": 0.69,
+        "json_validity": 1.0,
+        "schema_validity": 0.786046511627907,
+        "cost_usd_per_1k": null,
+        "tool_set_accuracy": 0.78,
+        "recall_at_1": 0.847457627118644,
+        "recall_at_3": 1.0,
+        "mrr": 1.0,
+        "negative_recall": 0.76,
+        "arg_em_given_correct_tool": 0.7948717948717948,
+        "positive_count": 100,
+        "negative_count": 100
+      },
+      {
+        "mode": "random",
+        "distractor_label": "random",
+        "n": 1000,
+        "n_queries": 200,
+        "truncated_gold": 0,
+        "same_domain_purity": null,
+        "latency": {
+          "n": 200,
+          "t_query_embed": {
+            "mean_ms": 65.721,
+            "p50_ms": 65.488,
+            "p95_ms": 72.078,
+            "p99_ms": 89.293
+          },
+          "t_retrieve": {
+            "mean_ms": 2.847,
+            "p50_ms": 2.829,
+            "p95_ms": 3.256,
+            "p99_ms": 4.381
+          },
+          "t_cross_encode": {
+            "mean_ms": 29.927,
+            "p50_ms": 20.946,
+            "p95_ms": 89.024,
+            "p99_ms": 150.638
+          },
+          "t_validate": {
+            "mean_ms": 0.228,
+            "p50_ms": 0.212,
+            "p95_ms": 0.532,
+            "p99_ms": 0.781
+          },
+          "total": {
+            "mean_ms": 98.724,
+            "p50_ms": 91.881,
+            "p95_ms": 160.146,
+            "p99_ms": 223.351
+          },
+          "gpu_peak_memory_mb": 3351.1
+        },
+        "n_fcem_positive": 0.54,
+        "strict_arga": 0.54,
+        "overall_success": 0.555,
+        "json_validity": 1.0,
+        "schema_validity": 0.7038327526132404,
+        "cost_usd_per_1k": null,
+        "tool_set_accuracy": 0.68,
+        "recall_at_1": 0.847457627118644,
+        "recall_at_3": 1.0,
+        "mrr": 1.0,
+        "negative_recall": 0.57,
+        "arg_em_given_correct_tool": 0.7941176470588235,
+        "positive_count": 100,
+        "negative_count": 100
+      }
+    ]
+  }
+}

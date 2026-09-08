@@ -75,12 +75,12 @@ def test_missing_param_is_incomplete():
     assert ERROR_INCOMPLETE in _classes(errors)
 
 
-def test_incomplete_status_recorded_once_plus_missing_param():
+def test_missing_parameter_is_not_double_counted_by_status():
     errors = classify_errors(
         _sample({"location": "Hà Nội"}), _prediction({}), _raw(status="incomplete")
     )
 
-    assert _classes(errors).count(ERROR_INCOMPLETE) == 2
+    assert _classes(errors).count(ERROR_INCOMPLETE) == 1
 
 
 def test_missed_and_hallucinated_calls():

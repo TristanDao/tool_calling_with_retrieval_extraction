@@ -27,6 +27,7 @@ class CrossEncoderForExtraction(nn.Module):
             hidden_size=encoder_hidden,
             max_enum_size=self.head_config.max_enum_size,
             dropout=self.head_config.dropout,
+            enable_should_call=self.head_config.enable_should_call,
         )
         self.heads = CrossEncoderHeads(self.head_config)
 

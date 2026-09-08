@@ -12,6 +12,7 @@ from typing import Any, Literal
 class NormalizationConfig:
     unicode_form: Literal["NFC", "NFD", "NFKC", "NFKD"] = "NFC"
     collapse_whitespace: bool = True
+    trim_whitespace: bool = True
     casefold_strings: bool = True
     coerce_numbers: bool = True
     coerce_booleans: bool = True
@@ -25,19 +26,14 @@ class NormalizationConfig:
     def strict(cls) -> NormalizationConfig:
         """Biến thể strict: tắt mọi nới lỏng ở mức GIÁ TRỊ.
 
-        §11 `method2_plan.md` yêu cầu báo cáo cả strict lẫn normalized. Bản
-        normalized trả lời "model có lấy đúng thông tin không", bản strict trả
-        lời "chuỗi sinh ra có dùng được ngay không cần hậu xử lý" — chênh lệch
-        giữa hai bản chính là phần công mà normalizer đang gánh.
-
-        `unicode_form` giữ NFC: đó là vệ sinh mã hoá, không phải nới lỏng ngữ
-        nghĩa — so sánh NFC với NFD chỉ tạo nhiễu chứ không đo được gì. Alias
-        bị bỏ vì chúng là tương đương do dataset khai báo, đúng thứ mà strict
-        cần loại ra.
+        Giữ Unicode NFC; tắt nới lỏng whitespace, case, type và alias.
+        Strict và normalized chấm cùng output sau postprocessing, nên chênh
+        lệch không phải ablation của normalizer trong inference.
         """
         return cls(
             unicode_form="NFC",
             collapse_whitespace=False,
+            trim_whitespace=False,
             casefold_strings=False,
             coerce_numbers=False,
             coerce_booleans=False,
@@ -61,6 +57,7 @@ class NormalizationConfig:
         for key in (
             "unicode_form",
             "collapse_whitespace",
+            "trim_whitespace",
             "casefold_strings",
             "coerce_numbers",
             "coerce_booleans",

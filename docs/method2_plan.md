@@ -596,6 +596,8 @@ Ba quy tắc sống còn trên Kaggle:
 
 ## 11. Định nghĩa "xong" (theo §13 experimental_plan)
 
+Đính chính 2026-09-06: user chọn strict unseen thay quy tắc chỉ cấm positive ở Phase 1 cũ. Cấm cả negative exposure của test-unseen tools; run cũ giữ làm legacy. Xem `method2_completion.md`. Oracle–pipeline phải so cùng mẫu số positive và mô tả là chênh lệch giữa hai chế độ, không suy ra toàn bộ chênh lệch là lỗi retrieval thuần. W/T/P/I tự động cần review người; thiếu gate Argument EM không được tính là pass.
+
 Mỗi run phải sinh đủ:
 
 - [ ] `config.yaml` đã resolve + commit hash + seed

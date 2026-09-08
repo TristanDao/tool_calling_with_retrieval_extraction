@@ -68,6 +68,9 @@ class ParamPrediction:
     normalizer_applied: list[str] = field(default_factory=list)
     unsupported: bool = False
     normalization_failed: bool = False
+    has_value_logit: float | None = None
+    enum_logits: list[float] | None = None
+    boolean_logits: list[float] | None = None
 
 
 def decode_span(
@@ -249,6 +252,7 @@ class CrossEncoderExtractor:
                 routing_type=param["routing_type"],
                 required=bool(param.get("required")),
                 has_value_prob=float(has_value_probs[row].item()),
+                has_value_logit=float(outputs["has_value"][row].item()),
             )
             routing_type = param["routing_type"]
             if routing_type in (SCHEMA_TYPE_STRING, SCHEMA_TYPE_NUMBER):
@@ -275,12 +279,14 @@ class CrossEncoderExtractor:
             elif routing_type == SCHEMA_TYPE_ENUM:
                 enum_values = param.get("enum") or []
                 logits = outputs["enum_logits"][row][: len(enum_values)]
+                pred.enum_logits = logits.detach().float().cpu().tolist()
                 idx = int(logits.argmax().item()) if len(enum_values) else 0
                 pred.enum_index = idx
                 if 0 <= idx < len(enum_values):
                     pred.value = enum_values[idx]
             elif routing_type == SCHEMA_TYPE_BOOLEAN:
                 idx = int(outputs["boolean_logits"][row].argmax().item())
+                pred.boolean_logits = outputs["boolean_logits"][row].detach().float().cpu().tolist()
                 pred.value = idx == BOOLEAN_LABEL_TRUE
             results.append(pred)
         return results

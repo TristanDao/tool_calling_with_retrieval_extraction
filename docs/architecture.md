@@ -89,6 +89,8 @@ Theo hướng tiếp cận của Ersoy et al. (2025).
 
 ## 3. Method 2 — Bi-Encoder + Cross-Encoder
 
+Implementation cập nhật 2026-09-06: Bi-Encoder dùng BGE-M3 + LoRA + sentence-transformers CachedMNRL; Cross-Encoder dùng XLM-R base + hierarchical heads theo `method2_plan.md`. Những sơ đồ BGE-M3 CE bên dưới mô tả thiết kế ban đầu. Protocol strict unseen và thứ tự nghiệm thu tại `method2_completion.md`.
+
 Pipeline 2 thành phần chuyên biệt, không autoregressive.
 
 ```

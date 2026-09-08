@@ -24,15 +24,15 @@ from __future__ import annotations
 import argparse
 import json
 import time
-import unicodedata
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
+from src.evaluation.error_analysis import classify_errors
 from src.models.biencoder.retrieve import RetrievalThresholds, ToolRetriever, select_tools
 from src.models.crossencoder.data_collator import DEFAULT_MAX_QUESTION_TOKENS
 from src.models.crossencoder.inference import CrossEncoderExtractor, ExtractionConfig
-from src.models.pipeline.validator import STATUS_INCOMPLETE, ArgumentValidator
+from src.models.pipeline.validator import ArgumentValidator
 from src.models.sources import load_jsonl, write_jsonl
 
 MODE_PIPELINE = "pipeline"
@@ -292,13 +292,11 @@ class Method2Pipeline:
             "ranked_tools": [{"name": n, "score": round(s, 6)} for n, s in ranked[:10]],
             "telemetry": {
                 "latency_ms": round(timings.total_ms, 3),
-                "input_tokens": 0,
-                "output_tokens": 0,
-                "cost_usd": 0.0,
                 **timings.as_ms(),
             },
             "metadata": {
                 "model": "method_2",
+                "cost_basis": "unavailable_gpu_cost",
                 "mode": mode,
                 "abstained": abstained,
                 "validation_status": statuses,
@@ -388,9 +386,9 @@ def summarize_latency(timings: Sequence[StageTimings]) -> dict[str, Any]:
         return {}
 
     def percentile(values: list[float], q: float) -> float:
-        ordered = sorted(values)
-        index = min(int(q * len(ordered)), len(ordered) - 1)
-        return round(ordered[index], 3)
+        from src.evaluation.statistics import percentile
+
+        return round(percentile(values, q), 3)
 
     report: dict[str, Any] = {"n": len(timings)}
     stages = ["t_query_embed", "t_retrieve", "t_cross_encode", "t_validate"]
@@ -421,58 +419,6 @@ def _cuda_available() -> bool:
 
 
 # ------------------------------------------------------------ error analysis
-
-
-def _norm(text: Any) -> str:
-    return unicodedata.normalize("NFC", str(text)).strip().lower()
-
-
-def classify_errors(
-    sample: dict[str, Any],
-    prediction: dict[str, Any],
-    raw: dict[str, Any],
-) -> list[dict[str, Any]]:
-    """Phân loại lỗi theo W/T/P/I (§9 experimental_plan), kèm lỗi mức tool."""
-    query = _norm(sample.get("query", ""))
-    gold_calls = {c["name"]: (c.get("arguments") or {}) for c in (sample.get("function_calls") or [])}
-    pred_calls = {c["name"]: (c.get("arguments") or {}) for c in prediction.get("function_calls", [])}
-    status_by_tool = {c["name"]: c["status"] for c in raw.get("calls", [])}
-    errors: list[dict[str, Any]] = []
-
-    def record(error_class: str, **detail: Any) -> None:
-        errors.append({"id": sample.get("id"), "error_class": error_class, **detail})
-
-    for name in gold_calls:
-        if name not in pred_calls:
-            record("missed_call" if not pred_calls else "wrong_tool", tool=name)
-    for name in pred_calls:
-        if name not in gold_calls:
-            record("hallucinated_call" if not gold_calls else "wrong_tool", tool=name)
-
-    for name, gold_args in gold_calls.items():
-        pred_args = pred_calls.get(name)
-        if pred_args is None:
-            continue
-        if status_by_tool.get(name) == STATUS_INCOMPLETE:
-            record(ERROR_INCOMPLETE, tool=name, missing=sorted(set(gold_args) - set(pred_args)))
-        for key, gold_value in gold_args.items():
-            if key not in pred_args:
-                record(ERROR_INCOMPLETE, tool=name, param=key, gold=gold_value)
-                continue
-            pred_value = pred_args[key]
-            if _norm(pred_value) == _norm(gold_value):
-                continue
-            gold_text = _norm(gold_value)
-            pred_text = _norm(pred_value)
-            if gold_text not in query:
-                # Giá trị gold không có nguyên văn trong query → giới hạn kiến trúc
-                # của span head, thường là canonical tiếng Anh.
-                record(ERROR_TRANSLATION, tool=name, param=key, gold=gold_value, predicted=pred_value)
-            elif gold_text in pred_text or pred_text in gold_text:
-                record(ERROR_PARAPHRASE, tool=name, param=key, gold=gold_value, predicted=pred_value)
-            else:
-                record(ERROR_WRONG_VALUE, tool=name, param=key, gold=gold_value, predicted=pred_value)
-    return errors
 
 
 def main() -> None:

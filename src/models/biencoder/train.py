@@ -75,6 +75,7 @@ class BiEncoderTrainConfig:
     max_train_samples: int | None = None
     #: False để tắt evaluator khi đo throughput.
     eval_enabled: bool = True
+    excluded_tools_path: Path | None = None
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "BiEncoderTrainConfig":
@@ -96,6 +97,8 @@ class BiEncoderTrainConfig:
                 target_modules=list(lora_raw.get("target_modules", LoraSettings().target_modules)),
             ),
             train_path=Path(train_raw.get("train_path", defaults.train_path)),
+            excluded_tools_path=(Path(raw["pairs"]["excluded_tools_path"])
+                                 if raw.get("pairs", {}).get("excluded_tools_path") else None),
             val_path=Path(train_raw.get("val_path", defaults.val_path)),
             output_dir=Path(train_raw.get("output_dir", defaults.output_dir)),
             tool_pool_path=Path(
@@ -222,6 +225,10 @@ def train(config: BiEncoderTrainConfig) -> dict[str, Any]:
     from src.models.biencoder.tool_pool import load_tool_pool
 
     tool_pool = load_tool_pool(config.tool_pool_path)
+    from src.models.biencoder.strict_unseen import assert_no_exposure, load_excluded
+
+    excluded = load_excluded(config.excluded_tools_path)
+    assert_no_exposure(load_jsonl(config.train_path), excluded)
     train_dataset = load_training_dataset(config.train_path, tool_pool, config.n_negatives)
     # Kích thước THẬT của tập train, giữ lại trước khi smoke cắt bớt. Ngoại suy
     # giờ/epoch mà dùng kích thước đã cắt thì ra số vô nghĩa (đo được: 0.1 h).
@@ -557,6 +564,7 @@ def mine_hard_negatives(
     n_negatives: int = 4,
     batch_size: int = 64,
     max_seq_length: int = 192,
+    excluded_tools_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Round 2: lấy tool sai nhưng xếp hạng cao làm negative tường minh."""
     import numpy as np
@@ -565,7 +573,11 @@ def mine_hard_negatives(
     from src.models.biencoder.tool_pool import load_tool_pool
 
     tool_pool = load_tool_pool(tool_pool_path)
-    names = sorted(tool_pool)
+    from src.models.biencoder.strict_unseen import assert_no_exposure, load_excluded
+
+    excluded = load_excluded(excluded_tools_path)
+    names = sorted(set(tool_pool) - excluded)
+    assert_no_exposure(load_jsonl(pairs_path), excluded)
     model = load_encoder(model_path, max_seq_length)
     doc_embeddings = model.encode(
         [tool_pool[n]["doc_text"] for n in names],
@@ -593,6 +605,13 @@ def mine_hard_negatives(
         order = sorted(order, key=lambda j: -scores[j])
         gold = set(row.get("all_gold") or [row["positive"]])
         negatives = [names[j] for j in order[skip_top:] if names[j] not in gold]
+        if len(negatives) < n_negatives:
+            negatives.extend(name for name in row.get("negatives", [])
+                             if name not in excluded and name not in gold and name not in negatives)
+        if len(negatives) < n_negatives:
+            negatives.extend(name for name in names if name not in gold and name not in negatives)
+        if len(negatives) < n_negatives:
+            raise ValueError("Mining could not provide enough allowed negatives")
         if negatives:
             updates[id(row)] = negatives[:n_negatives]
             mined += 1
@@ -601,6 +620,7 @@ def mine_hard_negatives(
         if id(row) in updates:
             row["negatives"] = updates[id(row)]
 
+    assert_no_exposure(rows, excluded)
     write_jsonl(output_path, rows)
     return {"n_rows": len(rows), "n_mined": mined, "output": str(output_path)}
 
@@ -700,6 +720,7 @@ def main() -> None:
         skip_top=int(mining.get("skip_top", 1)),
         n_negatives=int(mining.get("n_negatives", 4)),
         max_seq_length=config.max_seq_length,
+        excluded_tools_path=config.excluded_tools_path,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
 

@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-NOTEBOOKS = sorted(Path("notebooks").glob("method2_*.ipynb"))
+NOTEBOOKS = sorted(Path("notebooks").glob("method2_kaggle_*.ipynb"))
 
 
 def _load_generator():

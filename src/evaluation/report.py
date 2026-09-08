@@ -46,6 +46,8 @@ def summary_markdown(report: dict[str, Any]) -> str:
         ("Argument Pair F1", extraction["argument_pair"]["f1"]),
         ("Schema Validity", schema["call_schema_validity"]),
         ("N-FCEM-positive", end_to_end["n_fcem_positive"]),
+        ("Strict ArgA-positive", report["metrics"].get("strict_end_to_end", {}).get("n_fcem_positive")),
+        ("Oracle minus pipeline on positives", report["metrics"].get("oracle_pipeline_gap_positive")),
         ("Overall Success", end_to_end["overall_success"]),
         ("p95 latency (ms)", efficiency["latency_ms"]["p95"]),
         ("Cost/correct call (USD)", efficiency["cost"]["usd_per_correct_call"]),

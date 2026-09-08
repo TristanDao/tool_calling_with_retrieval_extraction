@@ -33,7 +33,9 @@ class ArgumentNormalizer:
     config: NormalizationConfig
 
     def normalize_text(self, value: str) -> str:
-        result = unicodedata.normalize(self.config.unicode_form, value).strip()
+        result = unicodedata.normalize(self.config.unicode_form, value)
+        if self.config.trim_whitespace:
+            result = result.strip()
         if self.config.collapse_whitespace:
             result = _SPACE_RE.sub(" ", result)
         if self.config.casefold_strings:
@@ -62,7 +64,9 @@ class ArgumentNormalizer:
         )
 
     def _identifier(self, value: str) -> str:
-        result = unicodedata.normalize(self.config.unicode_form, value).strip()
+        result = unicodedata.normalize(self.config.unicode_form, value)
+        if self.config.trim_whitespace:
+            result = result.strip()
         return result.casefold() if self.config.casefold_identifiers else result
 
     def _number(self, value: Any, integer: bool) -> int | float | Any:

@@ -1,0 +1,120 @@
+{
+  "protocol": "legacy_negative_exposure_rescored",
+  "rows": [
+    {
+      "dataset": "benchmark",
+      "sample_count": 10555,
+      "positive_count": 10555,
+      "negative_count": 0,
+      "source_counts": {
+        "glaive": 4447,
+        "xlam": 6108
+      },
+      "tool_set_accuracy_positive": 0.8028422548555187,
+      "strict_arga": 0.3940312648034107,
+      "normalized_arga": 0.3983893889152061,
+      "oracle_arga": 0.4266224538133586,
+      "oracle_pipeline_gap_positive": 0.028233064898152527,
+      "argument_f1": 0.6150877431950783,
+      "schema_validity": 0.8220121755847485,
+      "p50_ms": 56.304,
+      "p95_ms": 79.595,
+      "error_events": {
+        "wrong_tool": 2382,
+        "I": 3454,
+        "W": 1237,
+        "T": 2431,
+        "P": 842,
+        "missed_call": 329,
+        "extra_argument": 334
+      },
+      "samples_with_error_events": 6350,
+      "failed_samples_evaluator": 6350,
+      "ci": {
+        "estimate": 0.3983893889152061,
+        "lower": 0.38957366177167224,
+        "upper": 0.4082449076267172,
+        "samples": 1000,
+        "confidence_level": 0.95
+      }
+    },
+    {
+      "dataset": "custom_seen",
+      "sample_count": 800,
+      "positive_count": 400,
+      "negative_count": 400,
+      "source_counts": {
+        "custom_vi": 800
+      },
+      "tool_set_accuracy_positive": 0.855,
+      "strict_arga": 0.535,
+      "normalized_arga": 0.535,
+      "oracle_arga": 0.6425,
+      "oracle_pipeline_gap_positive": 0.10749999999999993,
+      "argument_f1": 0.8512783579402233,
+      "schema_validity": 0.806497175141243,
+      "p50_ms": 58.661,
+      "p95_ms": 89.31224999999999,
+      "error_events": {
+        "W": 77,
+        "I": 55,
+        "T": 66,
+        "wrong_tool": 58,
+        "hallucinated_call": 190
+      },
+      "samples_with_error_events": 288,
+      "failed_samples_evaluator": 288,
+      "ci": {
+        "estimate": 0.535,
+        "lower": 0.485,
+        "upper": 0.5800624999999999,
+        "samples": 1000,
+        "confidence_level": 0.95
+      }
+    },
+    {
+      "dataset": "custom_unseen",
+      "sample_count": 800,
+      "positive_count": 400,
+      "negative_count": 400,
+      "source_counts": {
+        "custom_vi": 800
+      },
+      "tool_set_accuracy_positive": 0.7625,
+      "strict_arga": 0.075,
+      "normalized_arga": 0.075,
+      "oracle_arga": 0.1925,
+      "oracle_pipeline_gap_positive": 0.11750000000000001,
+      "argument_f1": 0.5860237024928484,
+      "schema_validity": 0.679945054945055,
+      "p50_ms": 58.413,
+      "p95_ms": 93.27999999999997,
+      "error_events": {
+        "W": 233,
+        "wrong_tool": 89,
+        "I": 147,
+        "extra_argument": 64,
+        "P": 47,
+        "T": 19,
+        "missed_call": 9,
+        "hallucinated_call": 218
+      },
+      "samples_with_error_events": 479,
+      "failed_samples_evaluator": 479,
+      "ci": {
+        "estimate": 0.075,
+        "lower": 0.05,
+        "upper": 0.1025,
+        "samples": 1000,
+        "confidence_level": 0.95
+      }
+    }
+  ],
+  "cost": "unavailable",
+  "normalizer_ablation": "not_measured",
+  "notes": [
+    "Test predictions unchanged except removal of placeholder cost/tokens.",
+    "Strict scoring is not inference normalizer ablation.",
+    "Heuristic W/T/P/I labels require human review."
+  ]
+}

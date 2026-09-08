@@ -48,7 +48,15 @@ def evaluate_records(
     # (§11 method2_plan yêu cầu báo cáo cả hai).
     strict_normalizer = ArgumentNormalizer(NormalizationConfig.strict())
     strict_extraction, _ = compute_extraction_metrics(gold, aligned, strict_normalizer)
-    strict_end_to_end, _ = compute_end_to_end_metrics(gold, aligned, strict_normalizer)
+    strict_end_to_end, strict_rows = compute_end_to_end_metrics(gold, aligned, strict_normalizer)
+    strict_by_id = {row["id"]: row for row in strict_rows}
+    oracle_end_to_end = None
+    strict_oracle_end_to_end = None
+    oracle_by_id: dict[str, dict[str, Any]] = {}
+    if aligned_oracle is not None:
+        oracle_end_to_end, oracle_rows = compute_end_to_end_metrics(gold, aligned_oracle, normalizer)
+        strict_oracle_end_to_end, _ = compute_end_to_end_metrics(gold, aligned_oracle, strict_normalizer)
+        oracle_by_id = {row["id"]: row for row in oracle_rows}
     strict_oracle_extraction = (
         compute_extraction_metrics(gold, aligned_oracle, strict_normalizer)[0]
         if aligned_oracle is not None
@@ -67,6 +75,9 @@ def evaluate_records(
         extraction_row = extraction_by_id[record.id]
         row = {
             **end_row,
+            "strict_fcem": strict_by_id[record.id]["n_fcem"],
+            "strict_overall_success": strict_by_id[record.id]["overall_success"],
+            "oracle_fcem": oracle_by_id.get(record.id, {}).get("n_fcem"),
             "source": record.source,
             "parse_valid": prediction.parse_valid,
             "parse_error": prediction.parse_error,
@@ -123,6 +134,12 @@ def evaluate_records(
             "strict_extraction": strict_extraction,
             "strict_oracle_extraction": strict_oracle_extraction,
             "strict_end_to_end": strict_end_to_end,
+            "oracle_end_to_end": oracle_end_to_end,
+            "strict_oracle_end_to_end": strict_oracle_end_to_end,
+            "oracle_pipeline_gap_positive": (
+                oracle_end_to_end["n_fcem_positive"] - end_to_end["n_fcem_positive"]
+                if oracle_end_to_end is not None and end_to_end["positive_count"] else None
+            ),
             "schema_validity": schema_validity,
             "end_to_end": end_to_end,
             "robustness": robustness,

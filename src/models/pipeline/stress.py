@@ -64,6 +64,7 @@ class StressConfig:
     tool_pool_path: Path = Path("data/method2/tool_pool.json")
     gold_path: Path = Path("data/custom_vi/v1/test_seen.jsonl")
     output_dir: Path = Path("results/method2/stress")
+    allow_mixed_domain: bool = False
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "StressConfig":
@@ -81,6 +82,7 @@ class StressConfig:
             tool_pool_path=Path(raw.get("tool_pool_path", defaults.tool_pool_path)),
             gold_path=Path(raw.get("gold_path", defaults.gold_path)),
             output_dir=Path(raw.get("output_dir", defaults.output_dir)),
+            allow_mixed_domain=bool(raw.get("allow_mixed_domain", False)),
         )
 
 
@@ -116,6 +118,8 @@ def sample_queries(
     thì lượt hai trở đi rỗng và stress test chạy trên 0 query mà không báo lỗi.
     """
     samples = list(samples)
+    if n_queries <= 0 or n_queries > len(samples):
+        raise ValueError("n_queries must be positive and no larger than the dataset")
     positives = [s for s in samples if s.get("function_calls")]
     negatives = [s for s in samples if not s.get("function_calls")]
     half = n_queries // 2
@@ -124,6 +128,9 @@ def sample_queries(
     for group, quota in ((positives, half), (negatives, n_queries - half)):
         quota = min(quota, len(group))
         picked_ids.update(s["id"] for s in rng.sample(group, quota))
+    remaining = [s for s in samples if s["id"] not in picked_ids]
+    if len(picked_ids) < n_queries:
+        picked_ids.update(s["id"] for s in rng.sample(remaining, n_queries - len(picked_ids)))
     return [s for s in samples if s["id"] in picked_ids]
 
 
@@ -235,6 +242,8 @@ def _metrics(
     from src.evaluation.normalization import ArgumentNormalizer
     from src.evaluation.retrieval_metrics import compute_retrieval_metrics
     from src.evaluation.selection_metrics import compute_selection_metrics
+    from src.evaluation.end_to_end_metrics import compute_end_to_end_metrics
+    from src.evaluation.schema_validation import aggregate_schema_validity, validate_prediction_schema
 
     gold = [parse_gold_record(s) for s in samples]
     aligned = align_predictions(gold, [parse_prediction_record(p) for p in predictions])
@@ -245,7 +254,16 @@ def _metrics(
     extraction, _ = compute_extraction_metrics(
         gold, aligned, ArgumentNormalizer(NormalizationConfig())
     )
+    end_to_end, _ = compute_end_to_end_metrics(gold, aligned, ArgumentNormalizer(NormalizationConfig()))
+    strict, _ = compute_end_to_end_metrics(gold, aligned, ArgumentNormalizer(NormalizationConfig.strict()))
+    schema = aggregate_schema_validity([validate_prediction_schema(g, p) for g, p in zip(gold, aligned, strict=True)])
     return {
+        "n_fcem_positive": end_to_end["n_fcem_positive"],
+        "strict_arga": strict["n_fcem_positive"],
+        "overall_success": end_to_end["overall_success"],
+        "json_validity": schema["prediction_parse_validity"],
+        "schema_validity": schema["call_schema_validity"],
+        "cost_usd_per_1k": None,
         "tool_set_accuracy": selection["tool_set_accuracy_positive"],
         "recall_at_1": retrieval["recall_at_1"],
         "recall_at_3": retrieval["recall_at_3"],
@@ -275,6 +293,22 @@ def run_stress(
         pool = load_tool_pool(config.tool_pool_path)
     groups = {name: (tool.get("feature_group") or UNLABELED_GROUP) for name, tool in pool.items()}
     pool_names = sorted(pool)
+    if not samples or len({s["id"] for s in samples}) != len(samples):
+        raise ValueError("Stress anchors must be nonempty and have unique IDs")
+    if any(n <= 0 or n > len(pool) for n in config.n_values):
+        raise ValueError("N must be positive and no larger than the tool pool")
+    if any(mode not in (DISTRACTOR_RANDOM, DISTRACTOR_SAME_DOMAIN) for mode in config.distractor_modes):
+        raise ValueError("Unknown distractor mode")
+    for sample in samples:
+        gold_names = {c["name"] for c in sample.get("function_calls", [])}
+        if not gold_names <= set(pool) or len(gold_names) > min(config.n_values):
+            raise ValueError("Every anchor's gold tools must fit every haystack")
+        if DISTRACTOR_SAME_DOMAIN in config.distractor_modes and not config.allow_mixed_domain:
+            group = reference_group(sample, groups)
+            same = sum(name not in gold_names and groups[name] == group for name in pool)
+            if group is None or same < max(config.n_values) - len(gold_names):
+                raise ValueError("Pure same_domain infeasible; enrich groups or explicitly label a mixed-domain extension")
+    write_jsonl(config.output_dir / "anchors.jsonl", samples)
 
     # Stress test đo retrieval TRONG haystack đã dựng; ép `candidates` bất kể
     # config, vì `pool` sẽ xếp hạng trên toàn bộ 4.464 tool và N mất tác dụng.
@@ -297,6 +331,8 @@ def run_stress(
             }
             for n in config.n_values:
                 predictions: list[dict[str, Any]] = []
+                raw_predictions: list[dict[str, Any]] = []
+                presented: list[dict[str, Any]] = []
                 timings: list[StageTimings] = []
                 purities: list[float] = []
                 truncated = 0
@@ -311,14 +347,18 @@ def run_stress(
                         {**sample, "tools": haystack.tools}, MODE_PIPELINE
                     )
                     predictions.append(outcome["prediction"])
+                    raw_predictions.append(outcome.get("raw", {}))
+                    presented.append({**sample, "tools": haystack.tools})
                     timings.append(outcome["timings"])
 
                 write_jsonl(
                     config.output_dir / f"predictions_{mode}_n{n}.jsonl", predictions
                 )
+                write_jsonl(config.output_dir / f"raw_{mode}_n{n}.jsonl", raw_predictions)
                 rows.append(
                     {
                         "mode": mode,
+                        "distractor_label": "same_domain_first_mixed" if mode == DISTRACTOR_SAME_DOMAIN and config.allow_mixed_domain else mode,
                         "n": n,
                         "n_queries": len(samples),
                         "truncated_gold": truncated,
@@ -326,7 +366,7 @@ def run_stress(
                             round(sum(purities) / len(purities), 4) if purities else None
                         ),
                         "latency": summarize_latency(timings),
-                        **_metrics(samples, predictions),
+                        **_metrics(presented, predictions),
                     }
                 )
     finally:
@@ -372,9 +412,9 @@ def summary_markdown(report: dict[str, Any]) -> str:
         f"Pool: {report['config']['pool_size']} tool · "
         f"{report['config']['n_queries']} query · seed {report['config']['seed']}",
         "",
-        "| Mode | N | Tool Set Acc | R@1 | Neg Recall | ArgEM\\|tool | "
+        "| Mode | N | Tool Set Acc | R@1 | Neg Recall | ArgEM\\|tool | N-FCEM positive | Strict ArgA | "
         "t_embed p50 | t_retrieve p50 | t_cross p50 | total p50 | total p95 |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in report["rows"]:
         latency = row.get("latency") or {}
@@ -383,14 +423,16 @@ def summary_markdown(report: dict[str, Any]) -> str:
             return _cell((latency.get(stage) or {}).get(key), 2)
 
         lines.append(
-            "| {mode} | {n} | {acc} | {r1} | {neg} | {argem} | "
+            "| {mode} | {n} | {acc} | {r1} | {neg} | {argem} | {fcem} | {strict} | "
             "{embed} | {retrieve} | {cross} | {total} | {p95} |".format(
-                mode=row["mode"],
+                mode=row.get("distractor_label", row["mode"]),
                 n=row["n"],
                 acc=_cell(row["tool_set_accuracy"]),
                 r1=_cell(row["recall_at_1"]),
                 neg=_cell(row["negative_recall"]),
                 argem=_cell(row["arg_em_given_correct_tool"]),
+                fcem=_cell(row.get("n_fcem_positive")),
+                strict=_cell(row.get("strict_arga")),
                 embed=p("t_query_embed"),
                 retrieve=p("t_retrieve"),
                 cross=p("t_cross_encode"),
@@ -399,13 +441,13 @@ def summary_markdown(report: dict[str, Any]) -> str:
             )
         )
     impure = [
-        row for row in report["rows"] if (row.get("same_domain_purity") or 1.0) < 1.0
+        row for row in report["rows"] if row.get("same_domain_purity") is not None and row["same_domain_purity"] < 1.0
     ]
     if impure:
         lines += [
             "",
-            "`same_domain` bị lấp bằng distractor ngẫu nhiên khi hết tool cùng nhóm "
-            "(mỗi nhóm chỉ có 4 tool). Tỉ lệ distractor thật sự cùng nhóm:",
+            "`same_domain_first_mixed` có thêm distractor ngoài nhóm khi không đủ tool cùng nhóm. "
+            "Đây là mixed distractors; tỉ lệ distractor thật sự cùng nhóm:",
             "",
             "| N | purity |",
             "|---:|---:|",

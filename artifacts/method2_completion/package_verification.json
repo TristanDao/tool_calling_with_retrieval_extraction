@@ -1,0 +1,7 @@
+{
+  "files_verified": 114,
+  "test_gold_byte_identical": true,
+  "zip_bytes": 28891649,
+  "zip_sha256": "7ad46bac6e117596b43322c138d94605de4d566c99543152a209d28e06dd6874",
+  "gpu_stages_executed": false
+}

@@ -639,7 +639,7 @@ Report có thêm `strict_extraction`, `strict_oracle_extraction`,
 Ví dụ kiểm chứng: gold `{"amount": 5000, "note": "Gấp"}` vs dự đoán
 `{"amount": "5000", "note": "gấp"}` → normalized **1.0**, strict **0.0**.
 
-**Chênh lệch normalized − strict chính là đóng góp định lượng của
+**Đính chính 2026-09-06: chênh lệch normalized − strict chỉ đo normalization khi chấm, không phải ablation inference của
 normalizer (Phase 4)** — tức là hạng mục #2 trong danh sách ablation của
 Phase 6 (`Có/không normalizer`) đo được ngay từ predictions đã có, không cần
 chạy lại trên GPU.
@@ -1137,8 +1137,7 @@ python scripts/method2/ablation.py report   # → results/method2/ablation/
   lượng. **Phase 7 đã có code** (`src/models/pipeline/stress.py` +
   `scripts/method2/plot_stress.py`, §7.15) nhưng **chưa chạy trên GPU** — cần
   một lần Save & Run All của notebook eval để có số thật.
-- **Phase 6 (ablation)**: mục #2 "có/không normalizer" đã đo được miễn phí bằng
-  chênh lệch `strict` − `normalized` (§7.10f). Mục **#1 `should_call` head đã có
+- **Phase 6 (ablation)**: mục #2 "có/không normalizer" cần hai lần inference trên cùng checkpoint. Chênh lệch `strict` − `normalized` không thay thế ablation này. Xem `method2_completion.md`. Mục **#1 `should_call` head đã có
   đủ code** (head + loss + dữ liệu + pipeline + hiệu chỉnh + notebook, §7.17)
   nhưng **chưa train** — cần ~6 h GPU. Ba mục còn lại (#3 document text, #4 số
   hard negative, #5 backbone) chỉ là cờ config nhưng đều phải train lại. **Cả bốn
@@ -1147,3 +1146,8 @@ python scripts/method2/ablation.py report   # → results/method2/ablation/
   cho họ Bi-Encoder và ~20 h cho họ Cross-Encoder. Chi phí thật và giao thức rút
   gọn để vừa 30 h/tuần: **§7.16**.
 - Hai mục hụt của §11 `method2_plan.md` đã đóng, không tốn GPU — xem §7.10f.
+
+
+### Method 2 completion — 2026-09-06
+
+User chọn strict unseen. Các run cũ có negative exposure được giữ nguyên. Workflow mới, thứ tự notebook và kiểm định chất lượng ở [method2_completion.md](method2_completion.md). Phase 6 vẫn là tùy quota; pure same-domain cần đủ tool cùng nhóm, không âm thầm thay bằng random.
