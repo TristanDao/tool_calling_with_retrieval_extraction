@@ -73,7 +73,7 @@ snapshot_download(
     repo_id="ThinhDao/tool-calling-vi-experiments",
     repo_type="dataset",
     local_dir=str(LOCAL_DATA_ROOT),
-    allow_patterns=[f"{EXPERIMENT}/**"],
+    allow_patterns=[f"{EXPERIMENT}/**", "benchmark_core/**"],
 )
 ```
 
@@ -470,3 +470,269 @@ assert checkpoints
 
 Khi runtime bi ngat truoc khi copy Drive, moi thay doi sau checkpoint gan nhat
 se mat. Vi vay nen chon stage 500–750 steps thay vi dat sat gioi han runtime.
+
+## 13. Evaluation tren tap Test Tieng Viet (benchmark_core)
+
+Sau khi qua trinh training hoan tat, chay cac cell sau de danh gia mo hinh tren tap `vi/test.jsonl` (7.712 mau).
+
+### Cell 13.1: Don VRAM va Nap Model cho Inference
+
+```python
+import gc, torch
+from unsloth import FastLanguageModel
+from transformers.trainer_utils import get_last_checkpoint
+
+# Giai phong VRAM cua Trainer cu
+try:
+    del trainer, model
+except NameError:
+    pass
+gc.collect()
+torch.cuda.empty_cache()
+
+# Nap checkpoint moi nhat vua train (hoac chi dinh duong dan checkpoint cu the)
+CHECKPOINT_DIR = LOCAL_RUN_DIR / "checkpoint"
+latest_ckpt = get_last_checkpoint(str(CHECKPOINT_DIR)) or str(CHECKPOINT_DIR)
+print(f"Loading adapter from: {latest_ckpt}")
+
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name=latest_ckpt,
+    max_seq_length=4096,
+    load_in_4bit=True,
+    load_in_16bit=False,
+)
+tokenizer = getattr(tokenizer, "tokenizer", tokenizer)
+tokenizer.padding_side = "left"
+if tokenizer.pad_token_id is None:
+    tokenizer.pad_token = tokenizer.eos_token
+FastLanguageModel.for_inference(model)
+model.eval()
+print("Model loaded in inference mode: READY")
+```
+
+### Cell 13.2: Dinh nghia Helpers format Prompt
+
+```python
+SYSTEM_PROMPTS = {
+    "en": "You are an AI assistant capable of using tools.",
+    "vi": "Bạn là trợ lý AI có khả năng sử dụng công cụ.",
+}
+
+def format_tool(tool: dict) -> dict:
+    return {
+        "type": "function",
+        "function": {
+            "name": tool["name"],
+            "description": tool.get("description", ""),
+            "parameters": tool.get("parameters", {}),
+        },
+    }
+
+def format_call(call: dict) -> dict:
+    return {
+        "type": "function",
+        "function": {
+            "name": call["name"],
+            "arguments": call.get("arguments", {}),
+        },
+    }
+
+def native_row(record: dict, language: str = "vi") -> dict:
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPTS[language]},
+        {"role": "user", "content": record["query"]},
+    ]
+    calls = [format_call(call) for call in record.get("function_calls", [])]
+    if calls:
+        messages.append({"role": "assistant", "content": "", "tool_calls": calls})
+    else:
+        fallback = "Hiện tại tôi chưa thể thực hiện yêu cầu này." if language == "vi" else "I cannot complete that request right now."
+        messages.append({"role": "assistant", "content": record.get("assistant_content") or fallback})
+    return {
+        "id": record["id"],
+        "messages": messages,
+        "tools": [format_tool(tool) for tool in record.get("tools", [])],
+    }
+
+def prompt_text(record: dict, language: str = "vi") -> str:
+    row = native_row(record, language)
+    return tokenizer.apply_chat_template(
+        row["messages"][:-1],
+        tools=row["tools"],
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=False,
+    )
+```
+
+### Cell 13.3: Batched, Resumable Generation
+
+Cell nay sinh cau tra loi theo batch va ghi append truc tiep xuong file. Neu bi ngat ket noi giua chung, chay lai se tu dong tiep tuc tu mau chua hoan thanh:
+
+```python
+import json
+import os
+import time
+from pathlib import Path
+
+REVISION = "2026-09-02-full-dedup-seed42"
+TEST_PATH = LOCAL_DATA_ROOT / "benchmark_core" / REVISION / "vi/test.jsonl"
+PREDICTIONS_PATH = LOCAL_RUN_DIR / f"eval_predictions_{EXPERIMENT}_vi_test.jsonl"
+
+BATCH_SIZE = 8       # 8 tren T4 hoac 16 tren A100
+MAX_NEW_TOKENS = 128
+EVAL_LIMIT = None    # Dat 20 de chay thu nghiem truoc, dat None de danh gia toan bo 7.712 mau test
+
+def read_completed_ids(path: Path) -> set[str]:
+    if not path.exists():
+        return set()
+    with path.open(encoding="utf-8") as source:
+        return {json.loads(line)["id"] for line in source if line.strip()}
+
+with TEST_PATH.open(encoding="utf-8") as source:
+    test_records = [json.loads(line) for line in source if line.strip()]
+
+if EVAL_LIMIT is not None:
+    test_records = test_records[:EVAL_LIMIT]
+
+completed_ids = read_completed_ids(PREDICTIONS_PATH)
+pending_records = [r for r in test_records if r["id"] not in completed_ids]
+print(f"Total: {len(test_records)} | Completed: {len(completed_ids)} | Pending: {len(pending_records)}")
+
+with PREDICTIONS_PATH.open("a", encoding="utf-8") as output_file:
+    for start in range(0, len(pending_records), BATCH_SIZE):
+        batch = pending_records[start : start + BATCH_SIZE]
+        prompts = [prompt_text(record, "vi") for record in batch]
+        encoded = tokenizer(
+            prompts,
+            padding=True,
+            truncation=True,
+            max_length=4096,
+            add_special_tokens=False,
+            return_tensors="pt",
+        ).to(model.device)
+
+        t0 = time.perf_counter()
+        with torch.inference_mode():
+            generated = model.generate(
+                **encoded,
+                max_new_tokens=MAX_NEW_TOKENS,
+                do_sample=False,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+        batch_latency_ms = (time.perf_counter() - t0) * 1000.0
+        generated_tokens = generated[:, encoded["input_ids"].shape[1] :]
+        texts = tokenizer.batch_decode(generated_tokens, skip_special_tokens=False)
+
+        for record, raw_output in zip(batch, texts, strict=True):
+            output_file.write(json.dumps({
+                "id": record["id"],
+                "query": record["query"],
+                "gold": record.get("function_calls", []),
+                "raw_output": raw_output,
+                "batch_latency_ms": round(batch_latency_ms, 2),
+                "batch_size": len(batch),
+            }, ensure_ascii=False) + "\n")
+        output_file.flush()
+        os.fsync(output_file.fileno())
+
+        done = len(completed_ids) + start + len(batch)
+        if done % 100 == 0 or done == len(test_records):
+            print(f"Processed: {done}/{len(test_records)} ({done / len(test_records) * 100:.1f}%) | Latency: {batch_latency_ms:.0f}ms")
+
+print("Raw predictions saved to:", PREDICTIONS_PATH)
+```
+
+### Cell 13.4: Parse Tag va Tinh Metrics
+
+```python
+import re
+
+TOOL_RE = re.compile(
+    r"<tool_call>\s*<function\s*=\s*([^>\s]+)\s*>(.*?)</function>\s*</tool_call>",
+    re.DOTALL | re.IGNORECASE,
+)
+PARAM_RE = re.compile(
+    r"<parameter\s*=\s*([^>\s]+)\s*>(.*?)</parameter>",
+    re.DOTALL | re.IGNORECASE,
+)
+
+def parse_native_output(text: str) -> tuple[list[dict], list[str]]:
+    calls = []
+    errors = []
+    open_tags = len(re.findall(r"<tool_call\b", text, re.IGNORECASE))
+    close_tags = len(re.findall(r"</tool_call\s*>", text, re.IGNORECASE))
+    if open_tags != close_tags:
+        errors.append("unbalanced_tool_call_tags")
+    for name, body in TOOL_RE.findall(text):
+        arguments = {}
+        for parameter, value in PARAM_RE.findall(body):
+            value = value.strip()
+            try:
+                arguments[parameter.strip()] = json.loads(value)
+            except (json.JSONDecodeError, TypeError):
+                arguments[parameter.strip()] = value
+        calls.append({"name": name.strip(), "arguments": arguments})
+    if not calls and open_tags > 0:
+        errors.append("malformed_tool_call")
+    return calls, errors
+
+with PREDICTIONS_PATH.open(encoding="utf-8") as f:
+    rows = [json.loads(line) for line in f if line.strip()]
+
+positive = negative = tool_correct = negative_correct = exact_match = syntax_errors = 0
+total_latency_ms = 0.0
+
+for row in rows:
+    predicted, errors = parse_native_output(row["raw_output"])
+    gold = row["gold"]
+    is_positive = bool(gold)
+    tool_match = [c["name"] for c in predicted] == [c["name"] for c in gold]
+    exact = (predicted == gold)
+
+    if errors:
+        syntax_errors += 1
+    if is_positive:
+        positive += 1
+        if tool_match:
+            tool_correct += 1
+        if exact and not errors:
+            exact_match += 1
+    else:
+        negative += 1
+        if not predicted and not errors:
+            negative_correct += 1
+            exact_match += 1
+
+    total_latency_ms += row.get("batch_latency_ms", 0.0) / max(row.get("batch_size", 1), 1)
+
+total = len(rows)
+metrics = {
+    "total_evaluated": total,
+    "tool_selection_accuracy": round(tool_correct / positive, 4) if positive else 0.0,
+    "negative_correctness": round(negative_correct / negative, 4) if negative else 0.0,
+    "exact_match_accuracy": round(exact_match / total, 4) if total else 0.0,
+    "syntax_error_rate": round(syntax_errors / total, 4) if total else 0.0,
+    "avg_latency_ms": round(total_latency_ms / total, 2) if total else 0.0,
+}
+
+print("\n=== EVALUATION RESULTS ===")
+for k, v in metrics.items():
+    print(f"  {k}: {v}")
+
+metrics_path = LOCAL_RUN_DIR / f"eval_metrics_{EXPERIMENT}_vi_test.json"
+metrics_path.write_text(json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8")
+print(f"\nSaved metrics to {metrics_path}")
+```
+
+### Cell 13.5: Dong Bo Ket Qua Danh Gia Len Drive
+
+```python
+import shutil
+
+for fname in [f"eval_predictions_{EXPERIMENT}_vi_test.jsonl", f"eval_metrics_{EXPERIMENT}_vi_test.json"]:
+    src = LOCAL_RUN_DIR / fname
+    if src.exists():
+        shutil.copy(src, DRIVE_RUN_DIR / fname)
+        print(f"Synced {fname} to Drive!")
+```
