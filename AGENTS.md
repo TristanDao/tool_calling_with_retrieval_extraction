@@ -336,7 +336,9 @@ tool_calling_with_retrieval_extraction/
 | `docs/benchmark.md` | Cấu trúc benchmark tiếng Việt |
 | `docs/translation_guidelines.md` | Quy tắc dịch |
 | `docs/references.md` | Papers & resources |
-| `docs/kaggle_data_only_guide.md` | Chạy Kaggle chỉ với Dataset, không cần source repo |
+| `docs/kaggle_e0_evaluation_guide.md` | E0 và evaluation batched, resumable trên Kaggle |
+| `docs/kaggle_e1_e4_training_guide.md` | E1-E4 DDP training theo checkpoint-resume stages trên Kaggle |
+| `docs/colab_e1_e4_training_guide.md` | E1-E4 single-GPU Colab, data source và checkpoint qua Drive |
 | `.env.example` | Template biến môi trường |
 | `pyproject.toml` | Project metadata + tool config |
 
@@ -474,4 +476,7 @@ tool_calling_with_retrieval_extraction/
 | 2026-08-20 | **Cập nhật backbone model Method 1**: Chuyển mô hình SLM từ Qwen2.5 (0.5B/1.5B) sang **Qwen3.5 (2B/4B)** theo định hướng thực nghiệm mới. Đồng bộ toàn bộ tài liệu và kế hoạch thực nghiệm. |
 | 2026-08-31 | **Cập nhật trainer Method 1**: Chuyển QLoRA/SFT từ LLaMA-Factory sang **Unsloth**. Training path dùng native Qwen3.5 chat template + response-only loss, không dùng ShareGPT. |
 | 2026-09-02 | **Frozen benchmark + experiment preparation**: Rebuild paired EN/VI revision có negative và group-level dedup, archive pilot, materialize E0/E1/E2/E3/E4 train-only artifacts với native tool calls và manifest reproducibility. |
-| 2026-09-03 | **Kaggle Multi-GPU DDP Support**: Cập nhật `docs/kaggle_data_only_guide.md` hỗ trợ chạy phân tán trên 2 GPU T4 qua `torchrun` và Unsloth DDP; tự động điều chỉnh `gradient_accumulation_steps = 8` để giữ đúng `effective_batch_size = 16`. |
+| 2026-09-03 | **Kaggle Multi-GPU DDP Support**: Bổ sung hướng dẫn chạy phân tán trên 2 GPU T4 qua `torchrun` và Unsloth DDP, với `gradient_accumulation_steps = 8` khi batch mỗi GPU là 1 để giữ đúng `effective_batch_size = 16`. |
+| 2026-09-03 | **Kaggle timeout mitigation**: Tách guide E0 evaluation và E1-E4 training. E0 dùng batch generation/resume; E1-E4 dùng batch 2 x accumulation 4 x 2 GPU, tắt tqdm/full validation, checkpoint 250 steps và resume theo stage dưới giới hạn 12 giờ. |
+| 2026-09-04 | **Training RAM mitigation**: E1-E4 và trainer Unsloth đọc từng dòng JSONL, tokenize bằng generator và tạo dataset Arrow chỉ với các cột token; tắt dataloader workers/pin memory để tránh nhân host RAM trong DDP. |
+| 2026-09-04 | **Colab training guide**: Thêm hướng dẫn single-GPU Colab, lựa chọn data từ Drive/Hugging Face/Kaggle và resume checkpoint qua Google Drive. |

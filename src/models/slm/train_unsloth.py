@@ -34,19 +34,6 @@ class TrainConfig:
     resume_from_checkpoint: str | None = None
 
 
-def _read_rows(path: Path) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    with path.open(encoding="utf-8") as source:
-        for line_number, line in enumerate(source, start=1):
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            if not isinstance(row, dict):
-                raise ValueError(f"Expected object in {path}:{line_number}")
-            rows.append(row)
-    return rows
-
-
 def _load_training_dependencies() -> tuple[Any, Any, Any, Any, Any]:
     try:
         import torch
@@ -87,6 +74,8 @@ def _training_arguments(
         "seed": config.seed,
         "bf16": bool(torch.cuda.is_available() and torch.cuda.is_bf16_supported()),
         "fp16": bool(torch.cuda.is_available() and not torch.cuda.is_bf16_supported()),
+        "dataloader_num_workers": 0,
+        "dataloader_pin_memory": False,
     }
     if has_eval:
         kwargs["eval_strategy"] = "epoch"
@@ -97,6 +86,32 @@ def _training_arguments(
             kwargs.pop("eval_strategy", None)
             kwargs["evaluation_strategy"] = "epoch"
         return training_arguments(**kwargs)
+
+
+def _tokenized_dataset(
+    dataset_type: Any,
+    tokenizer: Any,
+    path: Path,
+    max_seq_length: int,
+    limit: int | None = None,
+) -> tuple[Any, int]:
+    row_count = 0
+
+    def tokenized_rows() -> Any:
+        nonlocal row_count
+        with path.open(encoding="utf-8") as source:
+            for line in source:
+                if not line.strip():
+                    continue
+                if limit is not None and row_count >= limit:
+                    break
+                row = json.loads(line)
+                if not isinstance(row, dict):
+                    raise ValueError(f"Expected object in {path}")
+                row_count += 1
+                yield tokenize_assistant_only(tokenizer, row, max_seq_length)
+
+    return dataset_type.from_generator(tokenized_rows), row_count
 
 
 def train(config: TrainConfig) -> dict[str, Any]:
@@ -126,16 +141,15 @@ def train(config: TrainConfig) -> dict[str, Any]:
     if hasattr(model, "config"):
         model.config.use_cache = False
 
-    train_rows = _read_rows(config.train_file)
-    eval_rows = _read_rows(config.eval_file) if config.eval_file else []
-    train_features = [
-        tokenize_assistant_only(tokenizer, row, config.max_seq_length) for row in train_rows
-    ]
-    eval_features = [
-        tokenize_assistant_only(tokenizer, row, config.max_seq_length) for row in eval_rows
-    ]
-    train_dataset = dataset_type.from_list(train_features)
-    eval_dataset = dataset_type.from_list(eval_features) if eval_features else None
+    train_dataset, train_row_count = _tokenized_dataset(
+        dataset_type, tokenizer, config.train_file, config.max_seq_length
+    )
+    if config.eval_file:
+        eval_dataset, eval_row_count = _tokenized_dataset(
+            dataset_type, tokenizer, config.eval_file, config.max_seq_length
+        )
+    else:
+        eval_dataset, eval_row_count = None, 0
     arguments = _training_arguments(arguments_type, config, eval_dataset is not None)
     trainer = trainer_type(
         model=model,
@@ -149,8 +163,8 @@ def train(config: TrainConfig) -> dict[str, Any]:
     tokenizer.save_pretrained(str(config.output_dir))
     run_metadata = {
         "config": {key: str(value) if isinstance(value, Path) else value for key, value in asdict(config).items()},
-        "train_rows": len(train_rows),
-        "eval_rows": len(eval_rows),
+        "train_rows": train_row_count,
+        "eval_rows": eval_row_count,
         "assistant_only_loss": True,
         "chat_template": "loaded from model checkpoint at runtime",
     }

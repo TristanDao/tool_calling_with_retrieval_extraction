@@ -135,7 +135,9 @@ python scripts/data/upload_experiments_to_kaggle.py \
 - `docs/translation_guidelines.md` — quy tắc dịch.
 - `docs/references.md` — papers & resources.
 - `docs/kaggle_notebook_guide.md` — chạy E0-E4 trên Kaggle.
-- `docs/kaggle_data_only_guide.md` — chạy Kaggle chỉ với Dataset, không cần source code repo.
+- `docs/kaggle_e0_evaluation_guide.md` — E0 và evaluation batched, resumable trên Kaggle.
+- `docs/kaggle_e1_e4_training_guide.md` — E1-E4 DDP training theo checkpoint-resume stages trên Kaggle.
+- `docs/colab_e1_e4_training_guide.md` — E1-E4 single-GPU Colab, data source và checkpoint qua Drive.
 
 ## 7. Trạng thái
 
