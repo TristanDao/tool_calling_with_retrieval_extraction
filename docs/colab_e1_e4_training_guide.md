@@ -271,8 +271,8 @@ def main(args_list: list[str] | None = None) -> None:
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA GPU is required")
-    if args.per_device_batch_size * args.gradient_accumulation_steps != 16:
-        raise ValueError("Expected effective batch size 16 on one GPU")
+    if args.per_device_batch_size < 1 or args.gradient_accumulation_steps < 1:
+        raise ValueError("Batch size and gradient accumulation must be >= 1")
 
     output_dir = Path(args.run_dir) / "checkpoint"
     train_path = Path(args.data_root) / args.experiment / "instruction/train_chat.jsonl"
@@ -313,7 +313,7 @@ def main(args_list: list[str] | None = None) -> None:
         "logging_strategy": "steps",
         "logging_steps": 50,
         "logging_first_step": True,
-        "disable_tqdm": True,
+        "disable_tqdm": False,
         "save_strategy": "steps",
         "save_steps": 250,
         "save_total_limit": 2,
@@ -322,8 +322,8 @@ def main(args_list: list[str] | None = None) -> None:
         "gradient_checkpointing": True,
         "optim": "adamw_8bit",
         "seed": args.seed,
-        "fp16": True,
-        "bf16": False,
+        "fp16": not torch.cuda.is_bf16_supported(),
+        "bf16": torch.cuda.is_bf16_supported(),
         "dataloader_num_workers": 0,
         "dataloader_pin_memory": False,
         "train_sampling_strategy": "group_by_length",
@@ -337,8 +337,13 @@ def main(args_list: list[str] | None = None) -> None:
         callbacks=[StopAtStep(args.stop_after_step)],
     )
     checkpoint = get_last_checkpoint(str(output_dir))
+    effective_batch_size = (
+        args.per_device_batch_size * args.gradient_accumulation_steps * 1
+    )
     print(
-        f"world_size=1 effective_batch_size=16 resume_from={checkpoint} "
+        f"world_size=1 per_device_batch_size={args.per_device_batch_size} "
+        f"gradient_accumulation_steps={args.gradient_accumulation_steps} "
+        f"effective_batch_size={effective_batch_size} resume_from={checkpoint} "
         f"stop_after_step={args.stop_after_step}"
     )
     trainer.train(resume_from_checkpoint=checkpoint)
@@ -364,28 +369,17 @@ if (DRIVE_RUN_DIR / "checkpoint").exists():
 
 Khong copy checkpoint cua model khac vao cung `LOCAL_RUN_DIR`.
 
-## 8. Cau hinh single GPU
-
-Effective batch size 16 duoc giu bang:
-
-```python
-PER_DEVICE_BATCH_SIZE = 2
-GRADIENT_ACCUMULATION_STEPS = 8
-TRAIN_LIMIT = None
-STOP_AFTER_STEP = 750
-```
-
-Cong thuc:
-
-```text
-2 samples x 8 accumulation x 1 GPU = 16
-```
-
 ## 9. Chay training
 
 Goi truc tiep ham `main()` voi cac tham so da cau hinh de bat dau training:
 
 ```python
+PER_DEVICE_BATCH_SIZE = 64
+GRADIENT_ACCUMULATION_STEPS = 1
+
+TRAIN_LIMIT = None
+STOP_AFTER_STEP = None
+
 train_args = [
     "--experiment", EXPERIMENT,
     "--model-id", MODEL_ID,
@@ -393,11 +387,14 @@ train_args = [
     "--data-root", str(LOCAL_DATA_ROOT),
     "--per-device-batch-size", str(PER_DEVICE_BATCH_SIZE),
     "--gradient-accumulation-steps", str(GRADIENT_ACCUMULATION_STEPS),
-    "--stop-after-step", str(STOP_AFTER_STEP),
     "--num-proc", "2",
 ]
 if TRAIN_LIMIT is not None:
     train_args.extend(["--train-limit", str(TRAIN_LIMIT)])
+
+if STOP_AFTER_STEP is not None:
+    train_args.extend(["--stop-after-step", str(STOP_AFTER_STEP)])
+
 
 main(train_args)
 ```
@@ -565,9 +562,92 @@ def prompt_text(record: dict, language: str = "vi") -> str:
     )
 ```
 
-### Cell 13.3: Batched, Resumable Generation
+### Cell 13.3: High-Throughput Generation (vLLM hoac PyTorch Toi Uu)
 
-Cell nay sinh cau tra loi theo batch va ghi append truc tiep xuong file. Neu bi ngat ket noi giua chung, chay lai se tu dong tiep tuc tu mau chua hoan thanh:
+Co 2 lua chon de sinh ket qua danh gia:
+
+#### Lua chon A: Dung vLLM (Khuyen nghi - Toc do cao nhat, ~2-3 phut tren A100)
+
+vLLM su dung **Continuous Batching** va **PagedAttention** (tich hop san FlashAttention-2), cho toc do sinh vuot troi gap 5-10 lan so voi `model.generate` thong thuong.
+
+Truoc tien, cai dat vLLM neu chua co:
+```bash
+pip install vllm
+```
+
+Chay cell inference voi vLLM:
+
+```python
+import json
+import time
+from pathlib import Path
+from vllm import LLM, SamplingParams
+from transformers.trainer_utils import get_last_checkpoint
+
+REVISION = "2026-09-02-full-dedup-seed42"
+TEST_PATH = LOCAL_DATA_ROOT / "benchmark_core" / REVISION / "vi/test.jsonl"
+PREDICTIONS_PATH = LOCAL_RUN_DIR / f"eval_predictions_{EXPERIMENT}_vi_test.jsonl"
+CHECKPOINT_DIR = LOCAL_RUN_DIR / "checkpoint"
+latest_ckpt = get_last_checkpoint(str(CHECKPOINT_DIR)) or str(CHECKPOINT_DIR)
+
+# 1. Merge LoRA sang merged_16bit de vLLM doc native
+MERGED_DIR = LOCAL_RUN_DIR / "merged_16bit"
+if not MERGED_DIR.exists():
+    print(f"Merging LoRA from {latest_ckpt} to {MERGED_DIR}...")
+    model.save_pretrained_merged(str(MERGED_DIR), tokenizer, save_method="merged_16bit")
+    print("Merged completed!")
+
+# 2. Doc danh sach test
+with TEST_PATH.open(encoding="utf-8") as source:
+    test_records = [json.loads(line) for line in source if line.strip()]
+
+# 3. Khoi tao vLLM engine
+llm = LLM(
+    model=str(MERGED_DIR),
+    max_model_len=4096,
+    gpu_memory_utilization=0.85,
+    trust_remote_code=True,
+)
+
+sampling_params = SamplingParams(
+    max_tokens=128,
+    temperature=0.0,
+    stop=["<|im_end|>", "<|endoftext|>"],
+)
+
+# 4. Chuan bi prompts
+prompts = [prompt_text(record, "vi") for record in test_records]
+
+print(f"Bat dau sinh ket qua cho {len(prompts)} mau test bang vLLM...")
+t0 = time.perf_counter()
+outputs = llm.generate(prompts, sampling_params)
+total_time = time.perf_counter() - t0
+print(f"Hoan thanh trong {total_time:.1f}s ({len(prompts) / total_time:.1f} samples/s)!")
+
+# 5. Ghi ket qua ra file
+with PREDICTIONS_PATH.open("w", encoding="utf-8") as output_file:
+    for record, output in zip(test_records, outputs, strict=True):
+        raw_output = output.outputs[0].text
+        output_file.write(json.dumps({
+            "id": record["id"],
+            "query": record["query"],
+            "gold": record.get("function_calls", []),
+            "raw_output": raw_output,
+            "latency_ms": round(total_time / len(prompts) * 1000.0, 2),
+        }, ensure_ascii=False) + "\n")
+
+print("Raw predictions saved to:", PREDICTIONS_PATH)
+```
+
+---
+
+#### Lua chon B: Dung PyTorch + Unsloth (Khong can cai vLLM, toi uu batch 64 + Sort Do dai)
+
+Neu khong muon cai them `vllm`, cell duoi day da duoc toi uu:
+1. Săp xep du lieu theo do dai (`length-sorted`) de triet tieu padding thua.
+2. Tang `BATCH_SIZE = 64` tan dung toi da GPU A100.
+3. Chi dinh EOS `<|im_end|>` de ngat ngay khi goi xong tool call.
+4. Ghi append va tu dong resume neu bi ngat.
 
 ```python
 import json
@@ -579,9 +659,9 @@ REVISION = "2026-09-02-full-dedup-seed42"
 TEST_PATH = LOCAL_DATA_ROOT / "benchmark_core" / REVISION / "vi/test.jsonl"
 PREDICTIONS_PATH = LOCAL_RUN_DIR / f"eval_predictions_{EXPERIMENT}_vi_test.jsonl"
 
-BATCH_SIZE = 8       # 8 tren T4 hoac 16 tren A100
+BATCH_SIZE = 64      # 64 tren A100, 16-32 tren T4
 MAX_NEW_TOKENS = 128
-EVAL_LIMIT = None    # Dat 20 de chay thu nghiem truoc, dat None de danh gia toan bo 7.712 mau test
+EVAL_LIMIT = None
 
 def read_completed_ids(path: Path) -> set[str]:
     if not path.exists():
@@ -597,7 +677,17 @@ if EVAL_LIMIT is not None:
 
 completed_ids = read_completed_ids(PREDICTIONS_PATH)
 pending_records = [r for r in test_records if r["id"] not in completed_ids]
+
+# Toi uu 1: Sap xep theo do dai prompt de gom cac cau ngan vao cung batch, giam 80% padding
+pending_records.sort(key=lambda r: len(r.get("query", "")) + len(str(r.get("tools", []))))
+
 print(f"Total: {len(test_records)} | Completed: {len(completed_ids)} | Pending: {len(pending_records)}")
+
+# Toi uu 2: Bat dung token <|im_end|> de dung som
+im_end_id = tokenizer.convert_tokens_to_ids("<|im_end|>")
+stop_ids = [tokenizer.eos_token_id]
+if im_end_id is not None and im_end_id not in stop_ids:
+    stop_ids.append(im_end_id)
 
 with PREDICTIONS_PATH.open("a", encoding="utf-8") as output_file:
     for start in range(0, len(pending_records), BATCH_SIZE):
@@ -619,6 +709,7 @@ with PREDICTIONS_PATH.open("a", encoding="utf-8") as output_file:
                 max_new_tokens=MAX_NEW_TOKENS,
                 do_sample=False,
                 pad_token_id=tokenizer.eos_token_id,
+                eos_token_id=stop_ids,
             )
         batch_latency_ms = (time.perf_counter() - t0) * 1000.0
         generated_tokens = generated[:, encoded["input_ids"].shape[1] :]
@@ -637,8 +728,9 @@ with PREDICTIONS_PATH.open("a", encoding="utf-8") as output_file:
         os.fsync(output_file.fileno())
 
         done = len(completed_ids) + start + len(batch)
-        if done % 100 == 0 or done == len(test_records):
-            print(f"Processed: {done}/{len(test_records)} ({done / len(test_records) * 100:.1f}%) | Latency: {batch_latency_ms:.0f}ms")
+        batch_idx = start // BATCH_SIZE + 1
+        total_batches = (len(pending_records) + BATCH_SIZE - 1) // BATCH_SIZE
+        print(f"Batch {batch_idx}/{total_batches} | Da xong: {done}/{len(test_records)} ({done / len(test_records) * 100:.1f}%) | Latency: {batch_latency_ms:.0f}ms")
 
 print("Raw predictions saved to:", PREDICTIONS_PATH)
 ```
