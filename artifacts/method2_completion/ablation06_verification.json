@@ -1,0 +1,88 @@
+{
+  "bundle_files": 114,
+  "artifact_files": 29,
+  "same_artifacts_as_04": true,
+  "marker": {
+    "stage": "normalizer_ablation",
+    "completed": true,
+    "bundle_manifest_sha256": "d562aa4b38bbba20eb28adfc1702df42c193add4795c7415528a62bde945c908",
+    "device": "Tesla T4",
+    "torch": "2.10.0+cu128",
+    "warmup": "3 per evaluation mode; excluded from measurements",
+    "checkpoint_hashes": {
+      "artifacts/method2/biencoder/strict_round1/final/config_sentence_transformers.json": "9696cf0d420f420dd1da034bb7a6d750ccacb6a14a39ba11bebb5135fbbffdd1",
+      "artifacts/method2/biencoder/strict_round1/final/modules.json": "3d02572a0455b832de67fb8e63a54981bc7e8b46e337c95e917bd8122a533bfd",
+      "artifacts/method2/biencoder/strict_round1/final/adapter_config.json": "0a68ec96717cbcd2bdfc1a3e929ab6a7dcfc01f343b0c0487a9dd7edd80eaba8",
+      "artifacts/method2/biencoder/strict_round1/final/sentence_bert_config.json": "3084164002c0bca01b0259c5327123803fce32e660a57feb93184ffead186fc8",
+      "artifacts/method2/biencoder/strict_round1/final/README.md": "8d54d696f1277e3cce3405d478f0bf361e1ec397c79650655da971331b48c6f2",
+      "artifacts/method2/biencoder/strict_round1/final/tokenizer_config.json": "71ab1498315ee1915b6de5fff8eb889835df8e485ac40b20c1de29838301ed31",
+      "artifacts/method2/biencoder/strict_round1/final/tokenizer.json": "826dde65dfa2758657bbb0543df764e99dd9bb616f972dac0240af0a226b0746",
+      "artifacts/method2/biencoder/strict_round1/final/adapter_model.safetensors": "4dad6d63c7a1fa8ce1663e16d3971a443517824067336c32188939d1015e264f",
+      "artifacts/method2/biencoder/strict_round1/final/2_Normalize/config.json": "cdb09dfca347a56aa2d691744e38d5ad3c7cbc2834e7181272b9a15328b82524",
+      "artifacts/method2/biencoder/strict_round1/final/1_Pooling/config.json": "3025df12a1b175b53c881060f91cf18728671aeea841112a12e020c7540307b9",
+      "artifacts/method2/biencoder/strict_round2/final/config_sentence_transformers.json": "9696cf0d420f420dd1da034bb7a6d750ccacb6a14a39ba11bebb5135fbbffdd1",
+      "artifacts/method2/biencoder/strict_round2/final/modules.json": "3d02572a0455b832de67fb8e63a54981bc7e8b46e337c95e917bd8122a533bfd",
+      "artifacts/method2/biencoder/strict_round2/final/adapter_config.json": "67f174a24847c9b7565d6c1cb6ac9b654eb0b3d70f3ab92d781dace07ab92fd8",
+      "artifacts/method2/biencoder/strict_round2/final/sentence_bert_config.json": "3084164002c0bca01b0259c5327123803fce32e660a57feb93184ffead186fc8",
+      "artifacts/method2/biencoder/strict_round2/final/README.md": "c030877d7469e22d237b666d0dcf1b3c90b3d5de057b0e546749191feb7b19c6",
+      "artifacts/method2/biencoder/strict_round2/final/tokenizer_config.json": "71ab1498315ee1915b6de5fff8eb889835df8e485ac40b20c1de29838301ed31",
+      "artifacts/method2/biencoder/strict_round2/final/tokenizer.json": "826dde65dfa2758657bbb0543df764e99dd9bb616f972dac0240af0a226b0746",
+      "artifacts/method2/biencoder/strict_round2/final/adapter_model.safetensors": "5de7f2e6d0944099db3c6d290bf6c4756d7da44a2fdd9ff687419dde4ac7e247",
+      "artifacts/method2/biencoder/strict_round2/final/2_Normalize/config.json": "cdb09dfca347a56aa2d691744e38d5ad3c7cbc2834e7181272b9a15328b82524",
+      "artifacts/method2/biencoder/strict_round2/final/1_Pooling/config.json": "3025df12a1b175b53c881060f91cf18728671aeea841112a12e020c7540307b9",
+      "artifacts/method2/crossencoder/run01/final/crossencoder_heads.pt": "3a69965d70455b26f2f7448aa6b5395e7668faa6ae21f4abf6359711e47803a2",
+      "artifacts/method2/crossencoder/run01/final/tokenizer_config.json": "5d84c938d902dbd684af806ccc920e4c99812d897b0f271eebf856361a4337f6",
+      "artifacts/method2/crossencoder/run01/final/config.json": "0af0984d803b4e1326c4aef3040ade9afb30cbc3be06ef6c5420d4edfe06768e",
+      "artifacts/method2/crossencoder/run01/final/tokenizer.json": "9e41e14b20cd582c03737a22b88457449591e410b1141e81e48504ab10ede296",
+      "artifacts/method2/crossencoder/run01/final/model.safetensors": "f90c604b061d01d35eb4d848f09f3482dd891240accf283ad2659e0233b19549",
+      "data/method2/index/index_meta.json": "7e0204c6a7ffc62545bd64244b1bb4ca8b4dd796318c0150c66acbe5d6f3f5b4",
+      "data/method2/index/tool_embeddings.npy": "49b90f70d0ceb7b97b4b155a9fe86aa7ea4db84429ec93670ee7a02d09eb78b8",
+      "data/method2/index/tool_ids.json": "7c2975c24344f4b9653f54acb17be8ba06f93d538c2afdc323f5093a9dac9196",
+      "artifacts/method2/biencoder/strict_round2/thresholds.json": "64df229509df03ccddd2cecf7ec9cc03e3b46101cb236373cef1d992dfad138e"
+    },
+    "results": {
+      "resolved_pipeline": {
+        "biencoder": "artifacts/method2/biencoder/strict_round2/final",
+        "crossencoder": "artifacts/method2/crossencoder/run01/final",
+        "thresholds_sha256": "64df229509df03ccddd2cecf7ec9cc03e3b46101cb236373cef1d992dfad138e",
+        "normalizer_enabled": false
+      }
+    }
+  },
+  "bundle_sha256": "d562aa4b38bbba20eb28adfc1702df42c193add4795c7415528a62bde945c908",
+  "notebook": {
+    "sha256": "1c61124a9923e9286baff3c724c579b65eda4ff302db762469a6d6e646dd0c06",
+    "error_count": 0,
+    "executed_cells": 4
+  },
+  "paired": {
+    "benchmark": {
+      "count": 10555,
+      "changed_calls": 4510,
+      "changed_tool_sequences": 0,
+      "changed_rankings": 0
+    },
+    "custom_seen": {
+      "count": 800,
+      "changed_calls": 271,
+      "changed_tool_sequences": 0,
+      "changed_rankings": 0
+    },
+    "custom_unseen": {
+      "count": 800,
+      "changed_calls": 216,
+      "changed_tool_sequences": 0,
+      "changed_rankings": 0
+    }
+  },
+  "test_id_coverage": {
+    "benchmark": 10555,
+    "custom_seen": 800,
+    "custom_unseen": 800
+  },
+  "normalizer_gain_pp": {
+    "benchmark": 19.22311700615822,
+    "custom_seen": 34.75,
+    "custom_unseen": 15.75
+  }
+}

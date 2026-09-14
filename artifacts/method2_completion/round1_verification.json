@@ -1,0 +1,10 @@
+{
+  "source": "output_train\\output_method2-completion-02-round1",
+  "stage": "round1",
+  "completed": true,
+  "bundle_files_verified": 114,
+  "checkpoint_files_verified": 10,
+  "archive_files": 130,
+  "archive_bytes": 59202252,
+  "archive_sha256": "6998347ce88775f05a95f20f40442246e51816a6724b50fb7d49b2af723e4f91"
+}

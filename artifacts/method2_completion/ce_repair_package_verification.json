@@ -1,0 +1,7 @@
+{
+  "zip_bytes": 10263360,
+  "zip_sha256": "a365ad669da93debfc13ea002ac7e0b552f74e9f299dbec5dfef047283fb1db4",
+  "files_verified": 7,
+  "parent_completion_sha256": "d562aa4b38bbba20eb28adfc1702df42c193add4795c7415528a62bde945c908",
+  "trained_checkpoint_created_locally": false
+}

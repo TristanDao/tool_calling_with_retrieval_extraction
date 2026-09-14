@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "Version pin cho Method 2. `preflight.py` kiểm tra `pinned` phải khớp tuyệt đối.",
+    "Ba package trong `pinned` quyết định API training VÀ tên metric của",
+    "InformationRetrievalEvaluator — đổi bản là đổi khoá metric, hỏng cả",
+    "load_best_model_at_end lẫn khả năng so sánh giữa các run.",
+    "`recorded` chỉ ghi nhận, không ép: Kaggle cài sẵn torch bản CUDA riêng, ép",
+    "cài lại vừa chậm vừa dễ lệch CUDA runtime của image.",
+    "Baseline đo trên .venv local ngày 2026-08-23."
+  ],
+  "pinned": {
+    "transformers": "5.15.1",
+    "sentence-transformers": "6.0.0",
+    "peft": "0.20.0"
+  },
+  "recorded": {
+    "torch": "2.13.0+cpu",
+    "datasets": "5.0.1",
+    "numpy": "2.4.6"
+  },
+  "install_command": "pip install -q 'transformers==5.15.1' 'sentence-transformers==6.0.0' 'peft==0.20.0'",
+  "baseline_measured_at": "2026-08-23",
+  "baseline_environment": "local .venv, CPU-only torch"
+}

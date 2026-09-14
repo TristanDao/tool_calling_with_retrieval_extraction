@@ -1,0 +1,9 @@
+# Tool pool canonical cho Method 2 (§1.1 method2_plan)
+output_path: data/method2/tool_pool.json
+stats_path: data/method2/tool_pool_stats.json
+
+# Ablation §6.3: false = name+desc, true = name+desc+param_names
+include_param_names_in_doc: true
+
+# null = dùng toàn bộ dữ liệu; đặt số nhỏ để smoke test
+limit_per_source: null

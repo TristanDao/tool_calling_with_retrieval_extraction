@@ -1,0 +1,205 @@
+{
+  "source": "output_train\\output_method2-ce-repair-01b",
+  "bundle_sha256": "d562aa4b38bbba20eb28adfc1702df42c193add4795c7415528a62bde945c908",
+  "manifest_files_verified": {
+    "completion_manifest.json": 114,
+    "ce_repair_manifest.json": 7
+  },
+  "selected_checkpoint_files_verified": 5,
+  "selected_equals_candidate": true,
+  "notebook_errors": [],
+  "notebook04_selected_inputs": {
+    "round2": "output_train\\output_method2-completion-03-round2\\results\\method2\\completion\\round2_completed.json",
+    "validation": "output_train\\output_method2-ce-repair-01b\\results\\method2\\completion\\validation_completed.json"
+  },
+  "selection": {
+    "selection_rule": "validation argument_em, then enum accuracy; baseline on ties",
+    "winner": "candidate",
+    "baseline_score": [
+      0.45652173913043476,
+      0.7571
+    ],
+    "candidate_score": [
+      0.6195652173913043,
+      0.7449
+    ],
+    "baseline_gate_passed": false,
+    "candidate_gate_passed": false,
+    "selected_gate_passed": false,
+    "selected_source": "artifacts/method2/crossencoder/repair_v1/final",
+    "selected_checkpoint": "artifacts/method2/crossencoder/run01/final",
+    "test_used_for_selection": false,
+    "repair_manifest_sha256": "7d8daa05a777a9b82cb2495aa190014ff3549b37012f388e106a86036452f34a",
+    "next_action": "review_validation_results_before_notebook04"
+  },
+  "validation_gate": {
+    "passed": false,
+    "failures": [
+      {
+        "metric": "enum_accuracy",
+        "value": 0.7449,
+        "required": 0.9
+      },
+      {
+        "metric": "argument_em",
+        "value": 0.6195652173913043,
+        "required": 0.7
+      }
+    ],
+    "missing_metrics": [],
+    "complete": true,
+    "measured_on": "custom_val_seen+custom_val_unseen",
+    "components": {
+      "overall": {
+        "has_value_precision": 0.9668,
+        "has_value_recall": 0.9775,
+        "has_value_f1": 0.9721,
+        "has_value_accuracy": 0.9548,
+        "span_em": 0.7521,
+        "span_start_accuracy": 0.8248,
+        "enum_accuracy": 0.7232,
+        "boolean_accuracy": 0.9444,
+        "n_span": 13935,
+        "n_enum": 271,
+        "n_boolean": 324
+      },
+      "by_source": {
+        "custom_vi": {
+          "has_value_precision": 0.9693,
+          "has_value_recall": 0.9743,
+          "has_value_f1": 0.9718,
+          "has_value_accuracy": 0.9543,
+          "span_em": 0.9364,
+          "span_start_accuracy": 0.9706,
+          "enum_accuracy": 0.7449,
+          "boolean_accuracy": 1.0,
+          "n_span": 1022,
+          "n_enum": 247,
+          "n_boolean": 91
+        },
+        "glaive": {
+          "has_value_precision": 0.9972,
+          "has_value_recall": 0.9887,
+          "has_value_f1": 0.9929,
+          "has_value_accuracy": 0.9867,
+          "span_em": 0.8559,
+          "span_start_accuracy": 0.9506,
+          "enum_accuracy": 0.5,
+          "boolean_accuracy": 1.0,
+          "n_span": 1742,
+          "n_enum": 24,
+          "n_boolean": 9
+        },
+        "xlam": {
+          "has_value_precision": 0.9619,
+          "has_value_recall": 0.9761,
+          "has_value_f1": 0.9689,
+          "has_value_accuracy": 0.9507,
+          "span_em": 0.719,
+          "span_start_accuracy": 0.7919,
+          "enum_accuracy": 0.0,
+          "boolean_accuracy": 0.9196,
+          "n_span": 11171,
+          "n_enum": 0,
+          "n_boolean": 224
+        }
+      },
+      "by_tool_split": {
+        "custom_vi/dev_unseen": {
+          "has_value_precision": 0.9376,
+          "has_value_recall": 0.9474,
+          "has_value_f1": 0.9425,
+          "has_value_accuracy": 0.907,
+          "span_em": 0.86,
+          "span_start_accuracy": 0.9368,
+          "enum_accuracy": 0.648,
+          "boolean_accuracy": 1.0,
+          "n_span": 443,
+          "n_enum": 179,
+          "n_boolean": 44
+        },
+        "custom_vi/seen": {
+          "has_value_precision": 1.0,
+          "has_value_recall": 1.0,
+          "has_value_f1": 1.0,
+          "has_value_accuracy": 1.0,
+          "span_em": 0.9948,
+          "span_start_accuracy": 0.9965,
+          "enum_accuracy": 1.0,
+          "boolean_accuracy": 1.0,
+          "n_span": 579,
+          "n_enum": 68,
+          "n_boolean": 47
+        },
+        "glaive/mixed": {
+          "has_value_precision": 0.9972,
+          "has_value_recall": 0.9887,
+          "has_value_f1": 0.9929,
+          "has_value_accuracy": 0.9867,
+          "span_em": 0.8559,
+          "span_start_accuracy": 0.9506,
+          "enum_accuracy": 0.5,
+          "boolean_accuracy": 1.0,
+          "n_span": 1742,
+          "n_enum": 24,
+          "n_boolean": 9
+        },
+        "xlam/mixed": {
+          "has_value_precision": 0.9619,
+          "has_value_recall": 0.9761,
+          "has_value_f1": 0.9689,
+          "has_value_accuracy": 0.9507,
+          "span_em": 0.719,
+          "span_start_accuracy": 0.7919,
+          "enum_accuracy": 0.0,
+          "boolean_accuracy": 0.9196,
+          "n_span": 11171,
+          "n_enum": 0,
+          "n_boolean": 224
+        }
+      },
+      "n_pairs": 18019,
+      "n_dropped_unalignable": 0
+    },
+    "inference_diagnostics": {
+      "argument_em": 0.6195652173913043,
+      "gold_call_count": 460,
+      "correct_call_count": 285,
+      "values_on_gold": {
+        "string": {
+          "correct": 600,
+          "support": 680,
+          "accuracy": 0.8823529411764706
+        },
+        "required": {
+          "correct": 822,
+          "support": 947,
+          "accuracy": 0.8680042238648363
+        },
+        "integer": {
+          "correct": 283,
+          "support": 283,
+          "accuracy": 1.0
+        },
+        "boolean": {
+          "correct": 90,
+          "support": 91,
+          "accuracy": 0.989010989010989
+        },
+        "number": {
+          "correct": 54,
+          "support": 59,
+          "accuracy": 0.9152542372881356
+        },
+        "enum": {
+          "correct": 155,
+          "support": 247,
+          "accuracy": 0.6275303643724697
+        }
+      }
+    },
+    "checkpoint": "artifacts/method2/crossencoder/run01/final",
+    "next_action": "inspect_validation_errors_before_retraining"
+  },
+  "recommendation": "Freeze validation-selected candidate for notebook04 evaluation, retaining quality_gate_passed=false. No further tuning from test results."
+}

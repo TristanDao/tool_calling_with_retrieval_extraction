@@ -1,0 +1,14 @@
+{
+  "train": {
+    "input_pairs": 15318,
+    "tokenized_pairs": 15318,
+    "dropped_out_of_window": 0,
+    "labels_outside_query": 0
+  },
+  "val": {
+    "input_pairs": 1684,
+    "tokenized_pairs": 1684,
+    "dropped_out_of_window": 0,
+    "labels_outside_query": 0
+  }
+}

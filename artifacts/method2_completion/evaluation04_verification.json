@@ -1,0 +1,19 @@
+{
+  "source": "output_train\\output_method2-completion-04-evaluation",
+  "bundle_sha256": "d562aa4b38bbba20eb28adfc1702df42c193add4795c7415528a62bde945c908",
+  "bundle_files_verified": 114,
+  "artifact_hashes_verified": 29,
+  "matches_prior_round2_and_selected_ce": true,
+  "prediction_id_coverage": {
+    "benchmark": 10555,
+    "custom_seen": 800,
+    "custom_unseen": 800
+  },
+  "notebook_errors": 0,
+  "quality_gate_passed": false,
+  "next_notebook": "notebooks/method2_completion_05_stress.ipynb",
+  "required_input": "Complete output_method2-completion-04-evaluation only",
+  "stress_scope": "random, 200 anchors x 6 tool counts = 1200 instances; pure same-domain pending",
+  "optional_notebook": "notebooks/method2_completion_06_normalizer_ablation.ipynb",
+  "optional_input": "Same complete output04, separate fresh session"
+}
