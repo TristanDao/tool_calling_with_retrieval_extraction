@@ -42,6 +42,7 @@ def _build_upload_bundle(
     experiments: Path,
     benchmark_revision: Path | None,
     custom_data: Path | None,
+    stress_data: Path | None,
     bundle: Path,
 ) -> Path:
     """Combine train artifacts and shared evaluation data without changing inputs."""
@@ -51,6 +52,8 @@ def _build_upload_bundle(
         raise FileNotFoundError(f"Benchmark revision does not exist: {benchmark_revision}")
     if custom_data is not None and not custom_data.is_dir():
         raise FileNotFoundError(f"CustomTools directory does not exist: {custom_data}")
+    if stress_data is not None and not stress_data.is_dir():
+        raise FileNotFoundError(f"Stress test directory does not exist: {stress_data}")
     if bundle.exists():
         raise FileExistsError(f"Bundle directory already exists: {bundle}")
     bundle.mkdir(parents=True)
@@ -60,6 +63,8 @@ def _build_upload_bundle(
         shutil.copytree(benchmark_revision, destination)
     if custom_data is not None:
         shutil.copytree(custom_data, bundle / "custom_vi")
+    if stress_data is not None:
+        shutil.copytree(stress_data, bundle / "stress_test")
     return bundle
 
 
@@ -88,6 +93,12 @@ def main() -> None:
         help="Optional data/custom_vi directory to include for shared evaluation",
     )
     parser.add_argument(
+        "--stress-data",
+        type=Path,
+        default=None,
+        help="Optional data/processed/stress_test directory to include for stress benchmark",
+    )
+    parser.add_argument(
         "--version-notes",
         default="Method 1 E0-E4 controlled-track data, seed 42",
     )
@@ -101,17 +112,18 @@ def main() -> None:
     for option, path in (
         ("--benchmark-revision", args.benchmark_revision),
         ("--custom-data", args.custom_data),
+        ("--stress-data", args.stress_data),
     ):
         if path is not None and not path.is_dir():
             parser.error(f"{option} directory does not exist: {path}")
 
     if args.dry_run:
-        extras = [str(path) for path in (args.benchmark_revision, args.custom_data) if path]
+        extras = [str(path) for path in (args.benchmark_revision, args.custom_data, args.stress_data) if path]
         suffix = f" plus {', '.join(extras)}" if extras else ""
         print(f"[kaggle] dry-run: would upload {args.source}{suffix} to {args.handle}")
         return
 
-    if args.benchmark_revision is None and args.custom_data is None:
+    if args.benchmark_revision is None and args.custom_data is None and args.stress_data is None:
         upload_dataset(args.handle, args.source, args.version_notes)
     else:
         with tempfile.TemporaryDirectory(prefix="tool-calling-vi-kaggle-") as temporary:
@@ -119,6 +131,7 @@ def main() -> None:
                 args.source,
                 args.benchmark_revision,
                 args.custom_data,
+                args.stress_data,
                 Path(temporary) / "dataset",
             )
             upload_dataset(args.handle, bundle, args.version_notes)
