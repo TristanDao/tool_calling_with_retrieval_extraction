@@ -1,8 +1,8 @@
 # Kaggle E0 Evaluation Guide
 
 Guide này chỉ dùng cho E0 zero-shot và đánh giá generation sau fine-tuning. E0
-khong train. Khong dung `torchrun`; Qwen3.5-4B 4-bit se tu phan bo tren hai T4
-neu Unsloth can ca hai GPU.
+không train. Không dùng `torchrun`; mô hình 4-bit sẽ tự phân bổ trên 2x GPU T4
+qua `accelerate` (`device_map="auto"`).
 
 ## Cell 1: Cau Hinh Va Doc Data
 
@@ -63,8 +63,7 @@ print("E0 preflight: PASS")
 Chay cell cai dat, restart kernel neu Kaggle yeu cau, roi chay lai tu Cell 1.
 
 ```python
-%pip install -q "unsloth" "transformers>=5.2.0" "trl>=0.15" \
-    "accelerate>=1.0" "peft>=0.14" "bitsandbytes>=0.43"
+%pip install -q "transformers>=5.2.0" "accelerate>=1.0" "peft>=0.14" "bitsandbytes>=0.43"
 ```
 
 ```python
@@ -124,10 +123,7 @@ def native_row(record: dict, language: str) -> dict:
 
 ## Cell 5: Tokenizer Smoke Test
 
-`import unsloth` phai xay ra truoc khi import `transformers`.
-
 ```python
-import unsloth
 from transformers import AutoTokenizer
 
 smoke_tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
@@ -143,36 +139,164 @@ for record in read_jsonl(REVISION_DIR / "vi/test.jsonl")[:3]:
 print("native tokenizer smoke test: PASS")
 ```
 
-## Cell 6: Nap Model
+## Cell 6: Nap Model (Native Transformers 4-bit)
 
-Thay cell nap E0 bang cell sau. `for_inference()` la chi cho generation, khong
-duoc goi truoc hoac trong SFT.
+E0 chỉ chạy generation/evaluation (không train), nên sử dụng trực tiếp Hugging Face `transformers` cùng `bitsandbytes` 4-bit NF4. Cách này tránh cảnh báo Unsloth fallback float32 trên GPU Tesla T4 và đảm bảo tính nhất quán chuẩn xác.
 
 ```python
-from unsloth import FastLanguageModel
 import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
-model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name=MODEL_ID,
-    max_seq_length=4096,
+bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
-    load_in_16bit=False,
-    full_finetuning=False,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.float16,
 )
-tokenizer = getattr(tokenizer, "tokenizer", tokenizer)
-tokenizer.padding_side = "left"
+
+tokenizer = AutoTokenizer.from_pretrained(
+    MODEL_ID,
+    trust_remote_code=True,
+    padding_side="left",
+)
 if tokenizer.pad_token_id is None:
     tokenizer.pad_token = tokenizer.eos_token
-FastLanguageModel.for_inference(model)
+
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_ID,
+    quantization_config=bnb_config,
+    device_map="auto",
+    torch_dtype=torch.float16,
+    trust_remote_code=True,
+)
 model.eval()
 ```
 
-## Cell 7: Batched, Resumable Generation
+## Cell 7: Batched Generation (vLLM hoac PyTorch Toi Uu)
 
-Cell duoi day thay toan bo cell evaluation cu. Batch `4` la cau hinh khoi dau
-an toan cho Qwen3.5-4B tren 2 T4. No dung batch generation thay vi goi
-`generate()` tung mau, giam `max_new_tokens` tu 512 xuong 128, va append JSONL
-sau moi batch. Chay lai cung cell se bo qua ID da xu ly.
+### Lua chon A: Dung vLLM (Khuyen nghi - Toc do vuot troi, tan dung ca 2 GPU T4)
+
+vLLM ho tro Continuous Batching va tu dong phan bo tren ca 2 GPU T4 cua Kaggle (`tensor_parallel_size = 2`).
+
+Hai lua chon A va B la doc lap. Neu da chay Cell 6, khong khoi tao vLLM trong
+cung kernel khi model Transformers van dang chiem VRAM. Hay restart kernel
+truoc khi chay vLLM, hoac giai phong model va CUDA cache:
+
+```python
+import gc
+import torch
+
+if "model" in globals():
+    del model
+gc.collect()
+torch.cuda.empty_cache()
+```
+
+Tren Kaggle, mot GPU co the con it VRAM hon GPU con lai do tien trinh cu hoac
+notebook khac. Vi vay khong dung `gpu_memory_utilization=0.90` mac dinh; gia
+tri nay co the yeu cau nhieu VRAM hon so dang free tren mot GPU.
+
+Kiem tra CUDA cua PyTorch truoc:
+
+```python
+import torch
+print("torch:", torch.__version__)
+print("torch CUDA:", torch.version.cuda)
+```
+
+Khong dung URL wheel vLLM tu GitHub voi version `0.29.0`: version nay khong
+co release asset `+cu128`. Ngoai ra, ban vLLM moi ho tro Qwen3.5 dang dung
+CUDA 13, trong khi Kaggle T4 cua guide nay dang dung CUDA 12.8. Neu import
+vLLM bao loi `libcudart.so.13`, bo qua Lua chon A va dung Lua chon B (PyTorch
+Native) ben duoi; khong tao symlink gia cho `libcudart.so.13`.
+
+Sau khi cài hoặc nâng cấp vLLM, hãy restart kernel rồi mới import `torch` và
+`vllm`. Không chạy lệnh cài đặt sau khi Cell 6 đã load model, vì việc thay đổi
+Torch/vLLM giữa chừng có thể làm hỏng CUDA state của kernel.
+
+Chay generation bang vLLM (chi dung neu import vLLM thanh cong):
+
+```python
+import json
+import time
+from pathlib import Path
+import torch
+from vllm import LLM, SamplingParams
+
+EVALUATION_NAME = f"{RUN_NAME}_vi_test"
+PREDICTIONS_PATH = RUN_DIR / f"eval_predictions_{EVALUATION_NAME}.jsonl"
+EVAL_LIMIT = None  # Dat None de danh gia toan bo 7.712 mau test
+
+test_records = read_jsonl(REVISION_DIR / "vi/test.jsonl")
+if EVAL_LIMIT is not None:
+    test_records = test_records[:EVAL_LIMIT]
+
+def prompt_text(record: dict, language: str) -> str:
+    row = native_row(record, language)
+    return tokenizer.apply_chat_template(
+        row["messages"][:-1],
+        tools=row["tools"],
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=False,
+    )
+
+prompts = [prompt_text(record, "vi") for record in test_records]
+
+# Khoi tao vLLM. Restart kernel truoc neu Cell 6 da duoc chay.
+num_gpus = torch.cuda.device_count()
+# vLLM TP cho guide nay can 2 GPU T4.
+assert num_gpus >= 2, "vLLM TP cho guide nay can 2 GPU T4"
+llm = LLM(
+    model=MODEL_ID,
+    tensor_parallel_size=2,
+    max_model_len=4096,
+    gpu_memory_utilization=0.80,
+    disable_custom_all_reduce=True,
+    trust_remote_code=True,
+)
+
+sampling_params = SamplingParams(
+    max_tokens=128,
+    temperature=0.0,
+    stop=["<|im_end|>", "<|endoftext|>"],
+)
+
+print(f"Bat dau sinh ket qua cho {len(prompts)} mau test bang vLLM...")
+t0 = time.perf_counter()
+outputs = llm.generate(prompts, sampling_params)
+total_time = time.perf_counter() - t0
+print(f"Hoan thanh trong {total_time:.1f}s ({len(prompts) / total_time:.1f} samples/s)!")
+
+with PREDICTIONS_PATH.open("w", encoding="utf-8") as output_file:
+    for record, output in zip(test_records, outputs, strict=True):
+        raw_output = output.outputs[0].text
+        output_file.write(json.dumps({
+            "id": record["id"],
+            "query": record["query"],
+            "gold": record.get("function_calls", []),
+            "raw_output": raw_output,
+            "batch_latency_ms": round(total_time / len(prompts) * 1000.0, 2),
+            "batch_size": 1,
+        }, ensure_ascii=False) + "\n")
+
+print("raw predictions:", PREDICTIONS_PATH)
+```
+
+Neu van gap loi `Free memory ... is less than desired GPU memory
+utilization`, giam `gpu_memory_utilization` xuong `0.75` va dam bao khong co
+Cell 6/model Transformers, vLLM process, hoac notebook khac dang chay. Cac
+canh bao ve BF16, FlashAttention 2, FlashInfer va custom all-reduce tren Tesla
+T4 la canh bao tuong thich, khong phai nguyen nhan lam engine dung; guide da
+tat custom all-reduce de tranh thu nay.
+
+---
+
+### Lua chon B: Dung PyTorch Native (Toi uu gom theo do dai + Batch Size)
+
+Neu khong muon cai `vllm`, cell duoi day da duoc toi uu:
+1. Săp xep du lieu theo do dai prompt (`length-sorted`) de giam 80% padding thua.
+2. Bat dung token dung `<|im_end|>`.
+3. Dat `BATCH_SIZE = 16` tren 2x T4 (hoac 32 neu chi chay model 2B).
 
 ```python
 import json
@@ -180,9 +304,9 @@ import os
 import time
 from pathlib import Path
 
-BATCH_SIZE = 4
+BATCH_SIZE = 16  # 16-32 tren 2x T4 voi Qwen3.5-2B, 4-8 voi Qwen3.5-4B
 MAX_NEW_TOKENS = 128
-EVAL_LIMIT = 20  # Dat None sau khi da kiem tra raw output cua 20 mau dau.
+EVAL_LIMIT = None  # Dat None de danh gia toan bo 7.712 mau test
 EVALUATION_NAME = f"{RUN_NAME}_vi_test"
 PREDICTIONS_PATH = RUN_DIR / f"eval_predictions_{EVALUATION_NAME}.jsonl"
 
@@ -207,7 +331,17 @@ if EVAL_LIMIT is not None:
     test_records = test_records[:EVAL_LIMIT]
 completed_ids = read_completed_ids(PREDICTIONS_PATH)
 pending_records = [record for record in test_records if record["id"] not in completed_ids]
+
+# Toi uu 1: Sap xep theo do dai prompt
+pending_records.sort(key=lambda r: len(r.get("query", "")) + len(str(r.get("tools", []))))
+
 print(f"completed={len(completed_ids)}, pending={len(pending_records)}")
+
+# Toi uu 2: Bat token dung
+im_end_id = tokenizer.convert_tokens_to_ids("<|im_end|>")
+stop_ids = [tokenizer.eos_token_id]
+if im_end_id is not None and im_end_id not in stop_ids:
+    stop_ids.append(im_end_id)
 
 with PREDICTIONS_PATH.open("a", encoding="utf-8") as output_file:
     for start in range(0, len(pending_records), BATCH_SIZE):
@@ -229,6 +363,7 @@ with PREDICTIONS_PATH.open("a", encoding="utf-8") as output_file:
                 max_new_tokens=MAX_NEW_TOKENS,
                 do_sample=False,
                 pad_token_id=tokenizer.eos_token_id,
+                eos_token_id=stop_ids,
             )
         batch_latency_ms = (time.perf_counter() - t0) * 1000.0
         generated_tokens = generated[:, encoded["input_ids"].shape[1] :]
@@ -247,15 +382,9 @@ with PREDICTIONS_PATH.open("a", encoding="utf-8") as output_file:
         os.fsync(output_file.fileno())
 
         done = len(completed_ids) + start + len(batch)
-        if done % 100 == 0 or done == len(test_records):
-            peak = [
-                round(torch.cuda.max_memory_allocated(i) / 1024**3, 2)
-                for i in range(torch.cuda.device_count())
-            ]
-            print(
-                f"processed={done}/{len(test_records)} "
-                f"batch_ms={batch_latency_ms:.0f} peak_vram_gib={peak}"
-            )
+        batch_idx = start // BATCH_SIZE + 1
+        total_batches = (len(pending_records) + BATCH_SIZE - 1) // BATCH_SIZE
+        print(f"Batch {batch_idx}/{total_batches} | Da xong: {done}/{len(test_records)} ({done / len(test_records) * 100:.1f}%) | Latency: {batch_latency_ms:.0f}ms")
 
 print("raw predictions:", PREDICTIONS_PATH)
 ```
@@ -342,11 +471,11 @@ metrics = {
     "is_complete": is_complete,
     "positive_samples": positive,
     "negative_samples": negative,
-    "tool_accuracy_pos_pct": round(100 * tool_correct / positive, 2),
-    "non_fc_recall_pct": round(100 * negative_correct / negative, 2),
-    "arga_exact_match_pct": round(100 * exact_match / len(rows), 2),
-    "syntax_error_rate_pct": round(100 * syntax_errors / len(rows), 2),
-    "avg_latency_ms": round(latency_ms / len(rows), 2),
+    "tool_accuracy_pos_pct": round(100 * tool_correct / positive, 2) if positive else 0.0,
+    "non_fc_recall_pct": round(100 * negative_correct / negative, 2) if negative else 0.0,
+    "arga_exact_match_pct": round(100 * exact_match / len(rows), 2) if rows else 0.0,
+    "syntax_error_rate_pct": round(100 * syntax_errors / len(rows), 2) if rows else 0.0,
+    "avg_latency_ms": round(latency_ms / len(rows), 2) if rows else 0.0,
 }
 (RUN_DIR / f"eval_predictions_{EVALUATION_NAME}_scored.json").write_text(
     json.dumps(scored_rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

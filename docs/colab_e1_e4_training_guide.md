@@ -468,18 +468,22 @@ assert checkpoints
 Khi runtime bi ngat truoc khi copy Drive, moi thay doi sau checkpoint gan nhat
 se mat. Vi vay nen chon stage 500–750 steps thay vi dat sat gioi han runtime.
 
-## 13. Evaluation tren tap Test Tieng Viet (benchmark_core)
+## 13. Evaluation tren tap Test Tieng Viet bang vLLM (Chuan dong nhat)
 
-Sau khi qua trinh training hoan tat, chay cac cell sau de danh gia mo hinh tren tap `vi/test.jsonl` (7.712 mau).
+Sau khi qua trinh training hoan tat, chung ta su dung **vLLM** lam runtime evaluation chuan (dong nhat voi Kaggle E0). vLLM su dung **Continuous Batching** va **PagedAttention**, cho toc do sinh vuot troi (chi ~2-3 phut cho toan bo 7.712 mau test tren A100/L4).
 
-### Cell 13.1: Don VRAM va Nap Model cho Inference
+### Cell 13.1: Merge LoRA sang 16-bit va Giai phong VRAM cho vLLM
+
+vLLM chay nhanh nhat va on dinh nhat khi doc model 16-bit da duoc merge. Cell nay se nap adapter LoRA da train, xuat ra thu muc `merged_16bit`, va **xoa sach model khoi VRAM GPU** de nhuong toan bo bo nho cho vLLM.
 
 ```python
-import gc, torch
+import gc
+from pathlib import Path
+import torch
 from unsloth import FastLanguageModel
 from transformers.trainer_utils import get_last_checkpoint
 
-# Giai phong VRAM cua Trainer cu
+# 1. Giai phong bo nho cua Trainer cu
 try:
     del trainer, model
 except NameError:
@@ -487,29 +491,37 @@ except NameError:
 gc.collect()
 torch.cuda.empty_cache()
 
-# Nap checkpoint moi nhat vua train (hoac chi dinh duong dan checkpoint cu the)
 CHECKPOINT_DIR = LOCAL_RUN_DIR / "checkpoint"
 latest_ckpt = get_last_checkpoint(str(CHECKPOINT_DIR)) or str(CHECKPOINT_DIR)
-print(f"Loading adapter from: {latest_ckpt}")
+MERGED_DIR = LOCAL_RUN_DIR / "merged_16bit"
 
-model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name=latest_ckpt,
-    max_seq_length=4096,
-    load_in_4bit=True,
-    load_in_16bit=False,
-)
-tokenizer = getattr(tokenizer, "tokenizer", tokenizer)
-tokenizer.padding_side = "left"
-if tokenizer.pad_token_id is None:
-    tokenizer.pad_token = tokenizer.eos_token
-FastLanguageModel.for_inference(model)
-model.eval()
-print("Model loaded in inference mode: READY")
+if not MERGED_DIR.exists():
+    print(f"Loading adapter from {latest_ckpt} and merging to {MERGED_DIR}...")
+    merge_model, merge_tokenizer = FastLanguageModel.from_pretrained(
+        model_name=latest_ckpt,
+        max_seq_length=4096,
+        load_in_4bit=True,
+    )
+    merge_model.save_pretrained_merged(str(MERGED_DIR), merge_tokenizer, save_method="merged_16bit")
+    print("LoRA merge 16-bit: COMPLETED")
+    del merge_model, merge_tokenizer
+else:
+    print(f"Merged model da ton tai tai: {MERGED_DIR}")
+
+# 2. Giai phong triet de VRAM GPU de chuan bi khoi dong vLLM
+gc.collect()
+torch.cuda.empty_cache()
+print("GPU VRAM cleared for vLLM: READY")
 ```
 
-### Cell 13.2: Dinh nghia Helpers format Prompt
+### Cell 13.2: Dinh nghia Helpers format Prompt (Native Qwen)
 
 ```python
+from transformers import AutoTokenizer
+
+MERGED_DIR = LOCAL_RUN_DIR / "merged_16bit"
+tokenizer = AutoTokenizer.from_pretrained(str(MERGED_DIR), trust_remote_code=True)
+
 SYSTEM_PROMPTS = {
     "en": "You are an AI assistant capable of using tools.",
     "vi": "Bạn là trợ lý AI có khả năng sử dụng công cụ.",
@@ -562,50 +574,45 @@ def prompt_text(record: dict, language: str = "vi") -> str:
     )
 ```
 
-### Cell 13.3: High-Throughput Generation (vLLM hoac PyTorch Toi Uu)
+### Cell 13.3: High-Throughput Generation bang vLLM
 
-Co 2 lua chon de sinh ket qua danh gia:
+Cai dat vLLM va thuc hien generation toan bo 7.712 mau test tieng Viet (hoac gioi han bang `EVAL_LIMIT` de smoke test).
 
-#### Lua chon A: Dung vLLM (Khuyen nghi - Toc do cao nhat, ~2-3 phut tren A100)
-
-vLLM su dung **Continuous Batching** va **PagedAttention** (tich hop san FlashAttention-2), cho toc do sinh vuot troi gap 5-10 lan so voi `model.generate` thong thuong.
-
-Truoc tien, cai dat vLLM neu chua co:
 ```bash
-pip install vllm
+!pip install -q uv
+!uv pip install vllm --torch-backend=auto --extra-index-url https://wheels.vllm.ai/nightly --system
 ```
-
-Chay cell inference voi vLLM:
 
 ```python
 import json
 import time
 from pathlib import Path
+import torch
 from vllm import LLM, SamplingParams
-from transformers.trainer_utils import get_last_checkpoint
 
 REVISION = "2026-09-02-full-dedup-seed42"
 TEST_PATH = LOCAL_DATA_ROOT / "benchmark_core" / REVISION / "vi/test.jsonl"
 PREDICTIONS_PATH = LOCAL_RUN_DIR / f"eval_predictions_{EXPERIMENT}_vi_test.jsonl"
-CHECKPOINT_DIR = LOCAL_RUN_DIR / "checkpoint"
-latest_ckpt = get_last_checkpoint(str(CHECKPOINT_DIR)) or str(CHECKPOINT_DIR)
-
-# 1. Merge LoRA sang merged_16bit de vLLM doc native
 MERGED_DIR = LOCAL_RUN_DIR / "merged_16bit"
-if not MERGED_DIR.exists():
-    print(f"Merging LoRA from {latest_ckpt} to {MERGED_DIR}...")
-    model.save_pretrained_merged(str(MERGED_DIR), tokenizer, save_method="merged_16bit")
-    print("Merged completed!")
+EVAL_LIMIT = None  # Dat None de chay full 7.712 mau test; hoac dat 50 de smoke test nhanh
 
-# 2. Doc danh sach test
+# 1. Doc tap test
 with TEST_PATH.open(encoding="utf-8") as source:
     test_records = [json.loads(line) for line in source if line.strip()]
 
-# 3. Khoi tao vLLM engine
+if EVAL_LIMIT is not None:
+    test_records = test_records[:EVAL_LIMIT]
+
+prompts = [prompt_text(record, "vi") for record in test_records]
+print(f"Chuan bi {len(prompts)} prompts cho vLLM...")
+
+# 2. Khoi tao vLLM Engine
+num_gpus = torch.cuda.device_count()
 llm = LLM(
     model=str(MERGED_DIR),
+    tensor_parallel_size=num_gpus if num_gpus > 0 else 1,
     max_model_len=4096,
-    gpu_memory_utilization=0.85,
+    gpu_memory_utilization=0.90,
     trust_remote_code=True,
 )
 
@@ -615,16 +622,14 @@ sampling_params = SamplingParams(
     stop=["<|im_end|>", "<|endoftext|>"],
 )
 
-# 4. Chuan bi prompts
-prompts = [prompt_text(record, "vi") for record in test_records]
-
-print(f"Bat dau sinh ket qua cho {len(prompts)} mau test bang vLLM...")
+# 3. Batch Generation
+print("Bat dau sinh ket qua bang vLLM...")
 t0 = time.perf_counter()
 outputs = llm.generate(prompts, sampling_params)
 total_time = time.perf_counter() - t0
-print(f"Hoan thanh trong {total_time:.1f}s ({len(prompts) / total_time:.1f} samples/s)!")
+print(f"Hoan thanh {len(prompts)} mau trong {total_time:.1f}s ({len(prompts) / total_time:.1f} samples/s)!")
 
-# 5. Ghi ket qua ra file
+# 4. Ghi predictions ra file theo schema chuan
 with PREDICTIONS_PATH.open("w", encoding="utf-8") as output_file:
     for record, output in zip(test_records, outputs, strict=True):
         raw_output = output.outputs[0].text
@@ -633,7 +638,8 @@ with PREDICTIONS_PATH.open("w", encoding="utf-8") as output_file:
             "query": record["query"],
             "gold": record.get("function_calls", []),
             "raw_output": raw_output,
-            "latency_ms": round(total_time / len(prompts) * 1000.0, 2),
+            "batch_latency_ms": round(total_time / len(prompts) * 1000.0, 2),
+            "batch_size": 1,
         }, ensure_ascii=False) + "\n")
 
 print("Raw predictions saved to:", PREDICTIONS_PATH)
@@ -641,7 +647,7 @@ print("Raw predictions saved to:", PREDICTIONS_PATH)
 
 ---
 
-#### Lua chon B: Dung PyTorch + Unsloth (Khong can cai vLLM, toi uu batch 64 + Sort Do dai)
+#### Phu luc: Dung PyTorch Native Fallback (Chi dung neu khong the cai dat vLLM)
 
 Neu khong muon cai them `vllm`, cell duoi day da duoc toi uu:
 1. Săp xep du lieu theo do dai (`length-sorted`) de triet tieu padding thua.

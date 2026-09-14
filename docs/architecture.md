@@ -114,22 +114,25 @@ Pipeline 2 thành phần chuyên biệt, không autoregressive.
 ### 3.1 Bi-Encoder — Semantic Tool Retrieval
 
 - **Base model**: `BAAI/bge-m3`.
-- **Framework**: `FlagEmbedding`.
-- **Loss**: `MultipleNegativesRankingLoss`.
-- **Input**: query VI + tool description VI.
-- **Metric**: Recall@1, Recall@5, MRR.
+- **Framework & Loss**: `sentence-transformers` với `CachedMultipleNegativesRankingLoss` (CachedMNRL) + LoRA ($r=16, \alpha=32$).
+- **Chiến lược**: 2 rounds (Round 1 làm teacher mining hard negatives cho Round 2).
+- **Input**: query VI + tool description VI (max length 192).
+- **Metric**: Recall@1, Recall@3, Recall@5, MRR.
+- **Ngưỡng quyết định (Calibration)**: Abstention $\tau = 0.35$, Gap $\delta = 0.21$, $k_{\max} = 3$.
 
 ### 3.2 Cross-Encoder — Schema-aware Parameter Extraction
 
-- **Base model**: `BAAI/bge-m3` + hierarchical heads.
-- **Input format** (BERT-QA): `[CLS] query [SEP] Param=<name>. Desc=<desc>. Type=<type>[. Enum=...] [SEP]`
-- **Heads**: `has_value` (binary) + span/enum/boolean sub-heads (schema-driven routing).
-- **Per-parameter forward pass**.
-- **Metric**: Span F1, Enum accuracy, End-to-end F1.
+- **Base model**: `xlm-roberta-base` (thay thế cho dự kiến BGE-M3 ban đầu để tối ưu tốc độ và kích thước head).
+- **Input format** (BERT-QA): `[CLS] query [SEP] Param=<name>. Desc=<desc>. Type=<type>[. Enum=...] [SEP]` (max length 256).
+- **Heads**: `has_value` (binary threshold 0.5) + hierarchical sub-heads (span / enum / boolean) theo schema routing.
+- **Huấn luyện**: Curriculum learning (2 epoch Glaive/xLAM warm-up + 2 epoch CustomTools).
+- **Post-processing**: Value Normalizer chuyển surface text sang kiểu dữ liệu canonical (số, ngày, Unicode, boolean).
+- **Metric**: Argument Exact Match (EM), Enum accuracy, Span EM, Strict/Normalized ArgA.
 
-### 3.3 Validator
+### 3.3 Validator & Normalizer
 
-- Kiểm tra JSON hợp lệ, enum hợp lệ, required fields đủ, type đúng.
+- **Normalizer**: Khớp surface text trích xuất từ câu hỏi sang dạng số/ngày chuẩn.
+- **Validator**: Kiểm tra tính hợp lệ của JSON, enum values, kiểu dữ liệu và các trường bắt buộc (`required`).
 
 ## 4. Data flow
 

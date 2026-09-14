@@ -33,6 +33,14 @@ ENV/
 .env.local
 *.log
 
+# Archives / compressed files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
 # Data — large files
 data/raw/
 data/processed/
@@ -45,6 +53,7 @@ data/translations/qwen_mt_logs/
 data/translations/qa_samples/
 data/statistics/
 data/experiments/
+data/result*/
 *.csv
 
 

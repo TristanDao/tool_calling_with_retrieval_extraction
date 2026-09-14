@@ -11,9 +11,10 @@
 
 - **Tên dự án**: Tool Calling tiếng Việt — So sánh 2 phương pháp: SLM End-to-End vs Bi-Encoder + Cross-Encoder
 - **Repo path**: `/home/thinh/project/UIT/tool_calling_with_retrieval_extraction`
-- **Loại**: Đồ án / luận văn UIT (nghiên cứu thực nghiệm + xây dựng hệ thống)
-- **Tác giả**: Thinh
-- **Trạng thái**: Phase 1 — Data pipeline (pilot translation + master benchmark rebuild; full translation pending)
+- **Tác giả**: Đào Phước Thịnh, Hà Quang Đạt
+- **Giảng viên hướng dẫn**: TS. Đặng Văn Thìn
+- **Đơn vị**: Khoa Công nghệ Thông tin, Trường Đại học Công nghệ Thông tin (UIT), ĐHQG-HCM
+- **Trạng thái**: Phase 4/6 — Hoàn thành đánh giá Method 1 (Qwen3.5-2B E0→E4) & Method 2; đang tổng hợp so sánh đối đầu và chuẩn bị Stress Test
 
 ---
 
@@ -57,16 +58,17 @@ Cả 2 được so sánh với:
 | Framework chính | **PyTorch + Transformers** |
 | Config | **Hydra** với **structured config** (Python `@dataclass`) |
 | **Method 1: SLM End-to-End** | **Qwen3.5 2B/4B** + **Unsloth** (QLoRA/SFT) |
-| Method 2: Bi-Encoder (Retrieval) | **BGE-M3** + **FlagEmbedding** + **MultipleNegativesRankingLoss** |
-| Method 2: Cross-Encoder (Extraction) | **BGE-M3** + **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head: span / enum / boolean), format `[CLS] query [SEP] Param=<name>. Desc=... Type=<type>[. Enum=...] [SEP]` (BERT-QA style) |
+| Method 2: Bi-Encoder (Retrieval) | **BGE-M3** + **sentence-transformers** + **CachedMultipleNegativesRankingLoss** (2 rounds) |
+| Method 2: Cross-Encoder (Extraction) | **XLM-RoBERTa-base** + **Hierarchical heads** (1 binary `has_value` + schema-driven sub-head: span / enum / boolean) + Value Normalizer |
 | Dịch dataset | **Alibaba OpenAI-compatible API** (qwen3.7-flash / qwen3.7-max) |
 | Baseline 1 | **OpenAI Function Calling** (gpt-4o-mini) |
 | Baseline 2 | **Google Gemini Function Calling** (gemini-1.5-flash) |
 
 **Lưu ý kiến trúc**:
 - Method 1 SLM: dùng Unsloth để QLoRA/SFT checkpoint `unsloth/Qwen3.5-2B` hoặc `unsloth/Qwen3.5-4B`. Training view dùng native `messages` + `tools` + structured `tool_calls`; render bằng chat template của exact checkpoint với `enable_thinking=False`, loss chỉ tính trên assistant response. Negative dùng assistant content bình thường, không dùng `<no_tool_call>`. Giống Ersoy et al. (2025) ở thiết kế SFT, không ở serialization.
-- Method 2 Bi-Encoder: dùng `FlagEmbedding` (BAAI official) + `MultipleNegativesRankingLoss`.
-- Method 2 Cross-Encoder: **Hierarchical Span Prediction** (BGE-M3 base + custom heads). Schema-driven routing: type lấy từ schema question nên model không cần học/predict type — chỉ activate 1 sub-head phù hợp (span/enum/boolean). 1 binary `has_value` head riêng để phân biệt null (absent) vs có giá trị. Input format BERT-QA: query làm context, param schema làm question.
+- Method 2 Bi-Encoder: dùng `BAAI/bge-m3` + `sentence-transformers` với `CachedMNRL` + LoRA ($r=16, \alpha=32$). Round 1 huấn luyện teacher để mining hard negatives cho Round 2. Ngưỡng calibration $\tau = 0.35, \delta = 0.21$.
+- Method 2 Cross-Encoder: **Hierarchical Span Prediction** trên backbone **`xlm-roberta-base`** (thực tế triển khai đã dùng XLM-R base thay vì BGE-M3 để tối ưu kích thước và tốc độ). Schema-driven routing: type lấy từ schema question nên model không cần học/predict type — chỉ activate 1 sub-head phù hợp (span/enum/boolean). 1 binary `has_value` head riêng để phân biệt null (absent) vs có giá trị. Input format BERT-QA: query làm context, param schema làm question. Kèm Value Normalizer để ánh xạ surface text về canonical types.
+- Đánh giá chéo: Cả 2 phương pháp dùng chung 100% tập test `CustomTools-VI` (`test_seen` 800, `test_unseen` 800) và 200 anchors Stress Test ($N = 3 \to 1000$). Trên Core Benchmark, Method 1 test trên `7,712` mẫu (kèm 491 negatives), Method 2 đã test trên `10,555` mẫu positive. Chi tiết xem `docs/data_pipeline_and_splits.md` và `docs/bao_cao_method2.md`.
 
 ---
 
@@ -251,12 +253,12 @@ tool_calling_with_retrieval_extraction/
 | Phase | Nội dung | Trạng thái |
 |---|---|---|
 | 0 | Skeleton (folders + .md files) | ✅ Done |
-| 1 | Data pipeline (collect, normalize, translate, build benchmark) | ⏳ In progress |
-| 2 | Method 2: Bi-Encoder | ⏳ |
-| 3 | Method 2: Cross-Encoder | ⏳ (skeleton có sẵn) |
-| 4 | Method 1: SLM fine-tune + instruction data | ⏳ |
-| 5 | Baselines (OpenAI FC, Gemini FC) | ⏳ |
-| 6 | Evaluation & comparison (4 methods) | ⏳ |
+| 1 | Data pipeline (collect, normalize, translate, build benchmark) | ✅ Done |
+| 2 | Method 2: Bi-Encoder | ✅ Done |
+| 3 | Method 2: Cross-Encoder | ✅ Done |
+| 4 | Method 1: SLM fine-tune + instruction data (Qwen3.5-2B E0→E4) | ✅ Done |
+| 5 | Baselines (OpenAI FC, Gemini FC) | ⏳ (Tạm gác theo quyết định chiến lược) |
+| 6 | Evaluation & comparison (Method 1 vs Method 2) | ⏳ In progress |
 | 7 | Stress test (RAG-MCP inspired, so sánh cả 4) | ⏳ |
 
 ### Phase detail
@@ -438,18 +440,51 @@ tool_calling_with_retrieval_extraction/
 
 ---
 
-## 11. Workflow khi bắt đầu session mới
+## 11. Current Action Items & Checklist (Theo Dõi Tiến Độ Cho Thinh & AI)
 
-1. **Đọc `AGENTS.md`** (file này) đầu tiên.
-2. **Đọc `docs/architecture.md`** + `docs/methodology.md`.
-3. **Kiểm tra phase hiện tại** trong section 7.
-4. **Kiểm tra open questions** trong section 10.
-5. **Hỏi user** nếu có nghi nghi gì về phase hiện tại.
-6. **Bắt đầu code**, sau đó cập nhật phase + open questions.
+> **Mục này ghi nhớ trạng thái và các bước cần làm tiếp theo để hỗ trợ Thinh nhanh chóng và chuẩn xác nhất khi bắt đầu session mới.**
+
+### 11.1 Trạng thái hiện tại (Current Status)
+- ✅ **Phase 1 (Data Pipeline)**: Hoàn tất. Đã có frozen revision `2026-09-02-full-dedup-seed42` (77,028 paired records, split 80/10/10) và tài liệu chuẩn hóa [docs/data_pipeline_and_splits.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/data_pipeline_and_splits.md).
+- ✅ **Phase 2 & 3 (Method 2 Bi-Encoder + Cross-Encoder)**: Đồng đội đã hoàn thành toàn bộ thực nghiệm (xem [docs/bao_cao_method2.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/bao_cao_method2.md)).
+  - Bi-Encoder: BGE-M3 (2 rounds CachedMNRL, 78k pairs).
+  - Cross-Encoder: XLM-RoBERTa-base (hierarchical heads, 145k pairs).
+  - Đã có kết quả trên Custom Seen (ArgA 67.75%), Custom Unseen (22.75%), Core Benchmark (40.21%), Normalizer Ablation và Random Stress ($N = 3 \to 1000$).
+- ✅ **Phase 4 (Method 1 SLM)**: Hoàn tất 100% benchmark đánh giá E0 $\to$ E4 cho `unsloth/Qwen3.5-2B` trên cả CustomTools-VI (Seen & Unseen) và Core Benchmark (EN & VI). Đã giải nén, lọc file part thừa, chuẩn hóa định dạng E2 và lưu trữ tại `results/slm/` (xem bảng tổng hợp [results/slm/summary_table.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/results/slm/summary_table.md)).
+
+### 11.2 Các quyết định chiến lược đã thống nhất (Key Decisions)
+1. **Về mô hình 4B (`unsloth/Qwen3.5-4B`)**:
+   - **KHÔNG** cần train lại toàn bộ từ E0 đến E4 để tránh lãng phí GPU và thời gian.
+   - Khi cần làm Ablation Study về Model Scaling (2B vs 4B), chỉ cần chạy:
+     - 4B E0 (Zero-shot inference trên Kaggle, không tốn giờ train).
+     - 4B E3 (Song ngữ) hoặc E4 (Domain): Chọn 1 checkpoint duy nhất để train và lấy kết quả đỉnh cao so sánh với Method 2.
+2. **Về Baseline thương mại (GPT-4o-mini & Gemini-1.5-flash)**:
+   - Tạm thời gác lại, tập trung 100% vào cuộc đối đầu giữa **Method 1 vs Method 2** (đây là đề tài chính).
+   - Nếu còn thời gian trước khi nộp bài: chỉ chạy thử nghiệm trên 800 mẫu `CustomTools-VI` (dùng Gemini free qua Google AI Studio) để làm mốc tham chiếu trần (Upper Bound).
+3. **Về sự lệch tập Core Test giữa 2 bên**:
+   - Hai bên đã khớp 100% trên `CustomTools-VI` (800 seen, 800 unseen) và Stress Test (200 anchors).
+   - Trên tập Core: Method 1 dùng 7,712 mẫu canonical, Method 2 dùng 10,555 mẫu positive. Ưu tiên chạy inference Method 2 trên 7,712 mẫu (chỉ mất 15 phút GPU) để số liệu khớp hoàn hảo.
+
+### 11.3 Checklist việc cần làm tiếp theo (Next Tasks)
+- [x] **Task 1**: Thinh gửi kết quả benchmark (ArgA, Latency, Accuracy) của E0 $\to$ E4 (2B) $\to$ Đã giải nén, lọc bỏ part thừa, chuẩn hóa metrics E2 và tổng hợp bảng so sánh đối đầu với Method 2 tại [results/slm/summary_table.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/results/slm/summary_table.md).
+- [⏳] **Task 2**: Huấn luyện và đánh giá `unsloth/Qwen3.5-4B` cho E3 (Song ngữ) và E4 (Dữ liệu miền) $\to$ **Thinh đang chạy trên GPU và sẽ gửi kết quả sau**.
+- [ ] **Task 2b (Chạy lại Benchmark Method 2 theo chuẩn Method 1)**: Chạy inference cho Method 2 (Bi-Encoder BGE-M3 + Cross-Encoder XLM-R) trên đúng 7,712 mẫu Core Benchmark canonical và 1,600 mẫu CustomTools-VI bằng cùng script chấm điểm của Method 1 để đảm bảo 100% tính đồng nhất về tiêu chí đo lường (mất ~15 phút GPU).
+- [ ] **Task 3**: Chạy Stress Test cho checkpoint tốt nhất của Method 1 (E4) trên 200 anchors ($N = [3, 10, 50, 100, 500, 1000]$) để so sánh đường suy giảm với Method 2.
+- [x] **Task 4**: Viết hoàn chỉnh bài báo khoa học / luận văn: đã tạo bản tiếng Anh [paper/paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md) và bản tiếng Việt [paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md) với đầy đủ bảng số liệu thực nghiệm, phân tích chuyên sâu, ghi chú rõ ràng các vị trí chờ cập nhật (4B và Method 2 re-eval).
 
 ---
 
-## 12. Change Log
+## 12. Workflow khi bắt đầu session mới
+
+1. **Đọc `AGENTS.md`** (file này) đầu tiên, đặc biệt là mục 11 (Current Action Items).
+2. **Đọc `docs/architecture.md`** + `docs/data_pipeline_and_splits.md`.
+3. **Kiểm tra phase hiện tại** trong section 7 và 11.
+4. **Hỏi user** nếu có nghi vấn về phase hoặc dữ liệu hiện tại.
+5. **Tiến hành công việc**, sau đó cập nhật checklist và change log.
+
+---
+
+## 13. Change Log
 
 | Ngày | Thay đổi |
 |---|---|

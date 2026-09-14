@@ -1,14 +1,17 @@
 # `notebooks/`
 
-Jupyter notebooks cho EDA và phân tích.
+Jupyter Notebooks phục vụ EDA, huấn luyện mô hình (Colab) và đánh giá benchmark (Kaggle).
 
-Dự kiến (sẽ thêm ở Phase 1+):
+## Cấu trúc thư mục
 
-- `01_eda_raw_datasets.ipynb` — Khám phá dataset gốc (Glaive, ToolBench, xLAM, ToolACE).
-- `02_eda_benchmark_vi.ipynb` — Khám phá benchmark tiếng Việt sau khi dịch.
-- `03_translation_qa.ipynb` — Phân tích chất lượng dịch Qwen-MT, sample lỗi.
-- `04_retrieval_analysis.ipynb` — Phân tích retrieval errors, hard negatives.
-- `05_extraction_errors.ipynb` — Phân tích extraction errors.
-- `06_results_comparison.ipynb` — Bảng so sánh cuối cùng.
+- `training/`
+  - `colab_E3.ipynb` — Notebook huấn luyện Unsloth QLoRA trên Google Colab T4 cho E3 (song ngữ), hỗ trợ push adapter lên Hugging Face Hub.
+- `benchmarks/`
+  - `kaggle_core_benchmark.ipynb` — Benchmark chạy đa GPU (2x T4) trên tập Core Benchmark (EN/VI test, 7,712 mẫu).
+  - `kaggle_custom_benchmark.ipynb` — Benchmark chạy đa GPU trên tập `CustomTools-VI` (`test_seen` và `test_unseen`, 1,600 mẫu).
+  - `kaggle_e3_benchmark.ipynb` — Benchmark chuyên biệt cho checkpoint E3.
+  - `kaggle_full_benchmark.ipynb` — Benchmark toàn diện tích hợp cả Core và CustomTools.
+- `01_eda_raw_data.ipynb` — Khám phá dataset gốc (Glaive, xLAM).
 
-> File `.ipynb_checkpoints/` đã gitignore. Commit notebook đã clean output trước khi push.
+> Lưu ý: Các file `.ipynb_checkpoints/` đã được cấu hình trong `.gitignore`. Hãy clean output trước khi commit notebook lớn lên Git.
+

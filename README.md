@@ -1,163 +1,141 @@
-# Tool Calling tiếng Việt — So sánh 2 Phương pháp
+# Tool Calling tiếng Việt — So sánh 2 Phương pháp (SLM End-to-End vs Bi-Encoder + Cross-Encoder)
 
-> Đồ án / luận văn UIT: so sánh SLM End-to-End vs Bi-Encoder + Cross-Encoder cho Tool Calling tiếng Việt.
+> **Đồ án / Luận văn tốt nghiệp UIT** — Nghiên cứu so sánh thực nghiệm toàn diện giữa Mô hình Ngôn ngữ Nhỏ (SLM End-to-End) và Kiến trúc Chuyên biệt Phân tách (Bi-Encoder Retrieval + Cross-Encoder Extraction) cho tác tử gọi công cụ tiếng Việt.  
+> **Sinh viên thực hiện**: Đào Phước Thịnh, Hà Quang Đạt  
+> **Giảng viên hướng dẫn**: TS. Đặng Văn Thìn  
+> **Đơn vị**: Khoa Công nghệ Thông tin, Trường Đại học Công nghệ Thông tin (UIT), ĐHQG-HCM.
 
-## 1. Tổng quan
+---
 
-Hệ thống so sánh **2 phương pháp** Tool Calling cho tiếng Việt:
+## 1. Tổng Quan & Kết Quả Đột Phá
 
-| Phương pháp | Cách làm | Model |
+Dự án phát triển và so sánh đối đầu **2 trường phái kiến trúc** Tool Calling cho tiếng Việt:
+
+| Phương pháp | Kiến trúc & Công nghệ | Điểm mạnh chính |
 |---|---|---|
-| **Method 1: SLM End-to-End** | Fine-tune SLM chọn tool + điền tham số bằng native tool calls | Unsloth QLoRA/SFT + `unsloth/Qwen3.5-4B` |
-| **Method 2: Bi-Encoder + Cross-Encoder** | Tách retrieval (Bi-Encoder) + extraction (Cross-Encoder) | BGE-M3 + FlagEmbedding + custom heads |
+| **Method 1: SLM End-to-End** | `unsloth/Qwen3.5-2B` / `4B` + Unsloth QLoRA SFT trên native XML tool calls | **Chuẩn vàng về độ chính xác (ArgA 87.00% seen, 86.38% unseen)**, năng lực tổng quát hóa zero-shot vượt trội |
+| **Method 2: Bi-Encoder + Cross-Encoder** | `BAAI/bge-m3` (2-round CachedMNRL) + `xlm-roberta-base` (Hierarchical Heads) + Value Normalizer | **Tốc độ siêu nhanh (~58–92 ms, nhanh gấp 10–15 lần SLM)**, chiếm ít VRAM (< 1.2 GB), 0% lỗi JSON |
 
-Baselines so sánh:
-- OpenAI Function Calling (gpt-4o-mini)
-- Google Gemini Function Calling (gemini-1.5-flash)
+### Bảng So Sánh Đối Đầu Nổi Bật (Head-to-Head Summary)
 
-## 2. Cấu trúc thư mục
+| Tập kiểm thử | Chỉ số (Metric) | Method 1: SLM Qwen3.5-2B (E4) | Method 2: Bi+Cross (BGE-M3 + XLM-R) | Chênh lệch (M1 - M2) |
+|---|---|:---:|:---:|:---:|
+| **Custom Seen** (800) | **ArgA / Exact Match** | **87.00%** | 67.75% | **+19.25%** |
+| **Custom Unseen** (800) | **ArgA / Exact Match** | **86.38%** | 22.75% | **+63.63% (Áp đảo)** |
+| **Core VI Test** (7,712) | **ArgA / Exact Match** | **69.75%** | 40.21% | **+29.54%** |
+| **Độ trễ suy luận (P50)** | **Thời gian phản hồi** | ~970 ms | **58.16 – 91.88 ms** | **Method 2 nhanh gấp ~10-15×** |
+
+📄 Chi tiết bài báo khoa học: xem [paper/paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md) (tiếng Anh) và [paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md) (tiếng Việt).
+
+---
+
+## 2. Cấu Trúc Thư Mục
 
 ```
 tool_calling_with_retrieval_extraction/
-├── AGENTS.md
-├── README.md
-├── pyproject.toml
-├── .gitignore
-├── .env.example
-├── configs/              # Hydra structured config
-├── data/                 # sources / frozen benchmark / experiment train artifacts
-├── src/                  # data/ + models/ + pipeline/ + evaluation/
-├── scripts/              # CLI wrappers
-├── notebooks/            # EDA + analysis
-├── tests/                # unit tests
-├── checkpoints/          # model weights (gitignored)
-├── results/              # metrics + tables/figures
-├── docs/                 # architecture, methodology, benchmark, translation_guidelines, references
-└── logs/                 # training/eval logs
+├── AGENTS.md                  # Bộ nhớ cross-session dài hạn cho AI agents
+├── README.md                  # Tài liệu tổng quan dự án (file này)
+├── pyproject.toml             # Khai báo dependency và build system
+│
+├── paper/                     # BÀI BÁO KHOA HỌC HOÀN CHỈNH
+│   ├── README.md              # Giới thiệu và hướng dẫn xuất PDF/LaTeX
+│   ├── paper_en.md            # Bản tiếng Anh chuẩn học thuật quốc tế
+│   └── paper_vi.md            # Bản tiếng Việt chuẩn báo cáo luận văn UIT
+│
+├── docs/                      # TÀI LIỆU KỸ THUẬT & HƯỚNG DẪN
+│   ├── README.md              # Mục lục toàn bộ tài liệu
+│   ├── architecture.md        # Thiết kế kiến trúc 2 pipeline
+│   ├── methodology.md         # Phương pháp luận nghiên cứu
+│   ├── experimental_plan.md   # Kế hoạch thực nghiệm E0-E4 & stress test
+│   ├── data_pipeline_and_splits.md # Đặc tả chuẩn dữ liệu và frozen revision
+│   ├── bao_cao_method2.md     # Báo cáo thực nghiệm chi tiết Method 2
+│   └── ... (các hướng dẫn Kaggle/Colab, dịch thuật, CustomTools)
+│
+├── data/                      # DỮ LIỆU & BENCHMARK
+│   ├── benchmark_core/        # Frozen revision canonical (77k samples EN/VI)
+│   ├── custom_vi/             # Tập benchmark đặc thù Việt Nam CustomTools-VI
+│   └── experiments/           # Dữ liệu train native theo từng cấu hình E0-E4
+│
+├── results/                   # KẾT QUẢ THỰC NGHIỆM
+│   ├── slm/                   # Metrics JSON, predictions và bảng tổng hợp SLM
+│   │   ├── metrics/           # 20 file metrics JSON chuẩn hóa (E0-E4)
+│   │   ├── predictions/       # Full predictions JSONL và scored JSON
+│   │   └── summary_table.md   # Bảng tổng hợp số liệu chi tiết E0-E4
+│   └── tables_figures/        # Bảng biểu và đồ thị báo cáo
+│
+├── src/                       # MÃ NGUỒN CỐT LÕI
+│   ├── data/                  # Pipeline thu thập, dịch, chuẩn hóa, rebuild
+│   ├── models/                # slm/, biencoder/, crossencoder/, baselines/
+│   └── evaluation/            # Bộ công cụ đo lường (retrieval, extraction, latency)
+│
+└── notebooks/                 # JUPYTER NOTEBOOKS
+    ├── 01_eda_raw_data.ipynb
+    └── benchmarks/            # Notebooks chạy benchmark trên Kaggle
 ```
 
-Chi tiết xem `AGENTS.md` section 6 và `docs/architecture.md`.
+---
 
-## 3. Quick start
+## 3. Hệ Thống Dữ Liệu & Benchmark
 
-> Core benchmark đã có revision frozen. Training vẫn cần môi trường GPU có Unsloth.
+1. **Canonical Core Benchmark** (`data/benchmark_core/2026-09-02-full-dedup-seed42/`):
+   - **77,028** bản ghi ghép cặp Anh–Việt (18,210 Glaive, 58,818 xLAM), **4,421** unique tools.
+   - Tỷ lệ phân chia cố định: `61,615` train / `7,701` val / `7,712` test (seed 42).
+2. **CustomTools-VI Benchmark** (`data/custom_vi/`):
+   - **8,000** mẫu thuộc **40** công cụ thuần Việt trên 10 nhóm lĩnh vực thực tế (thương mại điện tử, vé xe, đồ ăn, hóa đơn, phạt nguội, gia sư,...).
+   - Tỷ lệ 70/10/20: 5,600 train, 800 val, 1,600 test.
+   - Phân chia nghiêm ngặt: 20 công cụ **Seen** và 20 công cụ **Unseen** (zero-shot evaluation).
 
+---
+
+## 4. Các Bước Chạy & Thực Nghiệm
+
+### 4.1 Cài đặt môi trường
 ```bash
-# 1. Cài dependencies
+git clone https://github.com/TristanDao/tool_calling_with_retrieval_extraction.git
+cd tool_calling_with_retrieval_extraction
 pip install -e ".[dev,translate,train]"
-
-# 2. Copy & chỉnh env
-cp .env.example .env
-# điền OPENAI_API_KEY, GEMINI_API_KEY, ALIBABA_API_KEY, ...
-
-# 3. Collect dữ liệu
-bash scripts/data/run_collect.sh
-
-# 4. Translate Glaive + xLAM
-bash scripts/data/run_translate_glaive.sh
-bash scripts/data/run_translate_xlam.sh
-
-# 5. QA translation
-bash scripts/data/run_qa.sh
-
-# 6. Archive generated pilot artifacts (dry-run first, then apply)
-bash scripts/data/run_cleanup.sh
-bash scripts/data/run_cleanup.sh --apply --timestamp 20260902T000000Z
-
-# 7. Build and promote one frozen paired EN/VI revision
-bash scripts/data/run_benchmark.sh \
-  --revision 2026-09-02-full-dedup-seed42 \
-  --feature-group-cache data/legacy/pilot_20260902T000000Z/benchmark_vi/.cache/feature_group.json
-
-# 8. Materialize train-only artifacts (E0, E1, E2, E3, E4)
-bash scripts/data/prepare_experiments.sh --overwrite
-
-# 9. Smoke-test the exact Qwen3.5 templates in a GPU/Internet environment
-bash scripts/train/smoke_native_qwen.sh
 ```
 
-## 4. Data Schema
+### 4.2 Chuẩn bị dữ liệu thực nghiệm (E0 $\to$ E4)
+```bash
+# Tạo các train view native cho từng experiment
+bash scripts/data/prepare_experiments.sh --overwrite
+```
 
-Schema master single-turn + multi-call (dùng chung cho cả 2 method):
+### 4.3 Trích xuất và tổng hợp kết quả đánh giá
+```bash
+# Trích xuất toàn bộ metrics từ zip Kaggle, lọc file thừa và cập nhật bảng tổng hợp
+python3 scripts/eval/extract_and_filter_results.py
+```
 
-```json
-{
-  "id": "glaive_00042",
-  "source": "glaive",
-  "query": "Tôi muốn tìm gia sư Toán ở Hà Nội.",
-  "function_calls": [
-    {"name": "search_tutors", "arguments": {"subject": "Toán", "location": "Hà Nội"}}
-  ],
-  "tools": [
-    {"name": "search_tutors", "description": "Tìm gia sư theo môn và khu vực.", "feature_group": "Tìm kiếm & Kết nối", "parameters": {"type": "object", "properties": {"subject": {"type": "string", "description": "Môn học cần tìm"}, "location": {"type": "string", "description": "Thành phố hoặc khu vực"}}, "required": ["subject", "location"]}}
-  ]
+---
+
+## 5. Tiến Độ Dự Án (Roadmap)
+
+| Phase | Nội dung thực hiện | Trạng thái |
+|---|---|---|
+| 0 | Skeleton thư mục + tài liệu nền tảng | ✅ Hoàn thành |
+| 1 | Data pipeline (dịch thuật, QA, frozen revision 77k) | ✅ Hoàn thành |
+| 2 | Method 2: Bi-Encoder (BGE-M3 + 2 rounds CachedMNRL) | ✅ Hoàn thành |
+| 3 | Method 2: Cross-Encoder (XLM-RoBERTa hierarchical heads) | ✅ Hoàn thành |
+| 4 | Method 1: SLM Fine-tune (Qwen3.5-2B E0 $\to$ E4) | ✅ Hoàn thành |
+| - | Viết Bài Báo Khoa Học (EN & VI) | ✅ Hoàn thành |
+| - | Model Scaling Study (Qwen3.5-4B E3 & E4) | ⏳ Đang chạy thực nghiệm |
+| 6 | Tổng hợp so sánh đối đầu toàn diện M1 vs M2 | ⏳ Đang tiến hành |
+| 7 | Stress Test với số lượng công cụ tăng dần ($N = 3 \to 1000$) | ⏳ Kế hoạch tiếp theo |
+
+---
+
+## 6. License & Trích Dẫn
+
+Dự án phát hành theo giấy phép **MIT License**.
+
+```bibtex
+@misc{thinh2026vietnamesetoolcalling,
+  author = {Dao Phuoc Thinh and Ha Quang Dat and Dang Van Thin},
+  title = {Vietnamese Tool Calling: A Comparative Study Between End-to-End Small Language Models and Specialized Bi-Encoder + Cross-Encoder Architecture},
+  year = {2026},
+  publisher = {GitHub},
+  journal = {University of Information Technology (UIT), VNU-HCM}
 }
 ```
-
-Quy ước: `query` và `tools[].description` theo language split EN/VI; `function_calls[].name` và `arguments` keys là EN, values có thể VI/EN, `tools[].feature_group` là VI.
-
-- **Method 1**: convert sang native `messages`/`tool_calls` qua `src/data/convert_to_instruction.py`; training render dùng `apply_chat_template()` của checkpoint.
-- **Method 2**: dùng trực tiếp schema master để train Bi-Encoder + Cross-Encoder.
-
-Sau bước materialize, `data/experiments/{e0,e1,e2,e3,e4}/` chỉ có train input native và `manifest.json`. Test/validation dùng trực tiếp từ frozen revision và `data/custom_vi/`. Qwen3.5 post-trained/Instruct là checkpoint khởi đầu cho E1-E4.
-
-Upload training data cùng frozen benchmark và CustomTools test lên Kaggle Dataset:
-
-```bash
-pip install kagglehub
-python scripts/data/upload_experiments_to_kaggle.py <kaggle-username>/tool-calling-vi-experiments --dry-run
-python scripts/data/upload_experiments_to_kaggle.py \
-  <kaggle-username>/tool-calling-vi-experiments \
-  --benchmark-revision data/benchmark_core/2026-09-02-full-dedup-seed42 \
-  --custom-data data/custom_vi
-```
-
-`kagglehub` tự đọc token từ `~/.kaggle/access_token`; không ghi token vào source code hoặc commit vào Git.
-
-## 5. Tech stack
-
-| Thành phần | Công nghệ |
-|---|---|
-| Framework | PyTorch + Transformers |
-| Config | Hydra (structured config, Python dataclass) |
-| Method 1: SLM | `unsloth/Qwen3.5-4B`/`2B` + Unsloth QLoRA/SFT |
-| Method 2: Bi-Encoder | BGE-M3 + FlagEmbedding + MultipleNegativesRankingLoss |
-| Method 2: Cross-Encoder | BGE-M3 + Hierarchical heads, BERT-QA format |
-| Dịch dataset | Alibaba OpenAI-compatible API (qwen3.7-flash / qwen3.7-max) |
-| Baselines | OpenAI FC (gpt-4o-mini), Gemini FC (gemini-1.5-flash) |
-
-## 6. Tài liệu chi tiết
-
-- `AGENTS.md` — bộ nhớ cross-session.
-- `docs/architecture.md` — sơ đồ 2 pipeline.
-- `docs/methodology.md` — phương pháp nghiên cứu.
-- `docs/benchmark.md` — cấu trúc benchmark tiếng Việt.
-- `docs/translation_guidelines.md` — quy tắc dịch.
-- `docs/references.md` — papers & resources.
-- `docs/kaggle_notebook_guide.md` — chạy E0-E4 trên Kaggle.
-- `docs/kaggle_e0_evaluation_guide.md` — E0 và evaluation batched, resumable trên Kaggle.
-- `docs/kaggle_e1_e4_training_guide.md` — E1-E4 DDP training theo checkpoint-resume stages trên Kaggle.
-- `docs/colab_e1_e4_training_guide.md` — E1-E4 single-GPU Colab, data source và checkpoint qua Drive.
-
-## 7. Trạng thái
-
-| Phase | Nội dung | Trạng thái |
-|---|---|---|
-| 0 | Skeleton + docs | ✅ Done |
-| 1 | Data pipeline | ⏳ In progress |
-| 2 | Method 2: Bi-Encoder | ⏳ |
-| 3 | Method 2: Cross-Encoder | ⏳ (skeleton có sẵn) |
-| 4 | Method 1: SLM fine-tune | ⏳ |
-| 5 | Baselines (OpenAI FC, Gemini FC) | ⏳ |
-| 6 | Evaluation & comparison (4 methods) | ⏳ |
-| 7 | Stress test (RAG-MCP inspired) | ⏳ |
-
-## 8. References chính
-
-- Ersoy et al. (2025) — Tool Calling for Arabic LLMs: Data Strategies and Instruction Tuning.
-- RAG-MCP (2025) — arXiv:2505.03275.
-- BGE-M3 (BAAI, 2024).
-
-## 9. License
-
-MIT
