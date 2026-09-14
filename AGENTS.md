@@ -14,7 +14,7 @@
 - **Tác giả**: Đào Phước Thịnh, Hà Quang Đạt
 - **Giảng viên hướng dẫn**: TS. Đặng Văn Thìn
 - **Đơn vị**: Khoa Công nghệ Thông tin, Trường Đại học Công nghệ Thông tin (UIT), ĐHQG-HCM
-- **Trạng thái**: Phase 4/6 — Hoàn thành đánh giá Method 1 (Qwen3.5-2B E0→E4) & Method 2; đang tổng hợp so sánh đối đầu và chuẩn bị Stress Test
+- **Trạng thái**: Phase 6/7 — Hoàn thành Method 1 (2B E0→E4), Method 2 và viết bài báo hoàn chỉnh; đang chạy Stress Test (2B-E4 / 4B-E4) & chờ kết quả 4B-E3/E4; chuẩn bị chạy API Baselines (GPT-4o-mini & Gemini-1.5-flash)
 
 ---
 
@@ -440,37 +440,31 @@ tool_calling_with_retrieval_extraction/
 
 ---
 
-## 11. Current Action Items & Checklist (Theo Dõi Tiến Độ Cho Thinh & AI)
+## 11. Current Action Items & Checklist (Bộ Nhớ Tiến Độ Cho Thịnh & AI Agents)
 
-> **Mục này ghi nhớ trạng thái và các bước cần làm tiếp theo để hỗ trợ Thinh nhanh chóng và chuẩn xác nhất khi bắt đầu session mới.**
+> **Mục này ghi nhớ chính xác trạng thái hiện tại và các việc đang chờ để bất kỳ AI Agent nào khi mở phiên mới đều nắm bắt ngay lập tức, không bị loạn.**
 
-### 11.1 Trạng thái hiện tại (Current Status)
-- ✅ **Phase 1 (Data Pipeline)**: Hoàn tất. Đã có frozen revision `2026-09-02-full-dedup-seed42` (77,028 paired records, split 80/10/10) và tài liệu chuẩn hóa [docs/data_pipeline_and_splits.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/data_pipeline_and_splits.md).
-- ✅ **Phase 2 & 3 (Method 2 Bi-Encoder + Cross-Encoder)**: Đồng đội đã hoàn thành toàn bộ thực nghiệm (xem [docs/bao_cao_method2.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/bao_cao_method2.md)).
-  - Bi-Encoder: BGE-M3 (2 rounds CachedMNRL, 78k pairs).
-  - Cross-Encoder: XLM-RoBERTa-base (hierarchical heads, 145k pairs).
-  - Đã có kết quả trên Custom Seen (ArgA 67.75%), Custom Unseen (22.75%), Core Benchmark (40.21%), Normalizer Ablation và Random Stress ($N = 3 \to 1000$).
-- ✅ **Phase 4 (Method 1 SLM)**: Hoàn tất 100% benchmark đánh giá E0 $\to$ E4 cho `unsloth/Qwen3.5-2B` trên cả CustomTools-VI (Seen & Unseen) và Core Benchmark (EN & VI). Đã giải nén, lọc file part thừa, chuẩn hóa định dạng E2 và lưu trữ tại `results/slm/` (xem bảng tổng hợp [results/slm/summary_table.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/results/slm/summary_table.md)).
+### 11.1 Trạng thái các thành phần (Current Status)
+- ✅ **Method 1 (Qwen3.5-2B E0 $\to$ E4)**: Hoàn tất 100% đánh giá trên cả Core Benchmark (EN/VI) và CustomTools-VI (Seen/Unseen). Kết quả chuẩn hóa lưu tại `results/slm/`.
+- ✅ **Method 2 (Bi-Encoder BGE-M3 + Cross-Encoder XLM-R)**: Hoàn tất toàn bộ thực nghiệm (Evaluation, Random Stress Test $N=3 \to 1000$, Normalizer Ablation) do Đạt chạy. Báo cáo, ảnh đồ thị, PDF và file bằng chứng đã được import về nhánh `main` tại `reports/method2_20260908/` và `reports/method2_20260913/`.
+- ✅ **Dữ liệu Stress Test**: Đã tạo xong 100% tại `data/processed/stress_test/` (200 anchors, seed 42, 6 nấc $N \in [3, 10, 50, 100, 500, 1000]$).
+- ✅ **Công cụ hỗ trợ Kaggle**:
+  - Script upload Kaggle: `scripts/data/upload_experiments_to_kaggle.py` (đã hỗ trợ cờ `--stress-data`).
+  - Notebook chạy Stress Test: `notebooks/benchmarks/kaggle_stress_benchmark.ipynb` (đã tối ưu subprocess 2 GPU, dynamic batching chống OOM và tích hợp sẵn baseline Method 2 để đối chiếu).
+- ✅ **Bài báo khoa học (Paper)**: Đã hoàn thành cả 2 bản [paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md) và [paper/paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md).
 
-### 11.2 Các quyết định chiến lược đã thống nhất (Key Decisions)
-1. **Về mô hình 4B (`unsloth/Qwen3.5-4B`)**:
-   - **KHÔNG** cần train lại toàn bộ từ E0 đến E4 để tránh lãng phí GPU và thời gian.
-   - Khi cần làm Ablation Study về Model Scaling (2B vs 4B), chỉ cần chạy:
-     - 4B E0 (Zero-shot inference trên Kaggle, không tốn giờ train).
-     - 4B E3 (Song ngữ) hoặc E4 (Domain): Chọn 1 checkpoint duy nhất để train và lấy kết quả đỉnh cao so sánh với Method 2.
-2. **Về Baseline thương mại (GPT-4o-mini & Gemini-1.5-flash)**:
-   - Tạm thời gác lại, tập trung 100% vào cuộc đối đầu giữa **Method 1 vs Method 2** (đây là đề tài chính).
-   - Nếu còn thời gian trước khi nộp bài: chỉ chạy thử nghiệm trên 800 mẫu `CustomTools-VI` (dùng Gemini free qua Google AI Studio) để làm mốc tham chiếu trần (Upper Bound).
-3. **Về sự lệch tập Core Test giữa 2 bên**:
-   - Hai bên đã khớp 100% trên `CustomTools-VI` (800 seen, 800 unseen) và Stress Test (200 anchors).
-   - Trên tập Core: Method 1 dùng 7,712 mẫu canonical, Method 2 dùng 10,555 mẫu positive. Ưu tiên chạy inference Method 2 trên 7,712 mẫu (chỉ mất 15 phút GPU) để số liệu khớp hoàn hảo.
-
-### 11.3 Checklist việc cần làm tiếp theo (Next Tasks)
-- [x] **Task 1**: Thinh gửi kết quả benchmark (ArgA, Latency, Accuracy) của E0 $\to$ E4 (2B) $\to$ Đã giải nén, lọc bỏ part thừa, chuẩn hóa metrics E2 và tổng hợp bảng so sánh đối đầu với Method 2 tại [results/slm/summary_table.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/results/slm/summary_table.md).
-- [⏳] **Task 2**: Huấn luyện và đánh giá `unsloth/Qwen3.5-4B` cho E3 (Song ngữ) và E4 (Dữ liệu miền) $\to$ **Thinh đang chạy trên GPU và sẽ gửi kết quả sau**.
-- [ ] **Task 2b (Chạy lại Benchmark Method 2 theo chuẩn Method 1)**: Chạy inference cho Method 2 (Bi-Encoder BGE-M3 + Cross-Encoder XLM-R) trên đúng 7,712 mẫu Core Benchmark canonical và 1,600 mẫu CustomTools-VI bằng cùng script chấm điểm của Method 1 để đảm bảo 100% tính đồng nhất về tiêu chí đo lường (mất ~15 phút GPU).
-- [ ] **Task 3**: Chạy Stress Test cho checkpoint tốt nhất của Method 1 (E4) trên 200 anchors ($N = [3, 10, 50, 100, 500, 1000]$) để so sánh đường suy giảm với Method 2.
-- [x] **Task 4**: Viết hoàn chỉnh bài báo khoa học / luận văn: đã tạo bản tiếng Anh [paper/paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md) và bản tiếng Việt [paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md) với đầy đủ bảng số liệu thực nghiệm, phân tích chuyên sâu, ghi chú rõ ràng các vị trí chờ cập nhật (4B và Method 2 re-eval).
+### 11.2 Các công việc ĐANG CHỜ KẾT QUẢ & BƯỚC TIẾP THEO (Pending Roadmap)
+- [⏳ **ĐANG CHẠY**] **1. Benchmark Qwen3.5-4B (E3 & E4)**:
+  - Thịnh đang chạy suy luận trên Kaggle/Colab cho bản 4B.
+  - *Mục đích*: Điền vào **Bảng 5 (Model Scaling Study 2B vs 4B)** trong bài báo.
+- [⏳ **ĐANG CHẠY**] **2. Stress Test cho Method 1 (2B-E4 và 4B-E4)**:
+  - Thịnh đang chạy bằng notebook `notebooks/benchmarks/kaggle_stress_benchmark.ipynb` trên tập 200 anchors ($N = [3, 10, 50, 100, 500, 1000]$).
+  - *Mục đích*: Lấy số liệu ArgA, Tool Acc, Latency P50 để vẽ đồ thị so sánh đối đầu với Method 2.
+- [⏳ **TIẾP THEO**] **3. Baselines thương mại (OpenAI GPT-4o-mini & Google Gemini-1.5-flash)**:
+  - Chạy Function Calling của GPT-4o-mini và Gemini-1.5-flash trên 800 mẫu `CustomTools-VI` (`test_seen` và `test_unseen`).
+  - *Mục đích*: Điền vào cột API Baseline trong bài báo để làm ngưỡng tham chiếu trần (Upper Bound).
+- [💡 **TÙY CHỌN / DỰ PHÒNG**] **4. Chạy lại Method 2 trên Canonical Core (7,712 mẫu)**:
+  - Nếu cần đồng nhất tuyệt đối bảng Core Benchmark với Method 1 (trước đây Đạt test trên 10,555 mẫu cũ). Chạy mất ~15 phút GPU.
 
 ---
 
