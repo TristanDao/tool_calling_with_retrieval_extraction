@@ -1,12 +1,9 @@
 # Gọi Công Cụ (Tool Calling) Tiếng Việt: Nghiên Cứu So Sánh Giữa Mô Hình Ngôn Ngữ Nhỏ End-to-End Và Kiến Trúc Chuyên Biệt Bi-Encoder + Cross-Encoder
 
-**Tác giả**:  
-Đào Phước Thịnh$^1$, Hà Quang Đạt$^1$, Đặng Văn Thìn$^1$ (Giảng viên hướng dẫn)  
-
-$^1$Khoa Công nghệ Thông tin, Trường Đại học Công nghệ Thông tin, Đại học Quốc gia TP. Hồ Chí Minh  
-*Email*: {21521469, 21521925}@gm.uit.edu.vn, thindv@uit.edu.vn  
-
-**Thời gian**: Tháng 09/2026  
+**Đào Phước Thịnh**<sup>1</sup>, **Hà Quang Đạt**<sup>1</sup>, **Đặng Văn Thìn**<sup>1,*</sup>  
+<sup>1</sup>Khoa Công nghệ Thông tin, Trường Đại học Công nghệ Thông tin, ĐHQG-HCM, Việt Nam  
+Email: `{21521469, 21521925}@ms.uit.edu.vn`, `thindv@uit.edu.vn`  
+<sup>*</sup>Tác giả liên hệ (Corresponding author)
 
 ---
 

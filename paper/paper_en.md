@@ -1,12 +1,9 @@
 # Vietnamese Tool Calling: A Comparative Study Between End-to-End Small Language Models and Specialized Bi-Encoder + Cross-Encoder Architecture
 
-**Authors**:  
-Dao Phuoc Thinh$^1$, Ha Quang Dat$^1$, Dang Van Thin$^1$ (Supervisor)  
-
-$^1$Faculty of Information Technology, University of Information Technology, Vietnam National University, Ho Chi Minh City (VNU-HCM), Vietnam  
-*Email*: {21521469, 21521925}@gm.uit.edu.vn, thindv@uit.edu.vn  
-
-**Date**: September 2026  
+**Dao Phuoc Thinh**<sup>1</sup>, **Ha Quang Dat**<sup>1</sup>, **Dang Van Thin**<sup>1,*</sup>  
+<sup>1</sup>Faculty of Information Technology, University of Information Technology, VNU-HCM, Vietnam  
+Email: `{21521469, 21521925}@ms.uit.edu.vn`, `thindv@uit.edu.vn`  
+<sup>*</sup>Corresponding author
 
 ---
 
