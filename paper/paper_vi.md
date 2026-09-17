@@ -62,23 +62,20 @@ Trong khi đó, ở nhánh Xử lý Ngôn ngữ Tự nhiên cổ điển, các m
 Để đảm bảo tính khách quan và khả năng tái lập thực nghiệm, chúng tôi xây dựng hai bộ dữ liệu độc lập với các đặc tính thống kê chi tiết tại Bảng 1.
 
 **Bảng 1: Thống kê chi tiết các bộ dữ liệu trong Benchmark Tool Calling Tiếng Việt**  
-*(Ghi chú: FC biểu thị mẫu có gọi công cụ (Y) hoặc không gọi công cụ (N). Turns: Đơn lượt (S). Calls: Đơn lệnh (S) hoặc Đa lệnh (M). Unique Tools: Số lượng công cụ duy nhất).*
+*(Ghi chú: Core Benchmark là tập dữ liệu song ngữ đối xứng 1:1 (Paired EN–VI). CustomTools-VI có tỷ lệ mẫu âm tính cân bằng chính xác 50% ở mọi tập kiểm thử).*
 
-| Bộ dữ liệu | Ngôn ngữ | FC | Turns | Calls | Tập Huấn Luyện (Train) | Tập Kiểm Thử (Test) | Unique Tools |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Canonical Glaive** | Tiếng Việt (VI) | Y | S | S | 14,568 | 1,821 | 972 |
-| | Tiếng Việt (VI) | N | S | S | 3,642 | 455 | — |
-| | Tiếng Anh (EN) | Y | S | S | 14,568 | 1,821 | 972 |
-| | Tiếng Anh (EN) | N | S | S | 3,642 | 455 | — |
-| **Canonical xLAM** | Tiếng Việt (VI) | Y | S | M | 47,047 | 5,891 | 3,449 |
-| | Tiếng Việt (VI) | N | S | M | 0 | 0 | — |
-| | Tiếng Anh (EN) | Y | S | M | 47,047 | 5,891 | 3,449 |
-| | Tiếng Anh (EN) | N | S | M | 0 | 0 | — |
-| **CustomTools-VI (Seen)** | Tiếng Việt (VI) | Y | S | S/M | 3,600 | 400 | 20 |
-| | Tiếng Việt (VI) | N | S | S/M | 2,000 | 400 | — |
-| **CustomTools-VI (Unseen)**| Tiếng Việt (VI) | Y | S | S/M | 0 *(Strict Zero-Shot)* | 400 | 20 |
-| | Tiếng Việt (VI) | N | S | S/M | 0 *(Strict Zero-Shot)* | 400 | — |
-| **Tổng Cộng (Core Benchmark)**| **Song ngữ EN-VI**| **Y/N** | **S** | **S/M**| **61,615 (x2)** | **7,712 (x2)** | **4,421** |
+| Bộ dữ liệu | Mục đích & Đặc tính | Ngôn ngữ | Lệnh gọi | Mẫu Dương (FC) | Mẫu Âm (Non-FC) | Tập Train | Tập Test | Số công cụ (Tools) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| *Nhóm 1: Canonical Core Benchmark (77,028 cặp bản ghi song ngữ đối sánh 1:1)* | | | | | | | | |
+| **Canonical Glaive** | Khái quát hóa đơn lệnh + Âm tính | Song ngữ EN–VI (Paired) | Đơn lệnh (Single) | 14,568 | 3,642 | 18,210 | 2,276 | 972 |
+| **Canonical xLAM** | Cấu trúc phức tạp + Đa lệnh gọi | Song ngữ EN–VI (Paired) | Đa lệnh (Multi) | 47,047 | 0 | 47,047 | 5,891 | 3,449 |
+| **Tổng Core Benchmark** | **Khung chuẩn quy mô lớn** | **Song ngữ EN–VI** | **Đơn & Đa lệnh** | **57,750 (×2)** | **3,865 (×2)** | **61,615 (×2)** | **7,712 (×2)** | **4,421** |
+| *Nhóm 2: CustomTools-VI Benchmark (8,000 mẫu đặc thù đời sống Việt Nam)* | | | | | | | | |
+| **CustomTools-VI (Seen)** | 20 công cụ đã học (10 nhóm miền) | Tiếng Việt (VI) | Đơn & Đa lệnh | 2,800 | 2,800 | 5,600 | 800 | 20 (Seen) |
+| **CustomTools-VI (Unseen)**| 20 công cụ Zero-Shot (10 nhóm miền)| Tiếng Việt (VI) | Đơn & Đa lệnh | 400 | 400 | 0 *(Zero-Shot)* | 800 | 20 (Unseen) |
+| **Tổng CustomTools-VI** | **Khung chuẩn miền thực tế** | **Tiếng Việt (VI)** | **Đơn & Đa lệnh** | **3,200** | **3,200** | **5,600** | **1,600** | **40** |
+
+*\*Ghi chú chuyển đổi biểu diễn dữ liệu (Data Representation Mapping): Số liệu trong Bảng 1 đại diện cho các bản ghi hội thoại gốc (Master Conversational Samples). Khi huấn luyện kiến trúc phân biệt Method 2, các bản ghi này được trích xuất thành 78,435 cặp (query, tool_description) cho Bi-Encoder (loại bỏ hoàn toàn định danh của 20 công cụ unseen) và 145,383 cặp (query, param_schema) phân cấp cho Cross-Encoder. Trên Core Benchmark, Method 2 kiểm thử trên 10,555 truy vấn positive chuẩn của pipeline.*
 
 ### 3.1 Quy chuẩn dịch thuật và đóng băng Benchmark (Revision Policy)
 Để tránh rò rỉ dữ liệu và đảm bảo việc so sánh công bằng giữa các mô hình, chúng tôi áp dụng quy trình đóng băng phiên bản:

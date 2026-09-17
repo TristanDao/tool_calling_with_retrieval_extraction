@@ -493,18 +493,21 @@ Trong `CustomTools-VI`, chúng tôi thiết lập tỷ lệ âm tính cân bằn
 ### 3.5. Quy trình xây dựng tập kiểm thử áp lực (Stress Test Benchmark)
 Để kiểm tra độ bền vững của hệ thống khi quy mô danh mục công cụ tăng vọt, chúng tôi trích xuất **200 mẫu thử nghiệm mỏ neo (Anchor queries)** chuẩn, sau đó tiến hành nhồi thêm các công cụ gây nhiễu (distractor tools) để tạo ra các tập kiểm thử có quy mô $N \in \{3, 10, 50, 100, 500, 1.000\}$ công cụ. Các công cụ gây nhiễu được lấy từ kho 4,421 công cụ thực tế của Core Benchmark, mô phỏng chính xác kịch bản triển khai trong các tập đoàn quy mô lớn.
 
-**Bảng 3.1: Thống kê định lượng các bộ dữ liệu trong Benchmark Tool Calling Tiếng Việt**
+**Bảng 3.1: Thống kê định lượng các bộ dữ liệu trong Benchmark Tool Calling Tiếng Việt**  
+*(Ghi chú: Core Benchmark là tập dữ liệu song ngữ đối xứng 1:1 (Paired EN–VI). CustomTools-VI có tỷ lệ mẫu âm tính cân bằng chính xác 50% ở mọi tập kiểm thử).*
 
-| Bộ dữ liệu | Phân tách | Số mẫu (Samples) | Tỷ lệ Dương/Âm (Pos/Neg) | Số công cụ (Tools) | Lượt thoại | Lệnh gọi |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Core VI Train** | Huấn luyện | 61,615 | 57,750 / 3,865 | 4,421 | Đơn lượt (S) | Đơn/Đa (S+M) |
-| **Core VI Val** | Xác thực | 7,701 | 7,222 / 479 | 2,890 | Đơn lượt (S) | Đơn/Đa (S+M) |
-| **Core VI Test** | Kiểm thử | 7,712 | 7,221 / 491 | 2,905 | Đơn lượt (S) | Đơn/Đa (S+M) |
-| **CustomTools-VI Train** | Huấn luyện miền | 5,600 | 2,800 / 2,800 | 20 (Seen) | Đơn lượt (S) | Đơn/Đa (S+M) |
-| **CustomTools-VI Val** | Xác thực miền | 800 | 400 / 400 | 20 (Seen) | Đơn lượt (S) | Đơn/Đa (S+M) |
-| **CustomTools-VI Test Seen** | Kiểm thử miền đã học | 800 | 400 / 400 | 20 (Seen) | Đơn lượt (S) | Đơn/Đa (S+M) |
-| **CustomTools-VI Test Unseen**| Kiểm thử Zero-Shot | 800 | 400 / 400 | 20 (Unseen) | Đơn lượt (S) | Đơn/Đa (S+M) |
-| **Stress Test Anchors** | Kiểm thử áp lực ($N$) | 200 | 200 / 0 | $3 \to 1.000$ | Đơn lượt (S) | Đơn/Đa (S+M) |
+| Bộ dữ liệu | Mục đích & Đặc tính | Ngôn ngữ | Lệnh gọi | Mẫu Dương (FC) | Mẫu Âm (Non-FC) | Tập Train | Tập Test | Số công cụ (Tools) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| *Nhóm 1: Canonical Core Benchmark (77,028 cặp bản ghi song ngữ đối sánh 1:1)* | | | | | | | | |
+| **Canonical Glaive** | Khái quát hóa đơn lệnh + Âm tính | Song ngữ EN–VI (Paired) | Đơn lệnh (Single) | 14,568 | 3,642 | 18,210 | 2,276 | 972 |
+| **Canonical xLAM** | Cấu trúc phức tạp + Đa lệnh gọi | Song ngữ EN–VI (Paired) | Đa lệnh (Multi) | 47,047 | 0 | 47,047 | 5,891 | 3,449 |
+| **Tổng Core Benchmark** | **Khung chuẩn quy mô lớn** | **Song ngữ EN–VI** | **Đơn & Đa lệnh** | **57,750 (×2)** | **3,865 (×2)** | **61,615 (×2)** | **7,712 (×2)** | **4,421** |
+| *Nhóm 2: CustomTools-VI Benchmark (8,000 mẫu đặc thù đời sống Việt Nam)* | | | | | | | | |
+| **CustomTools-VI (Seen)** | 20 công cụ đã học (10 nhóm miền) | Tiếng Việt (VI) | Đơn & Đa lệnh | 2,800 | 2,800 | 5,600 | 800 | 20 (Seen) |
+| **CustomTools-VI (Unseen)**| 20 công cụ Zero-Shot (10 nhóm miền)| Tiếng Việt (VI) | Đơn & Đa lệnh | 400 | 400 | 0 *(Zero-Shot)* | 800 | 20 (Unseen) |
+| **Tổng CustomTools-VI** | **Khung chuẩn miền thực tế** | **Tiếng Việt (VI)** | **Đơn & Đa lệnh** | **3,200** | **3,200** | **5,600** | **1,600** | **40** |
+
+*\*Ghi chú chuyển đổi biểu diễn dữ liệu (Data Representation Mapping): Số liệu trong Bảng 3.1 đại diện cho các bản ghi hội thoại gốc (Master Conversational Records). Khi đưa vào huấn luyện đường ống phân biệt Method 2, các mẫu này được trích xuất thành 78,435 cặp (query, tool_description) cho Bi-Encoder (loại bỏ hoàn toàn định danh của 20 công cụ unseen để bảo toàn tính strict zero-shot) và 145,383 cặp (query, param_schema) phân cấp cho Cross-Encoder. Trên Core Benchmark, Method 2 được kiểm thử trên tập 10,555 truy vấn dương tính chuẩn hóa.*
 
 ---
 
@@ -562,6 +565,13 @@ Kiến trúc này tách biệt triệt để hai công đoạn:
    - Xây dựng trên nền tảng mô hình đa ngôn ngữ `xlm-roberta-base`.
    - Đầu vào nhận đồng thời truy vấn và schema của từng tham số của công cụ đã chọn.
    - Cơ chế định tuyến schema (Schema-driven routing): Mô hình không cần học phân loại kiểu dữ liệu vì kiểu dữ liệu đã được cung cấp sẵn từ schema. Mô hình kích hoạt đầu nhị phân `has_value` để xác định tham số có giá trị hay không, sau đó kích hoạt duy nhất một đầu ra tương ứng: `span_head` cho kiểu chuỗi/số, `enum_head` cho kiểu liệt kê, hoặc `bool_head` cho kiểu boolean.
+
+> [!NOTE] GHI CHÚ ĐỐI CHIẾU DÀNH CHO TÁC GIẢ METHOD 2 (HÀ QUANG ĐẠT)
+> *Các thông số kỹ thuật và số lượng mẫu biểu diễn của Phương pháp 2 dưới đây được trích xuất từ tài liệu thực nghiệm `docs/bao_cao_method2.md`. Tác giả Hà Quang Đạt vui lòng rà soát và cập nhật thêm các thông tin chi tiết (nếu có bổ sung mới từ các notebook Kaggle):*
+> - **Bi-Encoder (BGE-M3 + LoRA $r=16, \alpha=32$)**: 94,634 hàng cặp dữ liệu ban đầu $\to$ 78,435 cặp huấn luyện thực tế đưa vào hàm mất mát `CachedMNRL`. Bảo toàn 100% nguyên tắc *Strict Unseen* (loại bỏ hoàn toàn 20 công cụ `unseen` trong cả tập gốc và tập mined hard negatives).
+> - **Ngưỡng quyết định (Calibration Thresholds)**: Ngưỡng tuyệt đối $\tau = 0.35$, ngưỡng biên Top-1 vs Top-2 $\delta = 0.21$.
+> - **Cross-Encoder (`xlm-roberta-base` Hierarchical Heads)**: 145,383 cặp huấn luyện `(query, param_schema)` sau vòng sửa lỗi gán nhãn (`repair_v1`). Gồm đầu nhị phân `has_value` cùng 3 sub-heads phân cấp (`span_head`, `enum_head`, `bool_head`).
+> - **Phạm vi kiểm thử thực tế**: Core Benchmark đánh giá trên 10,555 truy vấn dương tính (4,447 Glaive + 6,108 xLAM); CustomTools-VI đánh giá trên đủ 800 mẫu `seen` và 800 mẫu `unseen` (mỗi tập 400 mẫu dương tính / 400 mẫu âm tính).
 
 ### 4.4. Cơ chế chuẩn hóa giá trị thực thể tiếng Việt (Vietnamese Value Normalizer)
 Để chuyển đổi các đoạn văn bản trích xuất (surface spans) thành các giá trị số và định dạng chuẩn phù hợp với API, chúng tôi xây dựng bộ chuẩn hóa bằng tập luật biểu thức chính quy (Regex) và phân tích cú pháp số học tiếng Việt:

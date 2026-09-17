@@ -58,23 +58,20 @@ Dense retrieval for APIs has been explored in ToolRetriever and AutoTool (Song e
 Table 1 summarizes the statistical properties of the benchmarks constructed and evaluated in this work.
 
 **Table 1: Detailed Statistics of the Function-Calling Benchmark Datasets**  
-*(FC: Function calling required (Y) or conversational negative (N). Turns: Single-turn (S). Calls: Single call (S) or Multiple calls (M). Unique Tools: Number of distinct API specifications).*
+*(Note: Core Benchmark represents a 1:1 paired bilingual dataset (EN–VI). CustomTools-VI enforces a strictly balanced 50% conversational negative ratio across all splits).*
 
-| Dataset | Language | FC | Turns | Calls | Train Samples | Test Samples | Unique Tools |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Canonical Glaive** | Vietnamese (VI) | Y | S | S | 14,568 | 1,821 | 972 |
-| | Vietnamese (VI) | N | S | S | 3,642 | 455 | — |
-| | English (EN) | Y | S | S | 14,568 | 1,821 | 972 |
-| | English (EN) | N | S | S | 3,642 | 455 | — |
-| **Canonical xLAM** | Vietnamese (VI) | Y | S | M | 47,047 | 5,891 | 3,449 |
-| | Vietnamese (VI) | N | S | M | 0 | 0 | — |
-| | English (EN) | Y | S | M | 47,047 | 5,891 | 3,449 |
-| | English (EN) | N | S | M | 0 | 0 | — |
-| **CustomTools-VI (Seen)** | Vietnamese (VI) | Y | S | S/M | 3,600 | 400 | 20 |
-| | Vietnamese (VI) | N | S | S/M | 2,000 | 400 | — |
-| **CustomTools-VI (Unseen)**| Vietnamese (VI) | Y | S | S/M | 0 *(Strict Zero-Shot)* | 400 | 20 |
-| | Vietnamese (VI) | N | S | S/M | 0 *(Strict Zero-Shot)* | 400 | — |
-| **Total (Core Benchmark)**| **Bilingual EN-VI**| **Y/N** | **S** | **S/M**| **61,615 (x2)** | **7,712 (x2)** | **4,421** |
+| Benchmark Dataset | Scope & Objective | Language | Invocations | Positives (FC) | Negatives (Non-FC) | Train Split | Test Split | Unique Tools |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| *Cohort 1: Canonical Core Benchmark (77,028 paired bilingual 1:1 records)* | | | | | | | | |
+| **Canonical Glaive** | Single-call generalization + Negatives | Bilingual EN–VI (Paired) | Single | 14,568 | 3,642 | 18,210 | 2,276 | 972 |
+| **Canonical xLAM** | Complex schemas + Multi-call | Bilingual EN–VI (Paired) | Multi | 47,047 | 0 | 47,047 | 5,891 | 3,449 |
+| **Total Core Benchmark**| **Large-scale Foundation** | **Bilingual EN–VI** | **Single / Multi** | **57,750 (×2)** | **3,865 (×2)** | **61,615 (×2)** | **7,712 (×2)** | **4,421** |
+| *Cohort 2: CustomTools-VI Benchmark (8,000 localized Vietnamese instances)* | | | | | | | | |
+| **CustomTools-VI (Seen)** | In-domain evaluation (10 domains) | Vietnamese (VI) | Single / Multi | 2,800 | 2,800 | 5,600 | 800 | 20 (Seen) |
+| **CustomTools-VI (Unseen)**| Zero-shot generalization (10 domains)| Vietnamese (VI) | Single / Multi | 400 | 400 | 0 *(Zero-Shot)* | 800 | 20 (Unseen) |
+| **Total CustomTools-VI** | **Localized Domain Benchmark** | **Vietnamese (VI)** | **Single / Multi** | **3,200** | **3,200** | **5,600** | **1,600** | **40** |
+
+*\*Data Representation Mapping Note: Sample counts in Table 1 represent master conversational records. When training the discriminative architecture (Method 2), these instances are converted into 78,435 pairs (query, tool_description) for the Bi-Encoder (completely excluding the 20 unseen tools) and 145,383 hierarchical pairs (query, param_schema) for the Cross-Encoder. On Core Benchmark, Method 2 is evaluated across 10,555 valid positive tool invocation instances.*
 
 ### 3.1 Canonical Core Benchmark & Revision Policy
 Derived from Glaive Function Calling v2 and Salesforce xLAM, raw records underwent rigorous deduplication, syntax validation, and single-turn standardization:
