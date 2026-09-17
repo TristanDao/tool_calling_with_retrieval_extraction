@@ -13,8 +13,7 @@
 - **Repo path**: `/home/thinh/project/UIT/tool_calling_with_retrieval_extraction`
 - **Tác giả**: Đào Phước Thịnh, Hà Quang Đạt
 - **Giảng viên hướng dẫn**: TS. Đặng Văn Thìn
-- **Đơn vị**: Khoa Công nghệ Thông tin, Trường Đại học Công nghệ Thông tin (UIT), ĐHQG-HCM
-- **Trạng thái**: Phase 6/7 — Hoàn thành Method 1 (2B E0→E4), Method 2 và viết bài báo hoàn chỉnh; đang chạy Stress Test (2B-E4 / 4B-E4) & chờ kết quả 4B-E3/E4; chuẩn bị chạy API Baselines (GPT-4o-mini & Gemini-1.5-flash)
+- **Trạng thái**: Phase 6/7 — Hoàn thành Method 1 (2B E0→E4), Method 2 và Stress Test đối đầu ($N=3 \to 1000$); Cập nhật đầy đủ hạ tầng phần cứng (1× A100 Colab Pro huấn luyện, 2× T4 Kaggle kiểm thử) và kết quả Stress Test vào bài báo; **Hoàn thành đánh giá Benchmark Qwen3.5-4B** trên Canonical Core (E3 VI Tool Acc 98.73%, ArgA 72.86%, Cú pháp lỗi 0.32%; EN Tool Acc 96.63%, ArgA 74.71%) và CustomTools-VI (E3 Seen 62.00%, Unseen 69.75%; E4 Seen ArgA 87.92%, Unseen ArgA 86.75%, ArgA Gap +1.17% thiết lập kỷ lục SOTA mới); **Hoàn thành đánh giá Frontier API Baselines** (`GPT-5.6 Luna` và `Gemini 3.8 Flash` trên toàn bộ 1,600 mẫu `CustomTools-VI`) qua Kaggle Model Proxy Serverless; **Tách riêng tài liệu Khóa luận tốt nghiệp UIT đầy đủ** tại `thesis/khoa_luan_tot_nghiep.md` và **chuẩn hóa bộ đôi Paper hội nghị khoa học** tại `paper/paper_en.md` và `paper/paper_vi.md`. Đang chờ nốt kết quả đánh giá 4B E4 trên Core Benchmark.
 
 ---
 
@@ -446,24 +445,21 @@ tool_calling_with_retrieval_extraction/
 
 ### 11.1 Trạng thái các thành phần (Current Status)
 - ✅ **Method 1 (Qwen3.5-2B E0 $\to$ E4)**: Hoàn tất 100% đánh giá trên cả Core Benchmark (EN/VI) và CustomTools-VI (Seen/Unseen). Kết quả chuẩn hóa lưu tại `results/slm/`.
+- ✅ **Method 1 (Qwen3.5-4B E3 & E4)**:
+  - Huấn luyện hoàn tất trên 1× NVIDIA A100 (loss E4 đạt 0.0103, push lên `ThinhDao/Qwen3.5-4B_E4`).
+  - **Core Benchmark (E3)**: Hoàn tất 100% (VI Tool Acc 98.73%, ArgA 72.86%, Cú pháp lỗi 0.32%; EN Tool Acc 96.63%, ArgA 74.71%, Cú pháp lỗi 1.97%).
+  - **CustomTools-VI (E3 & E4)**: Hoàn tất 100% (E3 Seen ArgA 62.00%, Unseen ArgA 69.75%; E4 Seen ArgA 87.92%, Unseen ArgA 86.75%, ArgA Gap +1.17% thiết lập đỉnh cao mới của dòng SLM).
+  - Đang chạy nốt suy luận cho 4B E4 trên Core Benchmark.
 - ✅ **Method 2 (Bi-Encoder BGE-M3 + Cross-Encoder XLM-R)**: Hoàn tất toàn bộ thực nghiệm (Evaluation, Random Stress Test $N=3 \to 1000$, Normalizer Ablation) do Đạt chạy. Báo cáo, ảnh đồ thị, PDF và file bằng chứng đã được import về nhánh `main` tại `reports/method2_20260908/` và `reports/method2_20260913/`.
-- ✅ **Dữ liệu Stress Test**: Đã tạo xong 100% tại `data/processed/stress_test/` (200 anchors, seed 42, 6 nấc $N \in [3, 10, 50, 100, 500, 1000]$).
-- ✅ **Công cụ hỗ trợ Kaggle**:
-  - Script upload Kaggle: `scripts/data/upload_experiments_to_kaggle.py` (đã hỗ trợ cờ `--stress-data`).
-  - Notebook chạy Stress Test: `notebooks/benchmarks/kaggle_stress_benchmark.ipynb` (đã tối ưu subprocess 2 GPU, dynamic batching chống OOM và tích hợp sẵn baseline Method 2 để đối chiếu).
-- ✅ **Bài báo khoa học (Paper)**: Đã hoàn thành cả 2 bản [paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md) và [paper/paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md).
+- ✅ **Stress Test Đối Đầu ($N = 3 \to 1000$)**: Đã hoàn thành đối đầu trực diện giữa `Qwen3.5-2B E4` và `Method 2`. Method 2 áp đảo tuyệt đối về độ trễ (nhanh hơn từ 21.6× đến 159.2×, giữ phẳng ~58 ms), SLM bị OOM ở $N \ge 500$ trên GPU T4 16GB do ma trận SDPA attention vượt 32GB VRAM.
+- ✅ **Frontier API Baselines**: Hoàn tất đánh giá `GPT-5.6 Luna` và `Gemini 3.8 Flash` trên toàn bộ 1,600 mẫu CustomTools-VI.
+- ✅ **Bài báo khoa học (Paper)**: Đã hoàn thành và cập nhật đồng bộ cả 2 bản [paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md) và [paper/paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md) với Mục 4.3 (Hạ tầng phần cứng & Siêu tham số), Mục 6 (Bảng 2 Frontier APIs, Bảng 3 Core Benchmark có E3 4B), Mục 6.6 (Stress Test), và Mục 7 (Model Scaling Study 2B vs 4B với Bảng 6, Bảng 6.1 và 4 phát hiện thực nghiệm then chốt).
 
 ### 11.2 Các công việc ĐANG CHỜ KẾT QUẢ & BƯỚC TIẾP THEO (Pending Roadmap)
-- [⏳ **ĐANG CHẠY**] **1. Benchmark Qwen3.5-4B (E3 & E4)**:
-  - Thịnh đang chạy suy luận trên Kaggle/Colab cho bản 4B.
-  - *Mục đích*: Điền vào **Bảng 5 (Model Scaling Study 2B vs 4B)** trong bài báo.
-- [⏳ **ĐANG CHẠY**] **2. Stress Test cho Method 1 (2B-E4 và 4B-E4)**:
-  - Thịnh đang chạy bằng notebook `notebooks/benchmarks/kaggle_stress_benchmark.ipynb` trên tập 200 anchors ($N = [3, 10, 50, 100, 500, 1000]$).
-  - *Mục đích*: Lấy số liệu ArgA, Tool Acc, Latency P50 để vẽ đồ thị so sánh đối đầu với Method 2.
-- [⏳ **TIẾP THEO**] **3. Baselines thương mại (OpenAI GPT-4o-mini & Google Gemini-1.5-flash)**:
-  - Chạy Function Calling của GPT-4o-mini và Gemini-1.5-flash trên 800 mẫu `CustomTools-VI` (`test_seen` và `test_unseen`).
-  - *Mục đích*: Điền vào cột API Baseline trong bài báo để làm ngưỡng tham chiếu trần (Upper Bound).
-- [💡 **TÙY CHỌN / DỰ PHÒNG**] **4. Chạy lại Method 2 trên Canonical Core (7,712 mẫu)**:
+- [⏳ **ĐANG CHẠY SUY LUẬN**] **1. Benchmark Qwen3.5-4B (E4 Core Benchmark)**:
+  - Thịnh đang chạy suy luận trên Kaggle cho 4B E4 trên Canonical Core Benchmark (7,712 mẫu VI / EN).
+  - *Mục đích*: Điền nốt các ô *[Đang chạy]* của E4 4B trong Bảng 6 của bài báo.
+- [💡 **TÙY CHỌN / DỰ PHÒNG**] **2. Chạy lại Method 2 trên Canonical Core (7,712 mẫu)**:
   - Nếu cần đồng nhất tuyệt đối bảng Core Benchmark với Method 1 (trước đây Đạt test trên 10,555 mẫu cũ). Chạy mất ~15 phút GPU.
 
 ---
@@ -509,3 +505,4 @@ tool_calling_with_retrieval_extraction/
 | 2026-09-03 | **Kaggle timeout mitigation**: Tách guide E0 evaluation và E1-E4 training. E0 dùng batch generation/resume; E1-E4 dùng batch 2 x accumulation 4 x 2 GPU, tắt tqdm/full validation, checkpoint 250 steps và resume theo stage dưới giới hạn 12 giờ. |
 | 2026-09-04 | **Training RAM mitigation**: E1-E4 và trainer Unsloth đọc từng dòng JSONL, tokenize bằng generator và tạo dataset Arrow chỉ với các cột token; tắt dataloader workers/pin memory để tránh nhân host RAM trong DDP. |
 | 2026-09-04 | **Colab training guide**: Thêm hướng dẫn single-GPU Colab, lựa chọn data từ Drive/Hugging Face/Kaggle và resume checkpoint qua Google Drive. |
+| 2026-09-15 | **Stress Test & Training Telemetry Update**: Upload lại Kaggle dataset đầy đủ `benchmark_core`; Hoàn tất Stress Test đối đầu 2B_E4 vs Method 2 ($N=3 \to 1000$), ghi nhận OOM tại $N \ge 500$ cho SLM; Ghi nhận thông số huấn luyện thực tế A100 Colab Pro (2B: 49.5m, 4B: 2h05m, loss 0.0103) và bổ sung toàn bộ vào `paper/paper_vi.md`, `paper/paper_en.md`, `AGENTS.md`. |

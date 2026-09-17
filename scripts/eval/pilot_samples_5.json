@@ -1,0 +1,1996 @@
+[
+  {
+    "id": "custom_vi_v1_006401",
+    "query": "Please giúp mình tìm quán phở bò ở Cà Mau, giá dưới 50.000 đồng, điểm đánh giá từ 2,5 trở lên, đồng thời đặt 2 phần bún bò Huế giao đến phường Cầu Giấy, không cay, giao trong tối đa 30 phút nhé. Mình cần hoàn tất phần chuẩn bị còn thiếu.",
+    "function_calls": [
+      {
+        "name": "vi_search_restaurants",
+        "arguments": {
+          "location": "Cà Mau",
+          "dish": "phở bò",
+          "max_price_vnd": 50000,
+          "min_rating": 2.5
+        }
+      },
+      {
+        "name": "vi_order_food",
+        "arguments": {
+          "dish": "bún bò Huế",
+          "quantity": 2,
+          "delivery_location": "phường Cầu Giấy",
+          "spicy": false,
+          "max_delivery_minutes": 30
+        }
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_estimate_meal_cost",
+          "description": "Ước tính tổng chi phí cho một bữa ăn.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "people": {
+                "type": "integer",
+                "description": "Số người dùng bữa"
+              },
+              "meal_type": {
+                "type": "string",
+                "description": "Loại bữa ăn",
+                "enum": [
+                  "bình dân",
+                  "trung cấp",
+                  "cao cấp"
+                ]
+              },
+              "location": {
+                "type": "string",
+                "description": "Địa điểm dùng bữa"
+              },
+              "drinks_per_person": {
+                "type": "integer",
+                "description": "Số đồ uống mỗi người"
+              }
+            },
+            "required": [
+              "people",
+              "meal_type",
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_products",
+          "description": "Tìm sản phẩm trên sàn thương mại điện tử.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "product": {
+                "type": "string",
+                "description": "Sản phẩm cần tìm"
+              },
+              "platform": {
+                "type": "string",
+                "description": "Sàn thương mại điện tử",
+                "enum": [
+                  "Shopee",
+                  "Lazada",
+                  "Tiki",
+                  "Sendo"
+                ]
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Giá tối đa bằng VND"
+              },
+              "official_store_only": {
+                "type": "boolean",
+                "description": "Có chỉ lấy gian hàng chính hãng hay không"
+              }
+            },
+            "required": [
+              "product",
+              "platform"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_order_food",
+          "description": "Đặt món ăn giao đến địa chỉ tại Việt Nam.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "dish": {
+                "type": "string",
+                "description": "Món ăn cần đặt"
+              },
+              "quantity": {
+                "type": "integer",
+                "description": "Số phần cần đặt"
+              },
+              "delivery_location": {
+                "type": "string",
+                "description": "Địa điểm giao món"
+              },
+              "spicy": {
+                "type": "boolean",
+                "description": "Có chọn vị cay hay không"
+              },
+              "max_delivery_minutes": {
+                "type": "integer",
+                "description": "Thời gian giao tối đa bằng phút"
+              }
+            },
+            "required": [
+              "dish",
+              "quantity",
+              "delivery_location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_calculate_route_distance",
+          "description": "Tính khoảng cách và thời gian dự kiến giữa hai địa điểm.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "origin": {
+                "type": "string",
+                "description": "Điểm đi"
+              },
+              "destination": {
+                "type": "string",
+                "description": "Điểm đến"
+              },
+              "travel_mode": {
+                "type": "string",
+                "description": "Phương thức di chuyển",
+                "enum": [
+                  "ô tô",
+                  "xe máy",
+                  "đi bộ"
+                ]
+              }
+            },
+            "required": [
+              "origin",
+              "destination"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_lookup_zodiac_information",
+          "description": "Tra cứu thông tin tham khảo về con giáp theo năm sinh.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "birth_year": {
+                "type": "integer",
+                "description": "Năm sinh"
+              },
+              "zodiac": {
+                "type": "string",
+                "description": "Con giáp",
+                "enum": [
+                  "Tý",
+                  "Sửu",
+                  "Dần",
+                  "Mão",
+                  "Thìn",
+                  "Tỵ",
+                  "Ngọ",
+                  "Mùi",
+                  "Thân",
+                  "Dậu",
+                  "Tuất",
+                  "Hợi"
+                ]
+              },
+              "topic": {
+                "type": "string",
+                "description": "Chủ đề",
+                "enum": [
+                  "tổng quan",
+                  "công việc",
+                  "tình cảm"
+                ]
+              }
+            },
+            "required": [
+              "birth_year"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_restaurants",
+          "description": "Tìm quán ăn theo món, địa điểm và mức giá.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm cần tìm"
+              },
+              "dish": {
+                "type": "string",
+                "description": "Món ăn cần tìm"
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Mức giá tối đa bằng VND"
+              },
+              "min_rating": {
+                "type": "number",
+                "description": "Điểm đánh giá tối thiểu"
+              }
+            },
+            "required": [
+              "location",
+              "dish"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_track_shipment",
+          "description": "Tra cứu trạng thái giao hàng theo mã vận đơn.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "tracking_code": {
+                "type": "string",
+                "description": "Mã vận đơn",
+                "x-identifier": true
+              },
+              "carrier": {
+                "type": "string",
+                "description": "Đơn vị vận chuyển",
+                "enum": [
+                  "GHN",
+                  "GHTK",
+                  "Viettel Post",
+                  "VNPost",
+                  "J&T Express"
+                ]
+              },
+              "include_history": {
+                "type": "boolean",
+                "description": "Có lấy lịch sử vận chuyển"
+              }
+            },
+            "required": [
+              "tracking_code"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_domestic_flights",
+          "description": "Tìm chuyến bay nội địa Việt Nam.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "origin": {
+                "type": "string",
+                "description": "Điểm khởi hành"
+              },
+              "destination": {
+                "type": "string",
+                "description": "Điểm đến"
+              },
+              "departure_date": {
+                "type": "string",
+                "description": "Ngày khởi hành",
+                "format": "date"
+              },
+              "airline": {
+                "type": "string",
+                "description": "Hãng hàng không ưu tiên"
+              },
+              "passengers": {
+                "type": "integer",
+                "description": "Số hành khách"
+              }
+            },
+            "required": [
+              "origin",
+              "destination",
+              "departure_date"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_attractions",
+          "description": "Tìm địa điểm tham quan tại Việt Nam.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Tỉnh hoặc thành phố"
+              },
+              "category": {
+                "type": "string",
+                "description": "Loại địa điểm",
+                "enum": [
+                  "thiên nhiên",
+                  "lịch sử",
+                  "văn hóa",
+                  "giải trí"
+                ]
+              },
+              "family_friendly_only": {
+                "type": "boolean",
+                "description": "Có chỉ lấy địa điểm phù hợp với gia đình hay không"
+              },
+              "max_distance_km": {
+                "type": "number",
+                "description": "Khoảng cách tối đa bằng km"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_accommodations",
+          "description": "Tìm nơi lưu trú theo địa điểm và ngân sách.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm lưu trú"
+              },
+              "check_in_date": {
+                "type": "string",
+                "description": "Ngày nhận phòng",
+                "format": "date"
+              },
+              "nights": {
+                "type": "integer",
+                "description": "Số đêm lưu trú"
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Giá tối đa mỗi đêm bằng VND"
+              },
+              "guests": {
+                "type": "integer",
+                "description": "Số khách lưu trú"
+              }
+            },
+            "required": [
+              "location",
+              "check_in_date",
+              "nights"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "custom_vi_v1_006402",
+    "query": "Phiền bạn đặt 4 phần mì Quảng giao đến phường Ninh Kiều, không cay, giao trong tối đa 30 phút, đồng thời tìm quán bánh xèo ở Sài Gòn, giá dưới 250k giúp tôi. Tôi muốn kiểm tra kỹ trước khi quyết định.",
+    "function_calls": [
+      {
+        "name": "vi_order_food",
+        "arguments": {
+          "dish": "mì Quảng",
+          "quantity": 4,
+          "delivery_location": "phường Ninh Kiều",
+          "spicy": false,
+          "max_delivery_minutes": 30
+        }
+      },
+      {
+        "name": "vi_search_restaurants",
+        "arguments": {
+          "location": "TP. Hồ Chí Minh",
+          "dish": "bánh xèo",
+          "max_price_vnd": 250000
+        }
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_convert_currency",
+          "description": "Quy đổi số tiền giữa các loại tiền tệ.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "description": "Số tiền cần đổi"
+              },
+              "from_currency": {
+                "type": "string",
+                "description": "Mã tiền tệ nguồn",
+                "enum": [
+                  "VND",
+                  "USD",
+                  "EUR",
+                  "JPY",
+                  "KRW"
+                ]
+              },
+              "to_currency": {
+                "type": "string",
+                "description": "Mã tiền tệ đích",
+                "enum": [
+                  "VND",
+                  "USD",
+                  "EUR",
+                  "JPY",
+                  "KRW"
+                ]
+              },
+              "fee_percent": {
+                "type": "number",
+                "description": "Phí quy đổi theo phần trăm"
+              }
+            },
+            "required": [
+              "amount",
+              "from_currency",
+              "to_currency"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_discount_codes",
+          "description": "Tìm mã giảm giá cho sàn hoặc sản phẩm.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "platform": {
+                "type": "string",
+                "description": "Sàn thương mại điện tử",
+                "enum": [
+                  "Shopee",
+                  "Lazada",
+                  "Tiki",
+                  "Sendo"
+                ]
+              },
+              "category": {
+                "type": "string",
+                "description": "Danh mục sản phẩm"
+              },
+              "minimum_discount_percent": {
+                "type": "integer",
+                "description": "Mức giảm tối thiểu theo phần trăm"
+              }
+            },
+            "required": [
+              "platform"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_order_food",
+          "description": "Đặt món ăn giao đến địa chỉ tại Việt Nam.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "dish": {
+                "type": "string",
+                "description": "Món ăn cần đặt"
+              },
+              "quantity": {
+                "type": "integer",
+                "description": "Số phần cần đặt"
+              },
+              "delivery_location": {
+                "type": "string",
+                "description": "Địa điểm giao món"
+              },
+              "spicy": {
+                "type": "boolean",
+                "description": "Có chọn vị cay hay không"
+              },
+              "max_delivery_minutes": {
+                "type": "integer",
+                "description": "Thời gian giao tối đa bằng phút"
+              }
+            },
+            "required": [
+              "dish",
+              "quantity",
+              "delivery_location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_estimate_meal_cost",
+          "description": "Ước tính tổng chi phí cho một bữa ăn.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "people": {
+                "type": "integer",
+                "description": "Số người dùng bữa"
+              },
+              "meal_type": {
+                "type": "string",
+                "description": "Loại bữa ăn",
+                "enum": [
+                  "bình dân",
+                  "trung cấp",
+                  "cao cấp"
+                ]
+              },
+              "location": {
+                "type": "string",
+                "description": "Địa điểm dùng bữa"
+              },
+              "drinks_per_person": {
+                "type": "integer",
+                "description": "Số đồ uống mỗi người"
+              }
+            },
+            "required": [
+              "people",
+              "meal_type",
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_accommodations",
+          "description": "Tìm nơi lưu trú theo địa điểm và ngân sách.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm lưu trú"
+              },
+              "check_in_date": {
+                "type": "string",
+                "description": "Ngày nhận phòng",
+                "format": "date"
+              },
+              "nights": {
+                "type": "integer",
+                "description": "Số đêm lưu trú"
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Giá tối đa mỗi đêm bằng VND"
+              },
+              "guests": {
+                "type": "integer",
+                "description": "Số khách lưu trú"
+              }
+            },
+            "required": [
+              "location",
+              "check_in_date",
+              "nights"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_attractions",
+          "description": "Tìm địa điểm tham quan tại Việt Nam.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Tỉnh hoặc thành phố"
+              },
+              "category": {
+                "type": "string",
+                "description": "Loại địa điểm",
+                "enum": [
+                  "thiên nhiên",
+                  "lịch sử",
+                  "văn hóa",
+                  "giải trí"
+                ]
+              },
+              "family_friendly_only": {
+                "type": "boolean",
+                "description": "Có chỉ lấy địa điểm phù hợp với gia đình hay không"
+              },
+              "max_distance_km": {
+                "type": "number",
+                "description": "Khoảng cách tối đa bằng km"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_calculate_personal_income_tax",
+          "description": "Ước tính thuế thu nhập cá nhân hàng tháng.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "gross_income_vnd": {
+                "type": "integer",
+                "description": "Thu nhập gộp hàng tháng bằng VND"
+              },
+              "dependents": {
+                "type": "integer",
+                "description": "Số người phụ thuộc"
+              },
+              "insurance_vnd": {
+                "type": "integer",
+                "description": "Khoản bảo hiểm được khấu trừ bằng VND"
+              },
+              "charity_vnd": {
+                "type": "integer",
+                "description": "Khoản từ thiện được khấu trừ bằng VND"
+              }
+            },
+            "required": [
+              "gross_income_vnd",
+              "dependents"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_events",
+          "description": "Tìm sự kiện giải trí theo địa điểm và ngày.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm tổ chức"
+              },
+              "event_type": {
+                "type": "string",
+                "description": "Loại sự kiện"
+              },
+              "date": {
+                "type": "string",
+                "description": "Ngày diễn ra",
+                "format": "date"
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Giá vé tối đa bằng VND"
+              }
+            },
+            "required": [
+              "location",
+              "date"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_restaurants",
+          "description": "Tìm quán ăn theo món, địa điểm và mức giá.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm cần tìm"
+              },
+              "dish": {
+                "type": "string",
+                "description": "Món ăn cần tìm"
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Mức giá tối đa bằng VND"
+              },
+              "min_rating": {
+                "type": "number",
+                "description": "Điểm đánh giá tối thiểu"
+              }
+            },
+            "required": [
+              "location",
+              "dish"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_products",
+          "description": "Tìm sản phẩm trên sàn thương mại điện tử.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "product": {
+                "type": "string",
+                "description": "Sản phẩm cần tìm"
+              },
+              "platform": {
+                "type": "string",
+                "description": "Sàn thương mại điện tử",
+                "enum": [
+                  "Shopee",
+                  "Lazada",
+                  "Tiki",
+                  "Sendo"
+                ]
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Giá tối đa bằng VND"
+              },
+              "official_store_only": {
+                "type": "boolean",
+                "description": "Có chỉ lấy gian hàng chính hãng hay không"
+              }
+            },
+            "required": [
+              "product",
+              "platform"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "custom_vi_v1_006403",
+    "query": "Giúp mk tìm chuyến bay từ Quảng Ninh đến Hải Phòng vào 27/03/2027 của Bamboo Airways, đồng thời tìm chỗ ở tại Thái Nguyên nhận phòng 28-03-2027 trong 4 đêm nha.",
+    "function_calls": [
+      {
+        "name": "vi_search_domestic_flights",
+        "arguments": {
+          "origin": "Quảng Ninh",
+          "destination": "Hải Phòng",
+          "departure_date": "2027-03-27",
+          "airline": "Bamboo Airways"
+        }
+      },
+      {
+        "name": "vi_search_accommodations",
+        "arguments": {
+          "location": "Thái Nguyên",
+          "check_in_date": "2027-03-28",
+          "nights": 4
+        }
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_estimate_meal_cost",
+          "description": "Ước tính tổng chi phí cho một bữa ăn.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "people": {
+                "type": "integer",
+                "description": "Số người dùng bữa"
+              },
+              "meal_type": {
+                "type": "string",
+                "description": "Loại bữa ăn",
+                "enum": [
+                  "bình dân",
+                  "trung cấp",
+                  "cao cấp"
+                ]
+              },
+              "location": {
+                "type": "string",
+                "description": "Địa điểm dùng bữa"
+              },
+              "drinks_per_person": {
+                "type": "integer",
+                "description": "Số đồ uống mỗi người"
+              }
+            },
+            "required": [
+              "people",
+              "meal_type",
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_restaurants",
+          "description": "Tìm quán ăn theo món, địa điểm và mức giá.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm cần tìm"
+              },
+              "dish": {
+                "type": "string",
+                "description": "Món ăn cần tìm"
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Mức giá tối đa bằng VND"
+              },
+              "min_rating": {
+                "type": "number",
+                "description": "Điểm đánh giá tối thiểu"
+              }
+            },
+            "required": [
+              "location",
+              "dish"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_public_transport",
+          "description": "Tìm tuyến giao thông công cộng phù hợp.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "origin": {
+                "type": "string",
+                "description": "Điểm đi"
+              },
+              "destination": {
+                "type": "string",
+                "description": "Điểm đến"
+              },
+              "mode": {
+                "type": "string",
+                "description": "Loại phương tiện",
+                "enum": [
+                  "xe buýt",
+                  "metro",
+                  "kết hợp"
+                ]
+              },
+              "departure_time": {
+                "type": "string",
+                "description": "Giờ khởi hành",
+                "format": "time"
+              }
+            },
+            "required": [
+              "origin",
+              "destination"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_lookup_zodiac_information",
+          "description": "Tra cứu thông tin tham khảo về con giáp theo năm sinh.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "birth_year": {
+                "type": "integer",
+                "description": "Năm sinh"
+              },
+              "zodiac": {
+                "type": "string",
+                "description": "Con giáp",
+                "enum": [
+                  "Tý",
+                  "Sửu",
+                  "Dần",
+                  "Mão",
+                  "Thìn",
+                  "Tỵ",
+                  "Ngọ",
+                  "Mùi",
+                  "Thân",
+                  "Dậu",
+                  "Tuất",
+                  "Hợi"
+                ]
+              },
+              "topic": {
+                "type": "string",
+                "description": "Chủ đề",
+                "enum": [
+                  "tổng quan",
+                  "công việc",
+                  "tình cảm"
+                ]
+              }
+            },
+            "required": [
+              "birth_year"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_products",
+          "description": "Tìm sản phẩm trên sàn thương mại điện tử.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "product": {
+                "type": "string",
+                "description": "Sản phẩm cần tìm"
+              },
+              "platform": {
+                "type": "string",
+                "description": "Sàn thương mại điện tử",
+                "enum": [
+                  "Shopee",
+                  "Lazada",
+                  "Tiki",
+                  "Sendo"
+                ]
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Giá tối đa bằng VND"
+              },
+              "official_store_only": {
+                "type": "boolean",
+                "description": "Có chỉ lấy gian hàng chính hãng hay không"
+              }
+            },
+            "required": [
+              "product",
+              "platform"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_calculate_route_distance",
+          "description": "Tính khoảng cách và thời gian dự kiến giữa hai địa điểm.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "origin": {
+                "type": "string",
+                "description": "Điểm đi"
+              },
+              "destination": {
+                "type": "string",
+                "description": "Điểm đến"
+              },
+              "travel_mode": {
+                "type": "string",
+                "description": "Phương thức di chuyển",
+                "enum": [
+                  "ô tô",
+                  "xe máy",
+                  "đi bộ"
+                ]
+              }
+            },
+            "required": [
+              "origin",
+              "destination"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_events",
+          "description": "Tìm sự kiện giải trí theo địa điểm và ngày.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm tổ chức"
+              },
+              "event_type": {
+                "type": "string",
+                "description": "Loại sự kiện"
+              },
+              "date": {
+                "type": "string",
+                "description": "Ngày diễn ra",
+                "format": "date"
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Giá vé tối đa bằng VND"
+              }
+            },
+            "required": [
+              "location",
+              "date"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_accommodations",
+          "description": "Tìm nơi lưu trú theo địa điểm và ngân sách.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm lưu trú"
+              },
+              "check_in_date": {
+                "type": "string",
+                "description": "Ngày nhận phòng",
+                "format": "date"
+              },
+              "nights": {
+                "type": "integer",
+                "description": "Số đêm lưu trú"
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Giá tối đa mỗi đêm bằng VND"
+              },
+              "guests": {
+                "type": "integer",
+                "description": "Số khách lưu trú"
+              }
+            },
+            "required": [
+              "location",
+              "check_in_date",
+              "nights"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_attractions",
+          "description": "Tìm địa điểm tham quan tại Việt Nam.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Tỉnh hoặc thành phố"
+              },
+              "category": {
+                "type": "string",
+                "description": "Loại địa điểm",
+                "enum": [
+                  "thiên nhiên",
+                  "lịch sử",
+                  "văn hóa",
+                  "giải trí"
+                ]
+              },
+              "family_friendly_only": {
+                "type": "boolean",
+                "description": "Có chỉ lấy địa điểm phù hợp với gia đình hay không"
+              },
+              "max_distance_km": {
+                "type": "number",
+                "description": "Khoảng cách tối đa bằng km"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_domestic_flights",
+          "description": "Tìm chuyến bay nội địa Việt Nam.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "origin": {
+                "type": "string",
+                "description": "Điểm khởi hành"
+              },
+              "destination": {
+                "type": "string",
+                "description": "Điểm đến"
+              },
+              "departure_date": {
+                "type": "string",
+                "description": "Ngày khởi hành",
+                "format": "date"
+              },
+              "airline": {
+                "type": "string",
+                "description": "Hãng hàng không ưu tiên"
+              },
+              "passengers": {
+                "type": "integer",
+                "description": "Số hành khách"
+              }
+            },
+            "required": [
+              "origin",
+              "destination",
+              "departure_date"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "custom_vi_v1_006404",
+    "query": "Tôi muốn tìm chỗ ở tại Đồng Nai nhận phòng 30/03/2027 trong 2 đêm, đồng thời tìm chuyến bay từ HN đến Tuyên Quang vào 31-03-2027, cho 5 hành khách.",
+    "function_calls": [
+      {
+        "name": "vi_search_accommodations",
+        "arguments": {
+          "location": "Đồng Nai",
+          "check_in_date": "2027-03-30",
+          "nights": 2
+        }
+      },
+      {
+        "name": "vi_search_domestic_flights",
+        "arguments": {
+          "origin": "Hà Nội",
+          "destination": "Tuyên Quang",
+          "departure_date": "2027-03-31",
+          "passengers": 5
+        }
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_calculate_personal_income_tax",
+          "description": "Ước tính thuế thu nhập cá nhân hàng tháng.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "gross_income_vnd": {
+                "type": "integer",
+                "description": "Thu nhập gộp hàng tháng bằng VND"
+              },
+              "dependents": {
+                "type": "integer",
+                "description": "Số người phụ thuộc"
+              },
+              "insurance_vnd": {
+                "type": "integer",
+                "description": "Khoản bảo hiểm được khấu trừ bằng VND"
+              },
+              "charity_vnd": {
+                "type": "integer",
+                "description": "Khoản từ thiện được khấu trừ bằng VND"
+              }
+            },
+            "required": [
+              "gross_income_vnd",
+              "dependents"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_attractions",
+          "description": "Tìm địa điểm tham quan tại Việt Nam.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Tỉnh hoặc thành phố"
+              },
+              "category": {
+                "type": "string",
+                "description": "Loại địa điểm",
+                "enum": [
+                  "thiên nhiên",
+                  "lịch sử",
+                  "văn hóa",
+                  "giải trí"
+                ]
+              },
+              "family_friendly_only": {
+                "type": "boolean",
+                "description": "Có chỉ lấy địa điểm phù hợp với gia đình hay không"
+              },
+              "max_distance_km": {
+                "type": "number",
+                "description": "Khoảng cách tối đa bằng km"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_accommodations",
+          "description": "Tìm nơi lưu trú theo địa điểm và ngân sách.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm lưu trú"
+              },
+              "check_in_date": {
+                "type": "string",
+                "description": "Ngày nhận phòng",
+                "format": "date"
+              },
+              "nights": {
+                "type": "integer",
+                "description": "Số đêm lưu trú"
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Giá tối đa mỗi đêm bằng VND"
+              },
+              "guests": {
+                "type": "integer",
+                "description": "Số khách lưu trú"
+              }
+            },
+            "required": [
+              "location",
+              "check_in_date",
+              "nights"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_estimate_meal_cost",
+          "description": "Ước tính tổng chi phí cho một bữa ăn.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "people": {
+                "type": "integer",
+                "description": "Số người dùng bữa"
+              },
+              "meal_type": {
+                "type": "string",
+                "description": "Loại bữa ăn",
+                "enum": [
+                  "bình dân",
+                  "trung cấp",
+                  "cao cấp"
+                ]
+              },
+              "location": {
+                "type": "string",
+                "description": "Địa điểm dùng bữa"
+              },
+              "drinks_per_person": {
+                "type": "integer",
+                "description": "Số đồ uống mỗi người"
+              }
+            },
+            "required": [
+              "people",
+              "meal_type",
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_estimate_ride_fare",
+          "description": "Ước tính cước chuyến xe công nghệ.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "pickup": {
+                "type": "string",
+                "description": "Điểm đón"
+              },
+              "destination": {
+                "type": "string",
+                "description": "Điểm đến"
+              },
+              "provider": {
+                "type": "string",
+                "description": "Ứng dụng gọi xe",
+                "enum": [
+                  "Grab",
+                  "be",
+                  "Xanh SM"
+                ]
+              },
+              "vehicle_type": {
+                "type": "string",
+                "description": "Loại phương tiện",
+                "enum": [
+                  "xe máy",
+                  "ô tô"
+                ]
+              }
+            },
+            "required": [
+              "pickup",
+              "destination"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_restaurants",
+          "description": "Tìm quán ăn theo món, địa điểm và mức giá.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm cần tìm"
+              },
+              "dish": {
+                "type": "string",
+                "description": "Món ăn cần tìm"
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Mức giá tối đa bằng VND"
+              },
+              "min_rating": {
+                "type": "number",
+                "description": "Điểm đánh giá tối thiểu"
+              }
+            },
+            "required": [
+              "location",
+              "dish"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_public_transport",
+          "description": "Tìm tuyến giao thông công cộng phù hợp.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "origin": {
+                "type": "string",
+                "description": "Điểm đi"
+              },
+              "destination": {
+                "type": "string",
+                "description": "Điểm đến"
+              },
+              "mode": {
+                "type": "string",
+                "description": "Loại phương tiện",
+                "enum": [
+                  "xe buýt",
+                  "metro",
+                  "kết hợp"
+                ]
+              },
+              "departure_time": {
+                "type": "string",
+                "description": "Giờ khởi hành",
+                "format": "time"
+              }
+            },
+            "required": [
+              "origin",
+              "destination"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_domestic_flights",
+          "description": "Tìm chuyến bay nội địa Việt Nam.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "origin": {
+                "type": "string",
+                "description": "Điểm khởi hành"
+              },
+              "destination": {
+                "type": "string",
+                "description": "Điểm đến"
+              },
+              "departure_date": {
+                "type": "string",
+                "description": "Ngày khởi hành",
+                "format": "date"
+              },
+              "airline": {
+                "type": "string",
+                "description": "Hãng hàng không ưu tiên"
+              },
+              "passengers": {
+                "type": "integer",
+                "description": "Số hành khách"
+              }
+            },
+            "required": [
+              "origin",
+              "destination",
+              "departure_date"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_events",
+          "description": "Tìm sự kiện giải trí theo địa điểm và ngày.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm tổ chức"
+              },
+              "event_type": {
+                "type": "string",
+                "description": "Loại sự kiện"
+              },
+              "date": {
+                "type": "string",
+                "description": "Ngày diễn ra",
+                "format": "date"
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Giá vé tối đa bằng VND"
+              }
+            },
+            "required": [
+              "location",
+              "date"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_order_food",
+          "description": "Đặt món ăn giao đến địa chỉ tại Việt Nam.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "dish": {
+                "type": "string",
+                "description": "Món ăn cần đặt"
+              },
+              "quantity": {
+                "type": "integer",
+                "description": "Số phần cần đặt"
+              },
+              "delivery_location": {
+                "type": "string",
+                "description": "Địa điểm giao món"
+              },
+              "spicy": {
+                "type": "boolean",
+                "description": "Có chọn vị cay hay không"
+              },
+              "max_delivery_minutes": {
+                "type": "integer",
+                "description": "Thời gian giao tối đa bằng phút"
+              }
+            },
+            "required": [
+              "dish",
+              "quantity",
+              "delivery_location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "custom_vi_v1_006405",
+    "query": "Hãy đổi 100 USD sang VND, đồng thời tính tiền trả khoản vay 100 triệu, lãi suất 8,2% trong 24 tháng, trả trước 30 triệu. Tôi cần thông tin này để bàn lại với gia đình.",
+    "function_calls": [
+      {
+        "name": "vi_convert_currency",
+        "arguments": {
+          "amount": 100,
+          "from_currency": "USD",
+          "to_currency": "VND"
+        }
+      },
+      {
+        "name": "vi_calculate_loan_payment",
+        "arguments": {
+          "principal_vnd": 100000000,
+          "annual_rate_percent": 8.2,
+          "term_months": 24,
+          "down_payment_vnd": 30000000
+        }
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_calculate_personal_income_tax",
+          "description": "Ước tính thuế thu nhập cá nhân hàng tháng.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "gross_income_vnd": {
+                "type": "integer",
+                "description": "Thu nhập gộp hàng tháng bằng VND"
+              },
+              "dependents": {
+                "type": "integer",
+                "description": "Số người phụ thuộc"
+              },
+              "insurance_vnd": {
+                "type": "integer",
+                "description": "Khoản bảo hiểm được khấu trừ bằng VND"
+              },
+              "charity_vnd": {
+                "type": "integer",
+                "description": "Khoản từ thiện được khấu trừ bằng VND"
+              }
+            },
+            "required": [
+              "gross_income_vnd",
+              "dependents"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_pharmacies",
+          "description": "Tìm nhà thuốc theo địa điểm và thời gian mở cửa.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Địa điểm cần tìm"
+              },
+              "open_now_only": {
+                "type": "boolean",
+                "description": "Có chỉ lấy nhà thuốc đang mở cửa hay không"
+              },
+              "medicine": {
+                "type": "string",
+                "description": "Tên thuốc cần tìm"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_track_shipment",
+          "description": "Tra cứu trạng thái giao hàng theo mã vận đơn.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "tracking_code": {
+                "type": "string",
+                "description": "Mã vận đơn",
+                "x-identifier": true
+              },
+              "carrier": {
+                "type": "string",
+                "description": "Đơn vị vận chuyển",
+                "enum": [
+                  "GHN",
+                  "GHTK",
+                  "Viettel Post",
+                  "VNPost",
+                  "J&T Express"
+                ]
+              },
+              "include_history": {
+                "type": "boolean",
+                "description": "Có lấy lịch sử vận chuyển"
+              }
+            },
+            "required": [
+              "tracking_code"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_admin_procedures",
+          "description": "Tra cứu thủ tục hành chính và hồ sơ cần chuẩn bị.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "procedure": {
+                "type": "string",
+                "description": "Tên thủ tục hành chính"
+              },
+              "location": {
+                "type": "string",
+                "description": "Tỉnh hoặc thành phố thực hiện"
+              },
+              "online_only": {
+                "type": "boolean",
+                "description": "Có chỉ lấy thủ tục thực hiện trực tuyến hay không"
+              }
+            },
+            "required": [
+              "procedure",
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_lookup_admission_scores",
+          "description": "Tra cứu điểm chuẩn tuyển sinh đại học.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "university": {
+                "type": "string",
+                "description": "Tên trường đại học"
+              },
+              "major": {
+                "type": "string",
+                "description": "Tên ngành học"
+              },
+              "year": {
+                "type": "integer",
+                "description": "Năm tuyển sinh"
+              },
+              "public_university_only": {
+                "type": "boolean",
+                "description": "Chỉ tra trường công lập"
+              }
+            },
+            "required": [
+              "university",
+              "year"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_search_products",
+          "description": "Tìm sản phẩm trên sàn thương mại điện tử.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "product": {
+                "type": "string",
+                "description": "Sản phẩm cần tìm"
+              },
+              "platform": {
+                "type": "string",
+                "description": "Sàn thương mại điện tử",
+                "enum": [
+                  "Shopee",
+                  "Lazada",
+                  "Tiki",
+                  "Sendo"
+                ]
+              },
+              "max_price_vnd": {
+                "type": "integer",
+                "description": "Giá tối đa bằng VND"
+              },
+              "official_store_only": {
+                "type": "boolean",
+                "description": "Có chỉ lấy gian hàng chính hãng hay không"
+              }
+            },
+            "required": [
+              "product",
+              "platform"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_estimate_meal_cost",
+          "description": "Ước tính tổng chi phí cho một bữa ăn.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "people": {
+                "type": "integer",
+                "description": "Số người dùng bữa"
+              },
+              "meal_type": {
+                "type": "string",
+                "description": "Loại bữa ăn",
+                "enum": [
+                  "bình dân",
+                  "trung cấp",
+                  "cao cấp"
+                ]
+              },
+              "location": {
+                "type": "string",
+                "description": "Địa điểm dùng bữa"
+              },
+              "drinks_per_person": {
+                "type": "integer",
+                "description": "Số đồ uống mỗi người"
+              }
+            },
+            "required": [
+              "people",
+              "meal_type",
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_convert_currency",
+          "description": "Quy đổi số tiền giữa các loại tiền tệ.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "description": "Số tiền cần đổi"
+              },
+              "from_currency": {
+                "type": "string",
+                "description": "Mã tiền tệ nguồn",
+                "enum": [
+                  "VND",
+                  "USD",
+                  "EUR",
+                  "JPY",
+                  "KRW"
+                ]
+              },
+              "to_currency": {
+                "type": "string",
+                "description": "Mã tiền tệ đích",
+                "enum": [
+                  "VND",
+                  "USD",
+                  "EUR",
+                  "JPY",
+                  "KRW"
+                ]
+              },
+              "fee_percent": {
+                "type": "number",
+                "description": "Phí quy đổi theo phần trăm"
+              }
+            },
+            "required": [
+              "amount",
+              "from_currency",
+              "to_currency"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_calculate_loan_payment",
+          "description": "Tính khoản thanh toán vay định kỳ.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "principal_vnd": {
+                "type": "integer",
+                "description": "Số tiền vay bằng VND"
+              },
+              "annual_rate_percent": {
+                "type": "number",
+                "description": "Lãi suất năm theo phần trăm"
+              },
+              "term_months": {
+                "type": "integer",
+                "description": "Thời hạn vay bằng tháng"
+              },
+              "down_payment_vnd": {
+                "type": "integer",
+                "description": "Khoản trả trước bằng VND"
+              }
+            },
+            "required": [
+              "principal_vnd",
+              "annual_rate_percent",
+              "term_months"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "vi_calculate_registration_fee",
+          "description": "Ước tính lệ phí trước bạ cho tài sản.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "asset_type": {
+                "type": "string",
+                "description": "Loại tài sản",
+                "enum": [
+                  "ô tô",
+                  "xe máy",
+                  "nhà đất"
+                ]
+              },
+              "asset_value_vnd": {
+                "type": "integer",
+                "description": "Giá trị tài sản bằng VND"
+              },
+              "location": {
+                "type": "string",
+                "description": "Nơi đăng ký"
+              }
+            },
+            "required": [
+              "asset_type",
+              "asset_value_vnd",
+              "location"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    ]
+  }
+]
