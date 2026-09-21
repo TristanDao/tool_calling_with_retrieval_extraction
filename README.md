@@ -14,7 +14,7 @@ Dự án phát triển và so sánh đối đầu **2 trường phái kiến tr�
 | Phương pháp | Kiến trúc & Công nghệ | Điểm mạnh chính |
 |---|---|---|
 | **Method 1: SLM End-to-End** | `unsloth/Qwen3.5-2B` / `4B` + Unsloth QLoRA SFT trên native XML tool calls | **Chuẩn vàng về độ chính xác (ArgA 87.00% seen, 86.38% unseen)**, năng lực tổng quát hóa zero-shot vượt trội |
-| **Method 2: Bi-Encoder + Cross-Encoder** | `BAAI/bge-m3` (2-round CachedMNRL) + `xlm-roberta-base` (Hierarchical Heads) + Value Normalizer | **Tốc độ siêu nhanh (~58–92 ms, nhanh gấp 10–15 lần SLM)**, chiếm ít VRAM (< 1.2 GB), 0% lỗi JSON |
+| **Method 2: Bi-Encoder + Cross-Encoder** | `BAAI/bge-m3` (2-round CachedMNRL) + `xlm-roberta-base` (Hierarchical Heads) + Value Normalizer | **P50 55–108 ms trong stress test**, VRAM allocated ~3.21 GiB theo telemetry, 0% lỗi JSON theo định nghĩa structured-output |
 
 ### Bảng So Sánh Đối Đầu Nổi Bật (Head-to-Head Summary)
 
@@ -23,7 +23,7 @@ Dự án phát triển và so sánh đối đầu **2 trường phái kiến tr�
 | **Custom Seen** (800) | **ArgA / Exact Match** | **87.00%** | 67.75% | **+19.25%** |
 | **Custom Unseen** (800) | **ArgA / Exact Match** | **86.38%** | 22.75% | **+63.63% (Áp đảo)** |
 | **Core VI Test** (7,712) | **ArgA / Exact Match** | **69.75%** | 40.21% | **+29.54%** |
-| **Độ trễ suy luận (P50)** | **Thời gian phản hồi** | ~970 ms | **58.16 – 91.88 ms** | **Method 2 nhanh gấp ~10-15×** |
+| **Độ trễ suy luận (P50)** | **Thời gian phản hồi** | ~970 ms | **55.13 – 107.68 ms** | **Hai protocol đo khác nhau; chỉ đối chiếu mô tả** |
 
 📄 Chi tiết bài báo khoa học: xem [paper/paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md) (tiếng Anh) và [paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md) (tiếng Việt).
 
@@ -48,7 +48,7 @@ tool_calling_with_retrieval_extraction/
 │   ├── methodology.md         # Phương pháp luận nghiên cứu
 │   ├── experimental_plan.md   # Kế hoạch thực nghiệm E0-E4 & stress test
 │   ├── data_pipeline_and_splits.md # Đặc tả chuẩn dữ liệu và frozen revision
-│   ├── bao_cao_method2.md     # Báo cáo thực nghiệm chi tiết Method 2
+│   ├── paper_vi_method2_shared.md # Báo cáo thực nghiệm chi tiết Method 2 (Shared E4)
 │   └── ... (các hướng dẫn Kaggle/Colab, dịch thuật, CustomTools)
 │
 ├── data/                      # DỮ LIỆU & BENCHMARK
@@ -120,9 +120,9 @@ python3 scripts/eval/extract_and_filter_results.py
 | 3 | Method 2: Cross-Encoder (XLM-RoBERTa hierarchical heads) | ✅ Hoàn thành |
 | 4 | Method 1: SLM Fine-tune (Qwen3.5-2B E0 $\to$ E4) | ✅ Hoàn thành |
 | - | Viết Bài Báo Khoa Học (EN & VI) | ✅ Hoàn thành |
-| - | Model Scaling Study (Qwen3.5-4B E3 & E4) | ⏳ Đang chạy thực nghiệm |
-| 6 | Tổng hợp so sánh đối đầu toàn diện M1 vs M2 | ⏳ Đang tiến hành |
-| 7 | Stress Test với số lượng công cụ tăng dần ($N = 3 \to 1000$) | ⏳ Kế hoạch tiếp theo |
+| - | Model Scaling Study (Qwen3.5-4B E3 & E4) | ✅ Hoàn thành |
+| 6 | Tổng hợp so sánh đối đầu toàn diện M1 vs M2 | ✅ Hoàn thành |
+| 7 | Stress Test với số lượng công cụ tăng dần ($N = 3 \to 1000$) | ✅ Hoàn thành |
 
 ---
 

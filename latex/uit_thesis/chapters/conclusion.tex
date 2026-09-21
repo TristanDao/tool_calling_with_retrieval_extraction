@@ -1,0 +1,23 @@
+\chapter*{KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}
+\addcontentsline{toc}{chapter}{KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}
+
+\subsection{Kết luận}
+
+Khóa luận tốt nghiệp đã hoàn thành mục tiêu nghiên cứu bài toán gọi công cụ (Tool Calling) cho ngôn ngữ tiếng Việt một cách toàn diện và có hệ thống, giải quyết xuyên suốt từ khâu chuẩn hóa dữ liệu benchmark đến đề xuất, tối ưu hóa và thực nghiệm đối đầu giữa hai trường phái kỹ thuật chính. Thông qua chuỗi thực nghiệm trên cả tập dữ liệu lõi quy mô lớn lẫn tập thử nghiệm nghiệp vụ chuyên sâu, nghiên cứu đã rút ra những phát hiện khoa học và đóng góp thực tiễn mang tính then chốt.
+
+Về mặt tài nguyên và cơ sở đánh giá, khóa luận đã xây dựng và công bố bộ đôi benchmark chuẩn mực gồm \texttt{Canonical Core Benchmark} với 77,028 cặp bản ghi song ngữ trên 4,421 công cụ và \texttt{CustomTools-VI} gồm 8,000 mẫu nghiệp vụ đời sống với tỷ lệ cân bằng 50\% mẫu âm tính, phân định rõ giữa miền đã học (\texttt{seen}) và miền mở rộng (\texttt{unseen}). Dựa trên cơ sở dữ liệu này, nghiên cứu đã làm sáng tỏ hiện tượng kích hoạt công cụ quá mức (over-triggering) vốn là điểm nghẽn nghiêm trọng khi tinh chỉnh mô hình ngôn ngữ trên dữ liệu dịch thuật đơn thuần; từ đó khẳng định vai trò quyết định của dữ liệu âm tính bản địa hóa trong việc khôi phục hoàn toàn năng lực từ chối gọi hàm với Non-FC Recall đạt 100.0\%.
+
+Về mặt giải pháp kỹ thuật và hiệu năng mô hình, nghiên cứu đã xác lập đường biên đánh đổi rõ rệt giữa hai phương pháp tiếp cận. Đối với hướng tiếp cận mô hình ngôn ngữ nhỏ (SLM), việc tinh chỉnh chuyên biệt với dữ liệu bản địa hóa đã giúp \texttt{Qwen3.5-4B} đạt độ chính xác tham số (ArgA) 87.92\% trên tập seen và 86.75\% trên tập unseen, vượt qua mô hình thương mại đóng \texttt{GPT-5.6 Luna} trong cùng điều kiện thử nghiệm. Ở hướng tiếp cận ngược lại, kiến trúc phân tách phi tự hồi quy Bi-Encoder kết hợp Hierarchical Cross-Encoder thể hiện ưu thế vượt trội về tính ổn định và khả năng chịu tải trong bài kiểm thử áp lực từ 3 đến $1000$ công cụ: trong khi SLM gặp hiện tượng tràn bộ nhớ (CUDA Out of Memory) khi danh mục vượt quá 500 công cụ, kiến trúc phân tách duy trì hoạt động thông suốt tới quy mô $1000$ công cụ với độ trễ trung vị P50 khoảng 107.68 ms và lượng VRAM phân bổ ổn định quanh mức 3.21 GiB.
+
+Tổng hòa các kết quả thực nghiệm cùng toàn bộ mã nguồn và dữ liệu được công bố mở, khóa luận không chỉ chứng minh tính khả thi của việc xây dựng các hệ thống gọi công cụ cục bộ cho tiếng Việt với chi phí tối ưu, mà còn cung cấp cơ sở khoa học thực chứng để các nhà phát triển lựa chọn kiến trúc phù hợp giữa yêu cầu về độ chính xác ngữ nghĩa sâu và đòi hỏi về thông lượng, độ trễ thời gian thực.
+
+\subsection{Hướng phát triển trong tương lai}
+
+Từ các kết quả đạt được và những giới hạn đã được chỉ ra, các hướng nghiên cứu tiếp theo có thể được mở rộng theo ba trọng tâm chính:
+
+Thứ nhất, phát triển mô hình gọi công cụ trong kịch bản hội thoại đa lượt (Multi-turn Tool Calling). Hệ thống sẽ được trang bị module quản lý trạng thái đối thoại và cơ chế lưu vết bộ nhớ động, cho phép tác tử tự động nhận diện các tham số còn thiếu và chủ động giao tiếp với người dùng để làm rõ thông tin trước khi thực thi lệnh gọi hàm.
+
+Thứ hai, tích hợp môi trường thực thi công cụ an toàn và cơ chế tự sửa sai (Self-healing Sandboxed Execution). Xây dựng môi trường sandbox bảo mật để thực thi trực tiếp các API trả về, tiếp nhận phản hồi lỗi thời gian thực và huấn luyện mô hình khả năng suy luận phản hồi (reflection) nhằm tự động điều chỉnh tham số khi xảy ra lỗi gọi hàm.
+
+Thứ ba, nghiên cứu kiến trúc lai (Hybrid Tool Calling Architecture). Kết hợp ưu thế truy hồi siêu tốc của Bi-Encoder để lọc nhanh tập rút gọn (Top-$K$ ứng viên) và tận dụng năng lực suy luận tạo sinh linh hoạt của SLM để trích xuất tham số. Kiến trúc kết hợp này hứa hẹn sẽ dung hòa hoàn hảo giữa tốc độ thực thi thời gian thực của kiến trúc phân tách và năng lực tổng quát hóa zero-shot vượt bậc của mô hình tạo sinh.
+

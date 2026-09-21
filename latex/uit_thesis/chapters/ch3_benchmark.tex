@@ -1,0 +1,148 @@
+\chapter{XÂY DỰNG BỘ TIÊU CHUẨN ĐÁNH GIÁ (BENCHMARK) CHO TIẾNG VIỆT}
+
+\section{Thiết kế Schema Chuẩn hóa Dữ liệu (Master Canonical Schema)}
+Để phục vụ huấn luyện và đánh giá công bằng giữa hai phương pháp tiếp cận, nhóm nghiên cứu thiết kế một cấu trúc dữ liệu JSON duy nhất (Master Canonical Schema), hỗ trợ đồng thời kịch bản đơn lệnh và đa lệnh gọi:
+
+\begin{verbatim}
+{
+  "id": "custom_vi_00128",
+  "source": "custom_tools_vi",
+  "query": "Kiểm tra phạt nguội cho xe ô tô biển số 30A-999.88 giùm tôi.",
+  "function_calls": [
+    {
+      "name": "tra_cuu_phat_nguoi",
+      "arguments": {
+        "bien_so": "30A-999.88",
+        "loai_phuong_tien": "o_to"
+      }
+    }
+  ],
+  "tools": [
+    {
+      "name": "tra_cuu_phat_nguoi",
+      "description": "Tra cứu lỗi vi phạm giao thông phạt nguội theo biển số xe và loại phương tiện.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "bien_so": {"type": "string", "description": "Biển số xe cần kiểm tra"},
+          "loai_phuong_tien": {"type": "string", "enum": ["o_to", "xe_may", "xe_dien"], "description": "Loại phương tiện"}
+        },
+        "required": ["bien_so", "loai_phuong_tien"]
+      }
+    }
+  ]
+}
+\end{verbatim}
+
+\section{Bộ chuẩn quy mô lớn Canonical Core Benchmark}
+Từ hai nguồn dữ liệu quốc tế chất lượng cao Glaive Function Calling và xLAM, nhóm nghiên cứu thiết lập quy trình lọc bỏ các câu đa lượt (chỉ giữ first-turn) và các bản ghi trùng lặp cấu trúc, sau đó tiến hành chuyển ngữ sang tiếng Việt thông qua mô hình dịch thuật chuyên dụng \texttt{Qwen-MT} của Alibaba kết hợp với hệ thống luật kiểm định chất lượng (QA Validation Rules) nghiêm ngặt:
+\begin{itemize}
+    \item Bảo toàn nguyên vẹn tên hàm và tên tham số bằng tiếng Anh (snake\_case).
+    \item Dịch tự nhiên nội dung truy vấn của người dùng và mô tả công cụ sang tiếng Việt.
+    \item Bảo toàn cấu trúc JSON và các định danh mã hóa (UUID, biển số xe, mã hiệu).
+\end{itemize}
+
+Bộ dữ liệu sau khi tinh lọc đạt quy mô \textbf{77,028 cặp bản ghi song ngữ} hoàn chỉnh (chia thành train: 61,615; val: 7,701; test: 7,712 bản ghi tương ứng cho mỗi ngôn ngữ) bao phủ \textbf{4,421 công cụ duy nhất}.
+
+\section{Bộ chuẩn miền thực tế bản địa hóa CustomTools-VI}
+Để kiểm tra năng lực xử lý ngôn ngữ thực tế trong bối cảnh văn hóa và dịch vụ tại Việt Nam, nhóm nghiên cứu xây dựng bộ dữ liệu \texttt{CustomTools-VI} gồm \textbf{8,000 mẫu} bao phủ 40 công cụ thuộc 10 nhóm lĩnh vực đời sống thiết yếu:
+\begin{enumerate}
+    \item Tra cứu hành chính \& dịch vụ công (phạt nguội, tra cứu CCCD, thuế cá nhân).
+    \item Tài chính \& Ngân hàng số (chuyển khoản VietQR, nạp tiền điện tử).
+    \item Đặt vé \& Giao thông nội địa (đặt vé xe khách, tra cứu tàu hỏa, đặt xe ôm công nghệ).
+    \item Thương mại điện tử \& Vận chuyển (tra cứu vận đơn bưu điện, kiểm tra đơn hàng).
+    \item Viễn thông \& Tiện ích (thanh toán hóa đơn điện lực EVN, nạp thẻ cước di động).
+    \item Y tế \& Đặt lịch khám bệnh.
+    \item Giáo dục \& Tra cứu điểm thi tuyển sinh.
+    \item Du lịch \& Nhà hàng khách sạn.
+    \item Bất động sản \& Thuê nhà ở.
+    \item Tiện ích đời sống (dự báo thời tiết địa phương, giá vàng SJC).
+\end{enumerate}
+
+Điểm mấu chốt trong thiết kế thực nghiệm là việc phân chia nghiêm ngặt thành hai tập:
+\begin{itemize}
+    \item \textbf{Tập đã học (Seen Tools)}: Gồm 20 công cụ xuất hiện trong cả tập huấn luyện và tập kiểm thử.
+    \item \textbf{Tập chưa từng gặp (Unseen Tools)}: Gồm 20 công cụ hoàn toàn mới, chỉ xuất hiện trong tập kiểm thử (\texttt{test_unseen}) nhằm đo lường chính xác năng lực tổng quát hóa Zero-Shot của mô hình.
+\end{itemize}
+
+\section{Chiến lược tạo lập và kiểm soát dữ liệu âm tính (Negative Samples)}
+Trong môi trường tương tác thực tế, người dùng thường xuyên đưa ra các câu hỏi trò chuyện xã giao hoặc các truy vấn nằm ngoài phạm vi hỗ trợ của các công cụ hiện có. Nếu mô hình chỉ được huấn luyện trên các mẫu bắt buộc kích hoạt công cụ, nó sẽ mắc phải thiên kiến kích hoạt quá mức (over-triggering bias), dẫn đến việc tự động gọi hàm sai lệch ngay cả khi truy vấn không yêu cầu.
+
+Nhằm triệt tiêu thiên kiến này, trong bộ dữ liệu \texttt{CustomTools-VI}, nghiên cứu thiết lập tỷ lệ mẫu âm tính cân bằng chính xác \textbf{50\%} trên toàn bộ các tập kiểm thử:
+\begin{itemize}
+    \item 800 mẫu \texttt{test_seen}: gồm 400 mẫu dương tính (yêu cầu kích hoạt công cụ) và 400 mẫu âm tính (truy vấn hội thoại xã giao hoặc nằm ngoài danh mục công cụ).
+    \item 800 mẫu \texttt{test_unseen}: gồm 400 mẫu dương tính và 400 mẫu âm tính tương tự đối với nhóm công cụ zero-shot.
+\end{itemize}
+
+\section{Quy trình xây dựng tập kiểm thử áp lực (Stress Test Benchmark)}
+Nhằm đánh giá tính bền vững và khả năng mở rộng của hệ thống khi không gian tìm kiếm công cụ gia tăng đột biến, nghiên cứu thiết lập quy trình kiểm thử áp lực dựa trên \textbf{200 truy vấn mỏ neo (anchor queries)} chuẩn. Từ tập mỏ neo này, không gian ngữ cảnh được mở rộng bằng cách bổ sung có kiểm soát các công cụ gây nhiễu (distractor tools) ngẫu nhiên và cùng miền từ kho 4,421 công cụ của Core Benchmark, tạo thành các kịch bản kiểm thử đa quy mô với số lượng công cụ $N \in \{3, 10, 50, 100, 500, 1000\}$. Thiết kế này phản ánh sát điều kiện vận hành thực tế trong các hệ sinh thái doanh nghiệp lớn, nơi hàng trăm API dịch vụ cùng tồn tại trong một hệ thống.
+
+
+
+\begin{verbatim}
+graph TD
+    classDef source fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1;
+    classDef process fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#e65100;
+    classDef dataset fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20;
+
+    subgraph Sources ["1. Nguồn dữ liệu thô (Raw Data Sources)"]
+        Glaive["Glaive Function Calling v2<br/>(60,734 mẫu đơn/đa lượt)"]:::source
+        xLAM["Salesforce xLAM-60k<br/>(60,000 mẫu cấu trúc phức tạp)"]:::source
+        CustomRaw["Tập chuyên biệt nghiệp vụ Việt Nam<br/>(8,000 mẫu 10 nhóm lĩnh vực)"]:::source
+    end
+
+    subgraph Pipeline ["2. Tiền xử lý & Chuyển ngữ có kiểm soát"]
+        Filter["Lọc hội thoại Single-turn<br/>& Khử trùng lặp cú pháp (Dedup)"]:::process
+        Translate["Chuyển ngữ với Alibaba Qwen-MT<br/>(Bảo toàn snake_case API & JSON Schema)"]:::process
+        QACheck["Kiểm định chất lượng với QA Rules<br/>(Xác thực cú pháp & tính nguyên vẹn)"]:::process
+        StratifiedSplit["Phân tầng dữ liệu Train / Val / Test<br/>(Tỷ lệ chuẩn hóa 80 / 10 / 10)"]:::process
+    end
+
+    subgraph Targets ["3. Các bộ chuẩn đánh giá hoàn thiện"]
+        CoreBenchmark["Canonical Core Benchmark (Song ngữ EN–VI đối sánh 1:1)<br/>(61,615 Train / 7,701 Val / 7,712 Test)"]:::dataset
+        CustomSeen["CustomTools-VI (Seen Tools: 20 công cụ)<br/>(5,600 Train / 400 Val / 800 Test)"]:::dataset
+        CustomUnseen["CustomTools-VI (Unseen Tools: 20 công cụ Zero-Shot)<br/>(0 Train / 400 Val / 800 Test)"]:::dataset
+        StressSet["Tập kiểm thử áp lực Stress Test<br/>(200 anchors × N = 3 đến 1000 distractors)"]:::dataset
+    end
+
+    Glaive --> Filter
+    xLAM --> Filter
+    Filter --> Translate
+    Translate --> QACheck
+    QACheck --> StratifiedSplit
+    CustomRaw --> StratifiedSplit
+
+    StratifiedSplit --> CoreBenchmark
+    StratifiedSplit --> CustomSeen
+    StratifiedSplit --> CustomUnseen
+    CoreBenchmark --> StressSet
+\end{verbatim}
+
+\textit{Hình 3.1: Quy trình xử lý dữ liệu và xây dựng các bộ tiêu chuẩn đánh giá Benchmark.}
+
+\textit{(Ghi chú: Core Benchmark là tập dữ liệu song ngữ đối xứng 1:1 (Paired EN–VI). CustomTools-VI duy trì tỷ lệ mẫu âm tính cân bằng 50\% ở mọi tập kiểm thử. Tỷ lệ phân chia Train / Val / Test tuân thủ nghiêm ngặt quy chuẩn 80/10/10).}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Thống kê định lượng các bộ dữ liệu trong Benchmark Tool Calling Tiếng Việt}
+    \label{tab:bảng_3_1}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{llcccccccc}
+        \toprule
+        \textbf{Bộ dữ liệu} & \textbf{Mục đích \& Đặc tính} & \textbf{Ngôn ngữ} & \textbf{Lệnh gọi} & \textbf{Mẫu Dương (FC)} & \textbf{Mẫu Âm (Non-FC)} & \textbf{Tập Train} & \textbf{Tập Val} & \textbf{Tập Test} & \textbf{Số công cụ (Tools)} \\
+        \midrule
+        \textit{Nhóm 1: Canonical Core Benchmark (77,028 cặp bản ghi song ngữ đối sánh 1:1)} &  &  &  &  &  &  &  &  &  \\
+        \textbf{Canonical Glaive} & Khái quát hóa đơn lệnh + Âm tính & Song ngữ EN–VI (Paired) & Đơn lệnh (Single) & 13,393 & 4,817 & 14,561 & 1,819 & 1,830 & 864 \\
+        \textbf{Canonical xLAM} & Cấu trúc phức tạp + Đa lệnh gọi & Song ngữ EN–VI (Paired) & Đa lệnh (Multi) & 58,818 & 0 & 47,054 & 5,882 & 5,882 & 3,602 \\
+        \textbf{Tổng Core Benchmark} & \textbf{Khung chuẩn quy mô lớn} & \textbf{Song ngữ EN–VI} & \textbf{Đơn \& Đa lệnh} & \textbf{72,211 (×2)} & \textbf{4,817 (×2)} & \textbf{61,615 (×2)} & \textbf{7,701 (×2)} & \textbf{7,712 (×2)} & \textbf{4,421} \\
+        \textit{Nhóm 2: CustomTools-VI Benchmark (8,000 mẫu đặc thù đời sống Việt Nam)} &  &  &  &  &  &  &  &  &  \\
+        \textbf{CustomTools-VI (Seen)} & 20 công cụ đã học (10 nhóm miền) & Tiếng Việt (VI) & Đơn \& Đa lệnh & 4,200 & 2,600 & 5,600 & 400 & 800 & 20 (Seen) \\
+        \textbf{CustomTools-VI (Unseen)} & 20 công cụ Zero-Shot (10 nhóm miền) & Tiếng Việt (VI) & Đơn \& Đa lệnh & 600 & 600 & 0 \textit{(Zero-Shot)} & 400 & 800 & 20 (Unseen) \\
+        \textbf{Tổng CustomTools-VI} & \textbf{Khung chuẩn miền thực tế} & \textbf{Tiếng Việt (VI)} & \textbf{Đơn \& Đa lệnh} & \textbf{4,800} & \textbf{3,200} & \textbf{5,600} & \textbf{800} & \textbf{1,600} & \textbf{40} \\
+        \bottomrule
+    \end{tabular}
+    }%
+\end{table}
+
+\textit{(Ghi chú chuyển đổi biểu diễn dữ liệu (Data Representation Mapping): Số liệu trong Bảng 3.1 thể hiện số lượng bản ghi hội thoại gốc (Master Conversational Records). Khi đưa vào huấn luyện đường ống phân biệt Method 2 Shared E4, các bản ghi này được trích xuất thành 70,988 cặp dương tính (query, tool\_description) cho bộ truy hồi Bi-Encoder (loại trừ hoàn toàn định danh của 20 công cụ unseen để bảo toàn tính nghiêm ngặt zero-shot) và 135,617 cặp (query, param\_schema) phân cấp cho bộ trích xuất Cross-Encoder. Trên Core Benchmark, Method 2 được kiểm định đồng bộ trên toàn bộ 7,712 mẫu kiểm thử tiếng Việt (VI Test) và 7,712 mẫu kiểm thử tiếng Anh (EN Test) chuẩn hóa).}
+

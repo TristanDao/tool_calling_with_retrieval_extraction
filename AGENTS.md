@@ -10,10 +10,14 @@
 ## 1. Project Identity
 
 - **Tên dự án**: Tool Calling tiếng Việt — So sánh 2 phương pháp: SLM End-to-End vs Bi-Encoder + Cross-Encoder
+- **Tên đề tài KLTN chính thức (Đề cương chi tiết đã đăng ký UIT)**:
+  - Tiếng Việt: **Nghiên cứu phương pháp Tool Calling dựa trên truy hồi ngữ nghĩa và trích xuất tham số theo Tool Schema**
+  - Tiếng Anh: **Research on Tool Calling using Semantic Retrieval and Schema-aware Parameter Extraction**
 - **Repo path**: `/home/thinh/project/UIT/tool_calling_with_retrieval_extraction`
-- **Tác giả**: Đào Phước Thịnh, Hà Quang Đạt
+- **Sinh viên thực hiện**: Đào Phước Thịnh (MSSV: 25210038), Hà Quang Đạt (MSSV: 25210008)
+- **Thời gian thực hiện**: Từ ngày 15/07/2026 đến ngày 23/09/2026
 - **Giảng viên hướng dẫn**: TS. Đặng Văn Thìn
-- **Trạng thái**: Phase 6/7 — Hoàn thành Method 1 (2B E0→E4), Method 2 và Stress Test đối đầu ($N=3 \to 1000$); Cập nhật đầy đủ hạ tầng phần cứng (1× A100 Colab Pro huấn luyện, 2× T4 Kaggle kiểm thử) và kết quả Stress Test vào bài báo; **Hoàn thành đánh giá Benchmark Qwen3.5-4B** trên Canonical Core (E3 VI Tool Acc 98.73%, ArgA 72.86%, Cú pháp lỗi 0.32%; EN Tool Acc 96.63%, ArgA 74.71%) và CustomTools-VI (E3 Seen 62.00%, Unseen 69.75%; E4 Seen ArgA 87.92%, Unseen ArgA 86.75%, ArgA Gap +1.17% thiết lập kỷ lục SOTA mới); **Hoàn thành đánh giá Frontier API Baselines** (`GPT-5.6 Luna` và `Gemini 3.8 Flash` trên toàn bộ 1,600 mẫu `CustomTools-VI`) qua Kaggle Model Proxy Serverless; **Tách riêng tài liệu Khóa luận tốt nghiệp UIT đầy đủ** tại `thesis/khoa_luan_tot_nghiep.md` và **chuẩn hóa bộ đôi Paper hội nghị khoa học** tại `paper/paper_en.md` và `paper/paper_vi.md`. Đang chờ nốt kết quả đánh giá 4B E4 trên Core Benchmark.
+- **Trạng thái**: Phase 6/7 — **Hoàn thành 100% thực nghiệm toàn diện**: Method 1 (Qwen3.5-2B E0→E4 và Qwen3.5-4B E3, E4 trên cả Canonical Core 7,712 mẫu EN/VI và CustomTools-VI 1,600 mẫu Seen/Unseen); Method 2 (Bi-Encoder + Cross-Encoder); Stress Test đối đầu 4 phương pháp ($N=3 \to 1000$); Frontier API Baselines (`GPT-5.6 Luna` và `Gemini 3.8 Flash`). Đồng bộ 100% tài liệu Khóa luận tốt nghiệp UIT chuẩn quy chế tại `thesis/khoa_luan_tot_nghiep.md` và `latex/uit_thesis/` theo Đề cương chi tiết đã đăng ký; giữ bộ đôi Paper hội nghị tại `paper/paper_en.md` và `paper/paper_vi.md`.
 
 ---
 
@@ -67,7 +71,7 @@ Cả 2 được so sánh với:
 - Method 1 SLM: dùng Unsloth để QLoRA/SFT checkpoint `unsloth/Qwen3.5-2B` hoặc `unsloth/Qwen3.5-4B`. Training view dùng native `messages` + `tools` + structured `tool_calls`; render bằng chat template của exact checkpoint với `enable_thinking=False`, loss chỉ tính trên assistant response. Negative dùng assistant content bình thường, không dùng `<no_tool_call>`. Giống Ersoy et al. (2025) ở thiết kế SFT, không ở serialization.
 - Method 2 Bi-Encoder: dùng `BAAI/bge-m3` + `sentence-transformers` với `CachedMNRL` + LoRA ($r=16, \alpha=32$). Round 1 huấn luyện teacher để mining hard negatives cho Round 2. Ngưỡng calibration $\tau = 0.35, \delta = 0.21$.
 - Method 2 Cross-Encoder: **Hierarchical Span Prediction** trên backbone **`xlm-roberta-base`** (thực tế triển khai đã dùng XLM-R base thay vì BGE-M3 để tối ưu kích thước và tốc độ). Schema-driven routing: type lấy từ schema question nên model không cần học/predict type — chỉ activate 1 sub-head phù hợp (span/enum/boolean). 1 binary `has_value` head riêng để phân biệt null (absent) vs có giá trị. Input format BERT-QA: query làm context, param schema làm question. Kèm Value Normalizer để ánh xạ surface text về canonical types.
-- Đánh giá chéo: Cả 2 phương pháp dùng chung 100% tập test `CustomTools-VI` (`test_seen` 800, `test_unseen` 800) và 200 anchors Stress Test ($N = 3 \to 1000$). Trên Core Benchmark, Method 1 test trên `7,712` mẫu (kèm 491 negatives), Method 2 đã test trên `10,555` mẫu positive. Chi tiết xem `docs/data_pipeline_and_splits.md` và `docs/bao_cao_method2.md`.
+- Đánh giá chéo: Cả 2 phương pháp dùng chung 100% tập test `CustomTools-VI` (`test_seen` 800, `test_unseen` 800) và 200 anchors Stress Test ($N = 3 \to 1000$). Trên Core Benchmark, cả Method 1 và Method 2 đều đã test đồng bộ trên `7,712` mẫu Core test mỗi ngôn ngữ (Method 2 Shared E4: VI Test Tool Acc 59.20%, ArgA 30.26%; EN Test Tool Acc 62.60%, ArgA 35.52%; Custom Seen ArgA 85.38%, Unseen ArgA 60.25%). Chi tiết xem `docs/tables_for_paper.md` và `docs/paper_vi_method2_shared.md`.
 
 ---
 
@@ -256,9 +260,9 @@ tool_calling_with_retrieval_extraction/
 | 2 | Method 2: Bi-Encoder | ✅ Done |
 | 3 | Method 2: Cross-Encoder | ✅ Done |
 | 4 | Method 1: SLM fine-tune + instruction data (Qwen3.5-2B E0→E4) | ✅ Done |
-| 5 | Baselines (OpenAI FC, Gemini FC) | ⏳ (Tạm gác theo quyết định chiến lược) |
-| 6 | Evaluation & comparison (Method 1 vs Method 2) | ⏳ In progress |
-| 7 | Stress test (RAG-MCP inspired, so sánh cả 4) | ⏳ |
+| 5 | Baselines (OpenAI FC, Gemini FC) | ✅ Hoàn thành (Frontier API baselines) |
+| 6 | Evaluation & comparison (Method 1 vs Method 2) | ✅ Hoàn thành |
+| 7 | Stress test (RAG-MCP inspired, so sánh cả 4) | ✅ Hoàn thành |
 
 ### Phase detail
 
@@ -319,6 +323,37 @@ tool_calling_with_retrieval_extraction/
 1. Cập nhật section tương ứng trong `AGENTS.md` + `docs/`
 2. Cập nhật phase trong roadmap
 3. Sau đó mới viết code
+
+### Quy chuẩn văn phong học thuật và trình bày Khóa luận tốt nghiệp UIT (BẮT BUỘC TUÂN THỦ)
+Mọi AI agent khi chỉnh sửa hoặc viết tài liệu Khóa luận tốt nghiệp (`thesis/khoa_luan_tot_nghiep.md` và `latex/uit_thesis/`) **phải tuân thủ nghiêm ngặt các quy tắc sau mà không cần user nhắc lại**:
+1. **Thông tin định danh học thuật**:
+   - Trường: Trường Đại học Công nghệ Thông tin – ĐHQG-HCM.
+   - Khoa: **KHOA KHOA HỌC MÁY TÍNH** (tuyệt đối không ghi Khoa Công nghệ Thông tin).
+   - Ngành đào tạo: **CỬ NHÂN NGÀNH TRÍ TUỆ NHÂN TẠO** (tuyệt đối không ghi CNTT/TTNT).
+   - Giảng viên hướng dẫn: **TS. Đặng Văn Thìn**.
+   - Sinh viên thực hiện: **ĐÀO PHƯỚC THỊNH** (MSSV: 25210038), **HÀ QUANG ĐẠT** (MSSV: 25210008).
+2. **Văn phong và Giọng văn**:
+   - **Ngôi xưng**: Nhất quán sử dụng *"chúng em"* hoặc *"nghiên cứu / nhóm tác giả"*. Tuyệt đối **không** dùng *"chúng con"* hay *"tôi"*.
+   - **Tính liền mạch (Narrative Flow)**: Viết theo cấu trúc các đoạn văn nghị luận học thuật hoàn chỉnh, có câu chủ đề (topic sentence) và liên từ dẫn dắt mượt mà. **Hạn chế tối đa các gạch đầu dòng (bullet points) vụn vặt, phân mảnh**.
+   - **Tránh sáo rỗng & khẩu ngữ**: Tuyệt đối không dùng văn mẫu cảm tính sến súa (*"tri ân vô hạn"*, *"điểm tựa tinh thần vững chắc nhất"*, *"bế tắc"*, *"đột phá"*) hoặc khẩu ngữ (*"nhồi thêm"*, *"kích hoạt mù quáng"*). Thay bằng thuật ngữ chuẩn mực (*"thiên kiến kích hoạt quá mức (over-triggering)"*, *"bổ sung có kiểm soát các công cụ gây nhiễu"*).
+3. **Quy chế cấu trúc KLTN Đại học UIT**:
+   - **Không có mục "Lời cam đoan"** (Lời cam đoan chỉ dành cho bậc Cao học / Thạc sĩ / Tiến sĩ).
+   - **Không có mục "Abstract" tiếng Anh riêng ở giữa tài liệu** (Abstract tiếng Anh chỉ nằm ở phần Tóm tắt mở đầu).
+   - **Không đưa mục "Công bố khoa học"** nếu bài báo chưa chính thức xuất bản có Acceptance Letter (chuyển thông tin mã nguồn và benchmark mở vào phần đóng góp thực tiễn).
+   - **Tính thống nhất toàn đoàn**: Khóa luận là công trình chung của cả nhóm. Tuyệt đối **không** đưa biên bản kiểm toán nội bộ, tranh luận cá nhân, hoặc phân chia trách nhiệm (*"Tài liệu Thịnh..."*, *"Đạt phụ trách..."*) vào văn bản nộp Hội đồng.
+4. **Cân đối độ sâu học thuật giữa các chương**:
+   - **Chương 2 (Cơ sở lý thuyết)**: Phải có cơ sở toán học đầy đủ (công thức Attention, cơ chế lượng tử hóa NF4/QLoRA, hàm mất mát `CachedMNRL`, bài toán phân cấp BERT-QA). Không được viết quá ngắn dưới 50 dòng.
+   - **Chương 4 (Phương pháp)**: Phải trình bày thuật toán chuẩn hóa giá trị tiếng Việt (Value Normalizer) bài bản, kèm bảng siêu tham số đối xứng giữa SLM và Method 2.
+   - **Chương 5 (Thực nghiệm)**: Cân đối giữa phân tích SLM và các Frontier APIs (GPT-5.6 Luna, Gemini 3.8 Flash). Phải phân tích rõ nguyên nhân SLM bản địa hóa vượt qua mô hình đóng của OpenAI.
+   - **Chương 6 (Phân tích lỗi)**: Phải có bảng phân tích ca lỗi thực tế (Case Studies), bảng bóc tách sub-heads và phân tích đối chứng Oracle.
+5. **Ký hiệu toán học**:
+   - Số hàng nghìn trong LaTeX / Math mode phải viết là **`$1000$`** hoặc **`$1{,}000$`**, tuyệt đối không dùng `$1.000$` (tránh bị LaTeX hiểu là số thập phân).
+   - Bảng số liệu Train / Val / Test phải khớp số học 100% từng đơn vị (bảo đảm có cột `Tập Val`).
+6. **Nguồn số liệu và phản biện kết quả**:
+   - `docs/tables_for_paper.md` là bảng tổng hợp **đã lỗi thời**, không dùng làm ground truth cho khóa luận hoặc bài báo.
+   - Với Method 1, Frontier APIs và Stress Test, dùng `paper/paper_vi.md` làm bảng số liệu hiện hành; với Method 2 Shared E4, dùng `docs/paper_vi_method2_shared.md` cho các số liệu, giới hạn Oracle, latency và calibration hiện hành.
+   - Không suy ra speedup, chi phí/1k queries, VRAM tối thiểu hoặc khả năng chạy CPU/Edge nếu không có phép đo cùng protocol. Syntax Error 0% chỉ xác nhận đầu ra có thể phân tích theo định nghĩa metric, không khẳng định mọi lời gọi hợp lệ theo JSON Schema hay khớp nhãn.
+   - Khi diễn giải kết quả, dùng ngôn ngữ điều kiện và định lượng; không biến kết quả một benchmark, một seed, hoặc Oracle có giới hạn repeated-call thành kết luận tuyệt đối hay quan hệ nhân quả đã được chứng minh.
 
 ### Khi gặp xung đột quyết định cũ
 - Mặc định ưu tiên quyết định **mới nhất trong AGENTS.md**
@@ -449,18 +484,15 @@ tool_calling_with_retrieval_extraction/
   - Huấn luyện hoàn tất trên 1× NVIDIA A100 (loss E4 đạt 0.0103, push lên `ThinhDao/Qwen3.5-4B_E4`).
   - **Core Benchmark (E3)**: Hoàn tất 100% (VI Tool Acc 98.73%, ArgA 72.86%, Cú pháp lỗi 0.32%; EN Tool Acc 96.63%, ArgA 74.71%, Cú pháp lỗi 1.97%).
   - **CustomTools-VI (E3 & E4)**: Hoàn tất 100% (E3 Seen ArgA 62.00%, Unseen ArgA 69.75%; E4 Seen ArgA 87.92%, Unseen ArgA 86.75%, ArgA Gap +1.17% thiết lập đỉnh cao mới của dòng SLM).
-  - Đang chạy nốt suy luận cho 4B E4 trên Core Benchmark.
+  - **Core Benchmark (E4)**: Hoàn tất 100% trên 7,712 mẫu mỗi ngôn ngữ; VI Tool Acc 86.22%, ArgA 64.94%, lỗi cú pháp 9.75%; EN Tool Acc 85.03%, ArgA 66.66%, lỗi cú pháp 11.36%.
 - ✅ **Method 2 (Bi-Encoder BGE-M3 + Cross-Encoder XLM-R)**: Hoàn tất toàn bộ thực nghiệm (Evaluation, Random Stress Test $N=3 \to 1000$, Normalizer Ablation) do Đạt chạy. Báo cáo, ảnh đồ thị, PDF và file bằng chứng đã được import về nhánh `main` tại `reports/method2_20260908/` và `reports/method2_20260913/`.
-- ✅ **Stress Test Đối Đầu ($N = 3 \to 1000$)**: Đã hoàn thành đối đầu trực diện giữa `Qwen3.5-2B E4` và `Method 2`. Method 2 áp đảo tuyệt đối về độ trễ (nhanh hơn từ 21.6× đến 159.2×, giữ phẳng ~58 ms), SLM bị OOM ở $N \ge 500$ trên GPU T4 16GB do ma trận SDPA attention vượt 32GB VRAM.
+- ✅ **Stress Test Đối Đầu ($N = 3 \to 1000$)**: Đã hoàn thành đối đầu trực diện giữa `Qwen3.5-2B E4` và `Method 2` (run chuẩn hóa mới trên candidate prefix lồng nhau và gold bảo toàn). Method 2 kiên cường vượt trội: ArgA đạt 87.50% → 84.00% (vượt trội SLM trên mọi mức $N$), Tool Acc 89.00% → 87.00%, Non-FC Recall 95.00% ở $N=1000$. P50 tăng trưởng dưới tuyến tính từ 55.13 ms lên 107.68 ms (nhanh hơn từ 22.8× đến 152.7× so với SLM), VRAM allocated ổn định ~3.21 GiB (3,283 MiB). SLM bị sụp đổ CUDA OOM ở $N \ge 500$ trên GPU T4 16GB do ma trận SDPA attention vượt 32GB VRAM.
 - ✅ **Frontier API Baselines**: Hoàn tất đánh giá `GPT-5.6 Luna` và `Gemini 3.8 Flash` trên toàn bộ 1,600 mẫu CustomTools-VI.
 - ✅ **Bài báo khoa học (Paper)**: Đã hoàn thành và cập nhật đồng bộ cả 2 bản [paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md) và [paper/paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md) với Mục 4.3 (Hạ tầng phần cứng & Siêu tham số), Mục 6 (Bảng 2 Frontier APIs, Bảng 3 Core Benchmark có E3 4B), Mục 6.6 (Stress Test), và Mục 7 (Model Scaling Study 2B vs 4B với Bảng 6, Bảng 6.1 và 4 phát hiện thực nghiệm then chốt).
 
-### 11.2 Các công việc ĐANG CHỜ KẾT QUẢ & BƯỚC TIẾP THEO (Pending Roadmap)
-- [⏳ **ĐANG CHẠY SUY LUẬN**] **1. Benchmark Qwen3.5-4B (E4 Core Benchmark)**:
-  - Thịnh đang chạy suy luận trên Kaggle cho 4B E4 trên Canonical Core Benchmark (7,712 mẫu VI / EN).
-  - *Mục đích*: Điền nốt các ô *[Đang chạy]* của E4 4B trong Bảng 6 của bài báo.
-- [💡 **TÙY CHỌN / DỰ PHÒNG**] **2. Chạy lại Method 2 trên Canonical Core (7,712 mẫu)**:
-  - Nếu cần đồng nhất tuyệt đối bảng Core Benchmark với Method 1 (trước đây Đạt test trên 10,555 mẫu cũ). Chạy mất ~15 phút GPU.
+### 11.2 Các công việc còn lại và bước tiếp theo
+- [x] **Benchmark Qwen3.5-4B (E4 Core Benchmark)**: Đã hoàn tất trên 7,712 mẫu VI và 7,712 mẫu EN; các metrics đã được ghi vào `results/slm/summary_metrics_qwen3.5-4b.json` và đồng bộ vào các bảng Markdown.
+- [ ] **Đóng gói phát hành**: Kiểm tra lần cuối liên kết, manifest và checksum trước khi công bố mã nguồn, benchmark và checkpoint.
 
 ---
 

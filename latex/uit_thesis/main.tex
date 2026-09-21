@@ -1,0 +1,122 @@
+% !TEX program = xelatex
+% ==============================================================================
+% KHÓA LUẬN TỐT NGHIỆP ĐẠI HỌC - TRƯỜNG ĐH CÔNG NGHỆ THÔNG TIN (ĐHQG-HCM)
+% Trình biên dịch: XeLaTeX | Font: Times New Roman (UTF-8)
+% Kế thừa và chuẩn hóa theo mẫu quy định của Bộ GD&ĐT và Trường ĐH CNTT
+% ==============================================================================
+
+\documentclass[13pt,a4paper,oneside]{report}
+
+% ------------------------------------------------------------------------------
+% 1. CẤU HÌNH FONT VÀ TIẾNG VIỆT
+% ------------------------------------------------------------------------------
+\usepackage{fontspec}          % Nạp font OpenType/TrueType cho XeLaTeX
+\setmainfont{Times New Roman}  % Font Times New Roman chuẩn mực
+
+\usepackage[vietnamese]{babel} % Tự động Việt hóa tiêu đề: Chương, Mục lục, Hình, Bảng...
+
+% ------------------------------------------------------------------------------
+% 2. CĂN LỀ TRANG IN (CHUẨN QUY ĐỊNH PHỤ LỤC 2 TRƯỜNG ĐH CNTT)
+% Quy định: Lề trên 3cm (30mm), Lề dưới 3.5cm (35mm), Lề trái 3.5cm (35mm), Lề phải 2cm (20mm)
+% ------------------------------------------------------------------------------
+\usepackage{geometry}
+\geometry{
+    a4paper,
+    top=30mm,
+    bottom=35mm,
+    left=35mm,
+    right=20mm
+}
+
+% ------------------------------------------------------------------------------
+% 3. GIÃN DÒNG VÀ ĐỊNH DẠNG ĐOẠN VĂN
+% ------------------------------------------------------------------------------
+\usepackage{setspace}
+\onehalfspacing             % Giãn dòng 1.5 dòng theo quy định chuẩn
+
+\usepackage{indentfirst}    % Tự động thụt đầu dòng cả đoạn văn đầu tiên sau tiêu đề
+\setlength{\parindent}{1cm} % Thụt lề đầu dòng 1cm
+\setlength{\parskip}{6pt}   % Khoảng cách giữa các đoạn văn 6pt
+
+% ------------------------------------------------------------------------------
+% 4. CÁC GÓI TIỆN ÍCH HỖ TRỢ (TOÁN, BẢNG BIỂU, HÌNH ẢNH, VIỀN BÌA TIKZ)
+% ------------------------------------------------------------------------------
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage{caption}
+\captionsetup{
+    font=small,
+    labelfont=bf,
+    labelsep=colon,
+    justification=centering
+}
+
+\usepackage[unicode]{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,        % Màu đen chuẩn mực cho liên kết nội bộ
+    citecolor=blue,         % Màu xanh lam cho trích dẫn tài liệu
+    urlcolor=blue           % Màu xanh lam cho URL
+}
+
+% ==============================================================================
+% BẮT ĐẦU TÀI LIỆU
+% ==============================================================================
+\begin{document}
+
+% ------------------------------------------------------------------------------
+% PHẦN TRANG BÌA VÀ THỦ TỤC ĐẦU BÁO CÁO (KHÔNG ĐÁNH SỐ TRANG THEO PHỤ LỤC 2)
+% ------------------------------------------------------------------------------
+\pagestyle{empty}
+\include{frontmatter/cover}
+\include{frontmatter/subcover}
+\include{frontmatter/council}
+\include{frontmatter/acknowledgments}
+\include{frontmatter/declaration}
+
+\tableofcontents
+\newpage
+
+\listoffigures
+\newpage
+
+\listoftables
+\newpage
+
+\include{frontmatter/abbreviations}
+\newpage
+
+% ------------------------------------------------------------------------------
+% BẮT ĐẦU ĐÁNH SỐ TRANG TỪ PHẦN TÓM TẮT ĐỒ ÁN (SỐ Ả-RẬP Ở GIỮA BÊN DƯỚI THEO PHỤ LỤC 2)
+% ------------------------------------------------------------------------------
+\pagestyle{plain}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\include{frontmatter/abstract_vi}
+\include{frontmatter/abstract_en}
+
+% ------------------------------------------------------------------------------
+% NỘI DUNG CHÍNH
+% ------------------------------------------------------------------------------
+
+\include{chapters/ch1_tong_quan}
+\include{chapters/ch2_co_so_ly_thuyet}
+\include{chapters/ch3_benchmark}
+\include{chapters/ch4_phuong_phap}
+\include{chapters/ch5_thuc_nghiem}
+\include{chapters/ch6_phan_tich_loi}
+\include{chapters/conclusion}
+
+% ------------------------------------------------------------------------------
+% TÀI LIỆU THAM KHẢO
+% ------------------------------------------------------------------------------
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\addcontentsline{toc}{chapter}{Tài liệu tham khảo}
+
+\end{document}

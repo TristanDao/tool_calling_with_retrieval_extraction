@@ -31,8 +31,12 @@ Thư mục này chứa toàn bộ các tài liệu kỹ thuật, kiến trúc, p
 
 | File | Mô tả nội dung |
 |---|---|
-| [bao_cao_method2.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/bao_cao_method2.md) | Báo cáo chi tiết kết quả thực nghiệm **Method 2 (Bi-Encoder BGE-M3 + Cross-Encoder XLM-RoBERTa-base)**: hai round retrieval, hierarchical extraction, normalizer ablation và random stress test. |
-| [../results/slm/summary_table.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/results/slm/summary_table.md) | Báo cáo tổng hợp kết quả **Method 1 (SLM Qwen3.5-2B E0 $\to$ E4)** và bảng so sánh đối đầu trực diện M1 vs M2. |
+| [paper_vi_method2_shared.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/paper_vi_method2_shared.md) | Báo cáo thực nghiệm chuyên sâu **Method 2 (Bi-Encoder BGE-M3 + Cross-Encoder XLM-RoBERTa-base)**: huấn luyện Shared E4, đánh giá Core Benchmark (7.712 mẫu EN/VI) và CustomTools-VI (1.600 mẫu), phân tích Oracle, Normalizer ablation và Stress test ($N=3 \to 1.000$). |
+| [tables_for_paper.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/tables_for_paper.md) | Bảng tổng hợp số liệu thực nghiệm đối chiếu 4 phương pháp cho bài báo và khóa luận. |
+| [method2.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/method2.md) | Tổng quan kiến trúc chi tiết của Method 2: Bi-Encoder BGE-M3 và Cross-Encoder XLM-RoBERTa. |
+| [method2_completion.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/method2_completion.md) | Báo cáo nghiệm thu hoàn tất các hạng mục kỹ thuật của Method 2. |
+| [method2_ce_repair.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/method2_ce_repair.md) | Nhật ký kỹ thuật khắc phục và chuẩn hóa các đầu dự đoán của Cross-Encoder. |
+| [../results/slm/summary_table.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/results/slm/summary_table.md) | Báo cáo tổng hợp kết quả **Method 1 (SLM Qwen3.5-2B/4B E0 $\to$ E4)** và so sánh đối đầu. |
 | [../paper/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/) | Bài báo khoa học hoàn chỉnh: bản tiếng Anh ([paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md)) và bản tiếng Việt ([paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md)). |
 
 ---
@@ -44,3 +48,13 @@ Thư mục này chứa toàn bộ các tài liệu kỹ thuật, kiến trúc, p
 | [kaggle_e1_e4_training_guide.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/kaggle_e1_e4_training_guide.md) | Hướng dẫn huấn luyện DDP trên Kaggle Dual GPU T4 cho E1 $\to$ E4 với Unsloth, quản lý checkpoint resume theo stage. |
 | [kaggle_e0_evaluation_guide.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/kaggle_e0_evaluation_guide.md) | Hướng dẫn chạy đánh giá suy luận (evaluation inference) đa GPU trên Kaggle. |
 | [colab_e1_e4_training_guide.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/colab_e1_e4_training_guide.md) | Hướng dẫn huấn luyện đơn GPU trên Google Colab Pro (A100 / L4 / T4) đồng bộ qua Google Drive. |
+
+---
+
+## 5. Tài Liệu Tham Khảo Mở Rộng & Biểu Mẫu (References & Templates)
+
+| Đường dẫn | Mô tả nội dung |
+|---|---|
+| [references/tool_calling_Arabic_ocr.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/references/tool_calling_Arabic_ocr.md) | Bản OCR toàn văn bài báo *Ersoy et al. (ArabicNLP 2025)* dùng làm tài liệu tham khảo đối sánh. |
+| [../thesis/templates/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/thesis/templates/) | Các biểu mẫu Word chính thức của Trường ĐH Công nghệ Thông tin (`BieuMau.docx`, `phuluc2_hinhthuctrinhbay.docx`). |
+

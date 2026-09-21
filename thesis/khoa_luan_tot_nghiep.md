@@ -1,6 +1,6 @@
 # ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH
 # TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN
-## KHOA CÔNG NGHỆ THÔNG TIN
+## KHOA KHOA HỌC MÁY TÍNH
 
 ---
 
@@ -10,21 +10,21 @@
 
 <br>
 
-### **NGHIÊN CỨU VÀ SO SÁNH CÁC PHƯƠNG PHÁP GỌI CÔNG CỤ (TOOL CALLING) CHO TIẾNG VIỆT GIỮA MÔ HÌNH NGÔN NGỮ NHỎ END-TO-END VÀ KIẾN TRÚC PHÂN TÁCH BI-ENCODER + CROSS-ENCODER**
+### **NGHIÊN CỨU PHƯƠNG PHÁP TOOL CALLING DỰA TRÊN TRUY HỒI NGỮ NGHĨA VÀ TRÍCH XUẤT THAM SỐ THEO TOOL SCHEMA**
 
 <br>
 
-### **RESEARCH AND COMPARISON OF VIETNAMESE TOOL CALLING METHODS: END-TO-END SMALL LANGUAGE MODELS VS. DECOUPLED BI-ENCODER + CROSS-ENCODER ARCHITECTURE**
+### **RESEARCH ON TOOL CALLING USING SEMANTIC RETRIEVAL AND SCHEMA-AWARE PARAMETER EXTRACTION**
 
 <br><br>
 
-**CỬ NHÂN NGÀNH CÔNG NGHỆ THÔNG TIN / TRÍ TUỆ NHÂN TẠO**
+**CỬ NHÂN NGÀNH TRÍ TUỆ NHÂN TẠO**
 
 <br><br>
 
 **Sinh viên thực hiện:**
-- **ĐÀO PHƯỚC THỊNH** — MSSV: 21521469
-- **HÀ QUANG ĐẠT** — MSSV: 21521925
+- **ĐÀO PHƯỚC THỊNH** — MSSV: 25210038
+- **HÀ QUANG ĐẠT** — MSSV: 25210008
 
 <br>
 
@@ -41,15 +41,15 @@
 
 # ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH
 # TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN
-## KHOA CÔNG NGHỆ THÔNG TIN
+## KHOA KHOA HỌC MÁY TÍNH
 
 ---
 
 <br><br>
 
 **Sinh viên thực hiện:**
-- **ĐÀO PHƯỚC THỊNH** — MSSV: 21521469
-- **HÀ QUANG ĐẠT** — MSSV: 21521925
+- **ĐÀO PHƯỚC THỊNH** — MSSV: 25210038
+- **HÀ QUANG ĐẠT** — MSSV: 25210008
 
 <br><br>
 
@@ -57,15 +57,15 @@
 
 <br>
 
-### **NGHIÊN CỨU VÀ SO SÁNH CÁC PHƯƠNG PHÁP GỌI CÔNG CỤ (TOOL CALLING) CHO TIẾNG VIỆT GIỮA MÔ HÌNH NGÔN NGỮ NHỎ END-TO-END VÀ KIẾN TRÚC PHÂN TÁCH BI-ENCODER + CROSS-ENCODER**
+### **NGHIÊN CỨU PHƯƠNG PHÁP TOOL CALLING DỰA TRÊN TRUY HỒI NGỮ NGHĨA VÀ TRÍCH XUẤT THAM SỐ THEO TOOL SCHEMA**
 
 <br>
 
-### **RESEARCH AND COMPARISON OF VIETNAMESE TOOL CALLING METHODS: END-TO-END SMALL LANGUAGE MODELS VS. DECOUPLED BI-ENCODER + CROSS-ENCODER ARCHITECTURE**
+### **RESEARCH ON TOOL CALLING USING SEMANTIC RETRIEVAL AND SCHEMA-AWARE PARAMETER EXTRACTION**
 
 <br><br>
 
-**CỬ NHÂN NGÀNH CÔNG NGHỆ THÔNG TIN / TRÍ TUỆ NHÂN TẠO**
+**CỬ NHÂN NGÀNH TRÍ TUỆ NHÂN TẠO**
 
 <br><br>
 
@@ -104,15 +104,15 @@ Khóa luận tốt nghiệp được bảo vệ và đánh giá tại Hội đ�
 
 ## LỜI CẢM ƠN
 
-Để hoàn thành chương trình đào tạo cử nhân và hoàn tất khóa luận tốt nghiệp này, chúng em xin bày tỏ lòng biết ơn sâu sắc và chân thành nhất tới các thầy cô giáo, gia đình và bạn bè đã luôn đồng hành, dìu dắt và tạo mọi điều kiện thuận lợi nhất cho chúng em trong suốt quá trình học tập và nghiên cứu.
+Để hoàn thành khóa luận tốt nghiệp và chương trình đào tạo cử nhân ngành Trí tuệ Nhân tạo, chúng em xin bày tỏ lòng biết ơn sâu sắc đến quý Thầy Cô, gia đình và bạn bè đã luôn đồng hành, chỉ dẫn và hỗ trợ chúng em trong suốt thời gian qua.
 
-Trước hết, chúng em xin gửi lời cảm ơn chân thành và sâu sắc nhất tới **TS. Đặng Văn Thìn**, giảng viên hướng dẫn trực tiếp của đề tài. Thầy đã dành nhiều thời gian, tâm huyết để định hướng phương pháp nghiên cứu khoa học, gợi mở những ý tưởng đột phá về mặt kiến trúc hệ thống, đồng thời luôn tận tình chỉ bảo, động viên và khích lệ chúng em vượt qua những thời điểm khó khăn, bế tắc khi huấn luyện các mô hình học sâu và tối ưu hóa hạ tầng điện toán phân tán.
+Trước hết, chúng em xin gửi lời cảm ơn chân thành nhất tới **TS. Đặng Văn Thìn**, giảng viên hướng dẫn của đề tài. Trong suốt quá trình thực hiện khóa luận, Thầy đã luôn dành thời gian định hướng học thuật, đưa ra những góp ý phản biện chuyên môn sâu sắc và kiên nhẫn định hướng phương pháp tiếp cận khi nhóm gặp khó khăn trong quá trình thiết kế kiến trúc cũng như huấn luyện mô hình.
 
-Chúng em xin chân thành cảm ơn Ban Giám hiệu, Phòng Đào tạo Đại học, cùng toàn thể quý thầy cô giáo thuộc **Khoa Công nghệ Thông tin**, **Trường Đại học Công nghệ Thông tin – Đại học Quốc gia TP. Hồ Chí Minh**, những người đã truyền dạy cho chúng em nền tảng kiến thức chuyên môn vững chắc, tư duy nghiên cứu độc lập và tác phong làm việc chuyên nghiệp trong suốt 4 năm học tập dưới mái trường UIT.
+Chúng em xin trân trọng cảm ơn quý Thầy Cô thuộc **Khoa Khoa học Máy tính**, **Trường Đại học Công nghệ Thông tin – ĐHQG-HCM**, những người đã truyền đạt nền tảng kiến thức chuyên môn, phương pháp tư duy và tạo điều kiện học tập thuận lợi nhất cho chúng em trong suốt những năm tháng đại học.
 
-Cuối cùng, chúng con xin gửi lời tri ân vô hạn tới gia đình — điểm tựa tinh thần vững chắc nhất, luôn yêu thương, tin tưởng và tạo mọi điều kiện tốt nhất để chúng con an tâm học tập và theo đuổi đam mê khoa học. Xin cảm ơn tất cả các bạn bè, đồng nghiệp tại phòng nghiên cứu đã luôn chia sẻ tài nguyên tính toán, thảo luận chuyên môn và hỗ trợ chúng em hoàn thành tốt đề tài này.
+Chúng em cũng xin gửi lời cảm ơn chân thành đến gia đình — những người đã luôn là hậu phương vững chắc, chia sẻ và tạo mọi điều kiện tốt nhất để chúng em yên tâm học tập, nghiên cứu. Đồng thời, chúng em xin cảm ơn các bạn bè tại phòng thí nghiệm và trong khoa đã luôn nhiệt tình trao đổi học thuật, hỗ trợ hạ tầng tính toán và đồng hành cùng nhóm trong các giai đoạn nước rút của đề tài.
 
-Mặc dù đã rất nỗ lực, đầu tư nghiêm túc và thực nghiệm cẩn trọng, khóa luận chắc chắn không thể tránh khỏi những thiếu sót nhất định. Chúng em rất mong nhận được những ý kiến đóng góp, chỉ dẫn quý báu từ quý Thầy Cô trong Hội đồng để đề tài được hoàn thiện hơn nữa.
+Dù đã nỗ lực hết mình để hoàn thành đề tài một cách chỉn chu và chặt chẽ nhất, khóa luận khó tránh khỏi những hạn chế nhất định. Chúng em rất mong nhận được những nhận xét, đóng góp quý báu từ quý Thầy Cô trong Hội đồng để tiếp tục hoàn thiện nghiên cứu này.
 
 *TP. Hồ Chí Minh, tháng 09 năm 2026*  
 **Nhóm sinh viên thực hiện**  
@@ -122,40 +122,20 @@ Mặc dù đã rất nỗ lực, đầu tư nghiêm túc và thực nghiệm c�
 
 <div style="page-break-after: always;"></div>
 
-## LỜI CAM ĐOAN
-
-Chúng em xin cam đoan rằng khóa luận tốt nghiệp với đề tài:  
-**"Nghiên cứu và so sánh các phương pháp gọi công cụ (Tool Calling) cho tiếng Việt giữa mô hình ngôn ngữ nhỏ End-to-End và kiến trúc phân tách Bi-Encoder + Cross-Encoder"**  
-là công trình nghiên cứu khoa học thực thụ do chính nhóm chúng em trực tiếp thực hiện dưới sự hướng dẫn khoa học của TS. Đặng Văn Thìn.
-
-Các số liệu thực nghiệm, kết quả đo đạc độ chính xác, độ trễ và tỷ lệ lỗi cú pháp được trình bày trong khóa luận này là hoàn toàn trung thực, khách quan, được ghi nhận trực tiếp từ các chu trình huấn luyện trên hạ tầng GPU NVIDIA A100-40GB và đánh giá kiểm thử trên cụm 2× NVIDIA Tesla T4. Các nội dung tham khảo, kế thừa từ các công trình nghiên cứu, bài báo khoa học của các tác giả khác trong và ngoài nước đều đã được trích dẫn nguồn gốc rõ ràng, đầy đủ theo đúng quy chuẩn học thuật của Trường Đại học Công nghệ Thông tin và chuẩn quốc tế IEEE.
-
-Chúng em xin chịu hoàn toàn trách nhiệm trước Nhà trường và Hội đồng khoa học về tính trung thực và tính nguyên bản của công trình nghiên cứu này.
-
-*TP. Hồ Chí Minh, tháng 09 năm 2026*  
-**Nhóm sinh viên thực hiện**  
-*(Ký và ghi rõ họ tên)*  
-<br><br>
-**Đào Phước Thịnh** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Hà Quang Đạt**
-
----
-
-<div style="page-break-after: always;"></div>
-
 ## MỤC LỤC
 
+- [LỜI CẢM ƠN](#lời-cảm-ơn)
 - [DANH MỤC HÌNH VẼ](#danh-mục-hình-vẽ)
 - [DANH MỤC BẢNG BIỂU](#danh-mục-bảng-biểu)
 - [DANH MỤC TỪ VIẾT TẮT](#danh-mục-từ-viết-tắt)
 - [TÓM TẮT KHÓA LUẬN](#tóm-tắt-khóa-luận)
-- [ABSTRACT](#abstract)
 - [MỞ ĐẦU](#mở-đầu)
 - [Chương 1. TỔNG QUAN VỀ ĐỀ TÀI](#chương-1-tổng-quan-về-đề-tài)
-  - [1.1. Đặt vấn đề và tính cấp thiết của nghiên cứu](#11-đặt-vấn-đề-và-tính-cấp-thiết-của-nghiên-cứu)
-  - [1.2. Mục tiêu nghiên cứu](#12-mục-tiêu-nghiên-cứu)
-  - [1.3. Các câu hỏi nghiên cứu cốt lõi (Research Questions)](#13-các-câu-hỏi-nghiên-cứu-cốt-lõi-research-questions)
-  - [1.4. Đối tượng và phạm vi nghiên cứu](#14-đối-tượng-và-phạm-vi-nghiên-cứu)
-  - [1.5. Đóng góp khoa học của khóa luận](#15-đóng-góp-khoa-học-của-khóa-luận)
+  - [1.1. Mô tả đề tài và tính cấp thiết của nghiên cứu](#11-mô-tả-đề-tài-và-tính-cấp-thiết-của-nghiên-cứu)
+  - [1.2. Mục tiêu của đề tài](#12-mục-tiêu-của-đề-tài)
+  - [1.3. Đối tượng và phạm vi nghiên cứu](#13-đối-tượng-và-phạm-vi-nghiên-cứu)
+  - [1.4. Phương pháp thực hiện](#14-phương-pháp-thực-hiện)
+  - [1.5. Kết quả mong đợi và đóng góp khoa học của đề tài](#15-kết-quả-mong-đợi-và-đóng-góp-khoa-học-của-đề-tài)
   - [1.6. Bố cục của khóa luận](#16-bố-cục-của-khóa-luận)
 - [Chương 2. CƠ SỞ LÝ THUYẾT VÀ CÁC CÔNG TRÌNH LIÊN QUAN](#chương-2-cơ-sở-lý-thuyết-và-các-công-trình-liên-quan)
   - [2.1. Cơ chế gọi công cụ (Tool Calling / Function Calling) trong LLM](#21-cơ-chế-gọi-công-cụ-tool-calling--function-calling-trong-llm)
@@ -202,10 +182,13 @@ Chúng em xin chịu hoàn toàn trách nhiệm trước Nhà trường và Hộ
 
 | Ký hiệu hình | Tên hình vẽ | Trang |
 | :---: | :--- | :---: |
+| **Hình 2.1** | Sơ đồ nguyên lý hoạt động của kiến trúc phân tách hai giai đoạn (Bi-Encoder Retrieval kết hợp Cross-Encoder Extraction) | 16 |
+| **Hình 3.1** | Quy trình xử lý dữ liệu và xây dựng các bộ tiêu chuẩn đánh giá Benchmark | 24 |
 | **Hình 4.1** | Sơ đồ kiến trúc tổng quan đối chiếu giữa Phương pháp 1 (SLM End-to-End) và Phương pháp 2 (Bi-Encoder + Cross-Encoder) | 28 |
+| **Hình 4.2** | Quy trình bốn giai đoạn của module Chuẩn hóa Giá trị tiếng Việt (Vietnamese Value Normalizer) | 38 |
 | **Hình 5.1** | So sánh đối đầu toàn diện hiệu năng trên benchmark CustomTools-VI (Seen vs. Unseen) giữa SLM 2B, 4B, Method 2 và các Frontier APIs | 42 |
 | **Hình 5.2** | Kết quả Stress Test đối đầu trực diện: Suy giảm độ chính xác, vùng sụp đổ CUDA OOM ($N \ge 500$) và đường cong độ trễ suy luận P50 (ms) log-scale | 49 |
-| **Hình 5.3** | Nghiên cứu mở rộng quy mô mô hình (2B vs. 4B): Nâng trần độ chính xác Core Benchmark và triệt tiêu lỗi cú pháp JSON | 54 |
+| **Hình 5.3** | Nghiên cứu mở rộng quy mô mô hình (2B vs. 4B): Nâng trần độ chính xác Core Benchmark và giảm tỷ lệ lỗi cú pháp JSON | 54 |
 
 ---
 
@@ -217,12 +200,16 @@ Chúng em xin chịu hoàn toàn trách nhiệm trước Nhà trường và Hộ
 | :---: | :--- | :---: |
 | **Bảng 3.1** | Thống kê định lượng các bộ dữ liệu trong Benchmark Tool Calling Tiếng Việt | 22 |
 | **Bảng 4.1** | Thiết lập siêu tham số huấn luyện mô hình SLM Qwen3.5 (2B và 4B) trên GPU NVIDIA A100 | 33 |
+| **Bảng 4.2** | Thiết lập siêu tham số và cấu hình huấn luyện của Phương pháp 2 (Bi-Encoder BGE-M3 và Cross-Encoder XLM-R) | 36 |
 | **Bảng 5.1** | Kết quả thực nghiệm đối đầu trên benchmark CustomTools-VI (Seen vs. Unseen) | 40 |
 | **Bảng 5.2** | Kết quả thực nghiệm trên Canonical Core Benchmark (7,712 mẫu / ngôn ngữ) | 44 |
 | **Bảng 5.3** | Bảng so sánh đa chiều toàn diện giữa 4 phương pháp tiếp cận | 46 |
-| **Bảng 5.4** | Kết quả thực nghiệm Stress Test đối đầu trực diện khi quy mô công cụ mở rộng từ $N = 3$ đến $N = 1.000$ | 48 |
+| **Bảng 5.4** | Kết quả thực nghiệm Stress Test đối đầu trực diện khi quy mô công cụ mở rộng từ $N = 3$ đến $N = 1000$ | 48 |
 | **Bảng 5.5** | Nghiên cứu mở rộng quy mô tham số mô hình: Qwen3.5-2B vs. Qwen3.5-4B | 52 |
-| **Bảng 5.6** | Hiệu năng chi tiết của mô hình Qwen3.5-4B (E3) trên Canonical Core Benchmark | 53 |
+| **Bảng 5.6** | Hiệu năng đối đầu chi tiết của mô hình Qwen3.5-4B (E3 vs. E4) trên Canonical Core Benchmark | 53 |
+| **Bảng 6.1** | Đánh giá chất lượng độc lập của các đầu phân cấp chuyên biệt trong Cross-Encoder | 58 |
+| **Bảng 6.2** | Đối chứng chẩn đoán Oracle giữa lỗi truy hồi (Retrieval) và lỗi trích xuất tham số (Extraction) | 60 |
+| **Bảng 6.3** | Các ví dụ thực tế (Case Studies) minh họa 4 dạng lỗi trích xuất tham số điển hình | 62 |
 
 ---
 
@@ -261,43 +248,17 @@ Chúng em xin chịu hoàn toàn trách nhiệm trước Nhà trường và Hộ
 
 ## TÓM TẮT KHÓA LUẬN
 
-Khả năng gọi công cụ (tool calling / function calling) là một trong những bước tiến mang tính cách mạng của Trí tuệ Nhân tạo hiện đại, cho phép các Mô hình Ngôn ngữ Lớn (LLM) phá vỡ rào cản thông tin đóng để tương tác với thế giới thực thông qua các giao diện lập trình ứng dụng (API), cơ sở dữ liệu và công cụ tính toán bên ngoài. Tuy nhiên, việc ứng dụng các giải pháp gọi công cụ thương mại đám mây (như OpenAI hay Google Gemini) vào hệ thống thực tế tại Việt Nam đối mặt với 4 thách thức kỹ thuật lớn: độ trễ suy luận tự hồi quy lớn (800–2,000 ms), chi phí tài nguyên điện toán cao, nguy cơ rò rỉ dữ liệu nhạy cảm, và hiện tượng ảo giác cấu trúc JSON.
+Khả năng gọi công cụ (tool calling / function calling) là một năng lực quan trọng của Trí tuệ Nhân tạo hiện đại, cho phép các Mô hình Ngôn ngữ Lớn (LLM) mở rộng tri thức nội tại bằng cách tương tác với các giao diện lập trình ứng dụng (API), cơ sở dữ liệu và công cụ tính toán bên ngoài. Tuy nhiên, việc đưa các giải pháp gọi công cụ thương mại đám mây vào hệ thống thực tế tại Việt Nam vẫn đặt ra nhiều vấn đề cần xem xét, trong đó có độ trễ của quá trình sinh tự hồi quy, chi phí hạ tầng và dịch vụ, yêu cầu bảo vệ dữ liệu nghiệp vụ, cũng như rủi ro sinh đầu ra JSON không phù hợp với schema. Các phép đo trong khóa luận cho thấy độ trễ SLM thay đổi đáng kể theo kích thước mô hình, độ dài ngữ cảnh và protocol đánh giá; vì vậy, việc so sánh cần gắn với điều kiện đo cụ thể thay vì sử dụng một ngưỡng chung cho mọi ứng dụng.
 
-Khóa luận này tập trung nghiên cứu, xây dựng và tiến hành thực nghiệm so sánh đối đầu có hệ thống giữa hai trường phái kỹ thuật:
-1. **Phương pháp 1 (SLM End-to-End)**: Tinh chỉnh các mô hình ngôn ngữ nhỏ mã nguồn mở tiên tiến (`unsloth/Qwen3.5-2B` và mở rộng quy mô lên `Qwen3.5-4B`) theo biểu diễn cấu trúc bản địa, tối ưu hóa qua kỹ thuật QLoRA.
-2. **Phương pháp 2 (Kiến trúc phân tách Bi-Encoder + Cross-Encoder)**: Pipeline phi tạo sinh hoàn toàn (purely non-autoregressive), sử dụng Bi-Encoder `BAAI/bge-m3` để truy hồi công cụ và Cross-Encoder `xlm-roberta-base` đa đầu phân cấp để trích xuất tham số trực tiếp, kết hợp bộ chuẩn hóa giá trị tiếng Việt (Value Normalizer).
+Trước bối cảnh đó, khóa luận tập trung nghiên cứu bài toán gọi công cụ tiếng Việt dựa trên truy hồi ngữ nghĩa và trích xuất tham số theo Tool Schema, đồng thời tiến hành so sánh đối đầu có hệ thống giữa hai trường phái kỹ thuật. Phương pháp 1 là mô hình ngôn ngữ nhỏ End-to-End, trong đó `Qwen3.5-2B` và `Qwen3.5-4B` được tinh chỉnh bằng QLoRA trên biểu diễn hội thoại có cấu trúc. Phương pháp 2 là kiến trúc phân tách phi tự hồi quy, kết hợp Bi-Encoder `BAAI/bge-m3` để xếp hạng các công cụ ứng viên với Cross-Encoder `xlm-roberta-base` có các đầu phân cấp để trích xuất tham số; bộ chuẩn hóa giá trị tiếng Việt được sử dụng ở bước hậu xử lý để ánh xạ các cách diễn đạt tự nhiên về kiểu dữ liệu trong schema.
 
-Để phục vụ đánh giá, chúng tôi đã chuẩn hóa và xây dựng hai bộ benchmark: **Canonical Core Benchmark** (77,028 cặp bản ghi Anh–Việt trên 4,421 công cụ duy nhất) và **CustomTools-VI** (8,000 mẫu đặc thù đời sống Việt Nam thuộc 40 công cụ, phân chia nghiêm ngặt thành 20 công cụ đã học - seen và 20 công cụ zero-shot - unseen, tỷ lệ âm tính 50%).
+Để bảo đảm phép đối sánh giữa hai phương pháp, nghiên cứu xây dựng `Canonical Core Benchmark` gồm 77,028 cặp bản ghi song ngữ trên 4,421 công cụ và `CustomTools-VI` gồm 8,000 mẫu nghiệp vụ đời sống Việt Nam thuộc 40 công cụ. Bộ dữ liệu thứ hai được chia thành các công cụ đã xuất hiện trong huấn luyện (`seen`) và các công cụ chưa xuất hiện (`unseen`), đồng thời duy trì tỷ lệ 50% mẫu âm tính trong tập kiểm thử nhằm đo cả khả năng gọi đúng và khả năng từ chối gọi công cụ.
 
-**Các kết quả thực nghiệm và đóng góp nổi bật bao gồm:**
-1. **Đỉnh cao độ chính xác và khả năng tổng quát hóa Zero-Shot**: Trên benchmark CustomTools-VI, mô hình SLM tinh chỉnh kết hợp miền đặc thù (E4) thiết lập kỷ lục mới với độ chính xác tham số (ArgA) đạt **87.92%** (seen) và **86.75%** (unseen) ở mô hình 4B, vượt qua mô hình thương mại đóng `GPT-5.6 Luna` (+8.75% trên seen và +6.88% trên unseen). Ngược lại, Phương pháp 2 bị sụt giảm nghiêm trọng khi gặp công cụ mới (ArgA rơi từ 67.75% xuống 22.75%), khẳng định ưu thế vượt bậc của SLM trong suy luận liên kết ngữ cảnh.
-2. **Hiện tượng kích hoạt công cụ quá mức và vai trò dữ liệu âm tính**: Mô hình huấn luyện song ngữ thuần túy (E3) xuất hiện "hội chứng kích hoạt công cụ quá mức" nghiêm trọng đối với các câu trò chuyện thông thường (Non-FC Recall chỉ đạt 2.00%–3.00%). Việc bổ sung dữ liệu âm tính bản địa hóa ở cấu hình E4 đã chữa lành hoàn toàn thiên kiến này, đưa Non-FC Recall đạt mức tuyệt đối **100.00%**.
-3. **Ưu thế áp đảo về tốc độ và chi phí tài nguyên của Phương pháp 2**: Phương pháp 2 đạt độ trễ trung vị P50 chỉ **54.68–58.16 ms**, nhanh gấp **15–18 lần** so với SLM (~860–970 ms ở 2B và ~2,432 ms ở 4B), kiểm soát VRAM dưới 1.2 GB và đảm bảo 0.00% rủi ro cú pháp, đặc biệt phù hợp cho các hệ thống thời gian thực khắt khe như Voicebot hay Edge IoT.
-4. **Giới hạn vật lý trong Stress Test ($N = 3 \to 1.000$)**: Khi danh mục công cụ mở rộng, Phương pháp 2 duy trì ổn định độ trễ dưới 92 ms và VRAM dưới 1.5 GB. Ngược lại, SLM gặp hiện tượng bùng nổ bộ nhớ bậc hai ($O(L^2)$ attention) dẫn tới sụp đổ hoàn toàn do tràn bộ nhớ (CUDA OOM) tại $N \ge 500$ trên phần cứng 16GB VRAM.
+Các kết quả thực nghiệm cho thấy `Qwen3.5-4B` ở cấu hình E4 đạt ArgA 87.92% trên tập seen và 86.75% trên tập unseen, cao hơn `GPT-5.6 Luna` lần lượt 9.67 và 7.25 điểm phần trăm trong protocol CustomTools-VI. Ở chiều ngược lại, cấu hình song ngữ thuần túy E3 bộc lộ thiên kiến kích hoạt công cụ quá mức, thể hiện qua Non-FC Recall chỉ đạt 2.0%–3.0%; khi bổ sung dữ liệu âm tính bản địa hóa trong E4, chỉ số này tăng lên mức tuyệt đối 100.0% trên benchmark CustomTools-VI.
 
-Công trình cung cấp bức tranh đối chiếu khoa học toàn diện, định hình rõ đường biên đánh đổi Pareto giữa chất lượng suy luận và tài nguyên tính toán, đóng vai trò là tài liệu tham khảo then chốt cho việc phát triển các trợ lý AI thông minh tại Việt Nam.
+Trong stress test, Method 2 ghi nhận P50 từ 55.05 đến 61.01 ms ở dải $N \le 100$, PyTorch allocated VRAM xấp xỉ 3.21 GiB và Syntax Error 0.00% theo định nghĩa structured-output. Các số đo này được thu thập theo protocol riêng nên chỉ được dùng để mô tả đặc tính của từng pipeline, không quy đổi thành hệ số tăng tốc trực tiếp. Khi danh mục mở rộng từ $N=3$ đến $N=1000$, SLM phát sinh CUDA Out of Memory tại $N \ge 500$ trên GPU 16GB trong protocol stress test, trong khi Method 2 tiếp tục đạt ArgA 84.00% và P50 107.68 ms ở $N=1000$.
 
----
-
-<div style="page-break-after: always;"></div>
-
-## ABSTRACT
-
-Tool calling (function calling) is a cornerstone capability enabling modern Large Language Models (LLMs) to bridge closed-world parametric knowledge with real-world environments via external Application Programming Interfaces (APIs), databases, and computational engines. However, deploying commercial cloud-based solutions in Vietnamese enterprise ecosystems presents formidable engineering hurdles: severe autoregressive decoding latency (800–2,000 ms), steep operational token expenses, data privacy exposures, and structural JSON invalidity.
-
-This graduation thesis presents a comprehensive empirical confrontation between two contrasting technical paradigms for Vietnamese tool calling:
-1. **Method 1 (End-to-End Small Language Models)**: Fine-tuning compact open-weight models (`unsloth/Qwen3.5-2B` and scaled up to `Qwen3.5-4B`) using QLoRA with response-only loss on structured native representations.
-2. **Method 2 (Decoupled Discriminative Pipeline)**: A purely non-autoregressive framework combining a Bi-Encoder (`BAAI/bge-m3` trained with two-round CachedMNRL) for semantic API candidate retrieval and a multi-task hierarchical Cross-Encoder (`xlm-roberta-base`) for parameter extraction, paired with a Vietnamese Value Normalizer.
-
-To facilitate rigorous evaluation, we introduce two standardized benchmarks: the **Canonical Core Benchmark** (77,028 paired English–Vietnamese records across 4,421 unique tools) and **CustomTools-VI** (8,000 localized samples spanning 40 tools across 10 Vietnamese domains, partitioned into 20 seen and 20 zero-shot unseen tools with a 50% conversational negative ratio).
-
-**Key Empirical Findings and Contributions:**
-1. **Superior Accuracy and Zero-Shot Generalization**: On `CustomTools-VI`, Method 1 (E4) achieves new state-of-the-art exact match argument accuracy (ArgA) of **87.92%** on seen tools and **86.75%** on unseen tools with the 4B backbone, comfortably surpassing proprietary baseline `GPT-5.6 Luna` (+8.75% on seen, +6.88% on unseen). Conversely, Method 2 experiences severe extraction degradation on novel tool signatures (ArgA plunging from 67.75% to 22.75%), corroborating the clear dominance of SLM autoregressive in-context reasoning for zero-shot generalization.
-2. **The Over-Triggering Pathology and Negative Calibration**: Generic bilingual instruction tuning (E3) triggers a severe over-calling vulnerability on conversational inputs, where Non-FC Recall collapses to 2.00%–3.00%. Incorporating localized negative prompts in E4 completely cures this pathology, restoring Non-FC Recall to **100.00%**.
-3. **Overwhelming Latency Advantage of Method 2**: Method 2 delivers deterministic P50 latency of **54.68–58.16 ms** (**15–18× faster** than SLM), requiring $< 1.2$ GB VRAM and guaranteeing 0.00% syntax errors, rendering it the optimal choice for real-time edge voicebots.
-4. **Quadratic Physical Barrier in Stress Testing ($N = 3 \to 1,000$)**: In stress tests scaling up to 1,000 candidate tools, Method 2 retains steady sub-92 ms latency and $< 1.5$ GB VRAM. Meanwhile, SLMs face quadratic attention memory explosion ($O(L^2)$), triggering catastrophic CUDA Out-of-Memory (OOM) failures at $N \ge 500$ on commodity 16GB GPUs.
-
-This work establishes the Pareto frontier between extraction fidelity and computational latency, providing rigorous guidelines for architecting autonomous AI agent systems in lower-resource linguistic contexts.
+Công trình cung cấp một bức tranh đối chiếu giữa độ chính xác, khả năng từ chối, độ trễ và tài nguyên tính toán trong các protocol đã thực hiện. Kết quả có thể được sử dụng như cơ sở tham khảo khi lựa chọn kiến trúc gọi công cụ tiếng Việt theo miền dữ liệu, quy mô danh mục API và điều kiện hạ tầng cụ thể.
 
 ---
 
@@ -319,54 +280,43 @@ Mặc dù các hãng công nghệ lớn như OpenAI hay Google đã triển khai
 
 ## Chương 1. TỔNG QUAN VỀ ĐỀ TÀI
 
-### 1.1. Đặt vấn đề và tính cấp thiết của nghiên cứu
-Khả năng gọi công cụ đòi hỏi mô hình phải thực hiện đồng thời ba tác vụ phức tạp trong một lượt xử lý:
-1. **Phát hiện ý định (Intent Detection)**: Phân biệt rõ ràng giữa câu trò chuyện thông thường (không cần gọi công cụ) và câu lệnh có nhu cầu kích hoạt hành động.
-2. **Lựa chọn công cụ (Tool Selection)**: Quét qua danh mục hàng chục hoặc hàng trăm công cụ khả dụng để chọn ra đúng API mục tiêu dựa trên mô tả ngữ nghĩa.
-3. **Trích xuất tham số cấu trúc (Parameter Extraction)**: Điền chính xác các giá trị từ câu hỏi vào schema tham số (chuỗi, số nguyên, số thực, giá trị enum, boolean) và đóng gói thành định dạng chuẩn (JSON hoặc XML).
+### 1.1. Mô tả đề tài và tính cấp thiết của nghiên cứu
+Trong những năm gần đây, sự phát triển đột phá của các mô hình ngôn ngữ lớn (Large Language Models – LLMs) đã thúc đẩy sự chuyển dịch mạnh mẽ từ các hệ thống đối thoại thụ động sang các tác nhân thông minh (AI Agents) có khả năng tương tác chủ động với môi trường bên ngoài. Thay vì chỉ giới hạn ở tác vụ sinh văn bản đơn thuần, mô hình được trang bị cơ chế gọi công cụ (Tool Calling / Function Calling) để trở thành cầu nối giữa năng lực suy luận ngôn ngữ trừu tượng và không gian thực thi của các hệ thống phần mềm, từ truy vấn thông tin thời gian thực, khai thác cơ sở dữ liệu nghiệp vụ, đến kích hoạt các dịch vụ giao diện lập trình ứng dụng (APIs) phức tạp.
 
-Hiện nay, hầu hết các hệ thống công nghiệp phụ thuộc vào các dịch vụ API đám mây quốc tế. Tuy nhiên, hướng tiếp cận này bộc lộ những điểm yếu chí mạng:
-- **Độ trễ suy luận không đáp ứng thời gian thực**: Cơ chế sinh mã tự hồi quy (autoregressive token generation) trên các context dài chứa hàng loạt JSON Schema thường kéo dài từ 800 ms đến hơn 2,000 ms, không thể tích hợp vào các tổng đài giọng nói thông minh (Voicebot) yêu cầu phản hồi dưới 200 ms.
-- **Hiện tượng ảo giác cú pháp (Syntax Hallucination)**: Mô hình tạo sinh có xác suất xuất ra chuỗi JSON dị tật, thiếu ngoặc nhọn hoặc bịa đặt tham số không tồn tại trong tài liệu API.
-- **Bùng nổ bộ nhớ ngữ cảnh khi số lượng công cụ tăng cao**: Khi danh mục công cụ mở rộng từ vài chục lên hàng trăm API, việc nhồi toàn bộ schema vào prompt làm bùng nổ chiều dài ngữ cảnh, dẫn đến hiện tượng suy giảm chú ý ("kim trong bọc" - needle in a haystack) và gây lỗi tràn bộ nhớ (Out Of Memory - OOM).
-- **Thiếu hụt nghiên cứu chuẩn mực cho tiếng Việt**: Các bộ benchmark uy tín như BFCL, ToolBench hay ToolACE hoàn toàn sử dụng tiếng Anh. Tiếng Việt với đặc trưng từ đơn lập, dấu thanh điệu, ngữ cảnh phức tạp và cách diễn đạt số tiền, ngày tháng phong phú ("nửa triệu", "ngày rằm") chưa từng có một bộ dữ liệu tiêu chuẩn nào để đánh giá năng lực tool calling.
+Trước tiềm năng to lớn đó, hàng loạt nền tảng công nghiệp và khung phát triển tác tử đã ra đời như OpenAI Function Calling, Google Gemini Function Calling, LangGraph, AutoGen và Model Context Protocol (MCP). Song song với các ứng dụng thương mại, nhiều công trình học thuật tiêu biểu như Toolformer, Gorilla, ToolBench, ToolLLM, ToolACE, xLAM và AutoTool đã không ngừng hoàn thiện khả năng sử dụng công cụ của mô hình ngôn ngữ. Dù đa dạng về phương thức cài đặt, phần lớn các giải pháp hiện nay đều chia sẻ chung một tư duy thiết kế nguyên khối: sử dụng một mô hình ngôn ngữ sinh tạo sinh (Generative LLMs) duy nhất để đảm nhiệm đồng thời cả hai khâu nghiệp vụ cốt lõi: định tuyến công cụ mục tiêu và tạo sinh cấu trúc chuỗi JSON chứa các tham số đầu vào.
 
-### 1.2. Mục tiêu nghiên cứu
-- **Mục tiêu 1**: Xây dựng và công bố bộ dữ liệu tiêu chuẩn (Benchmark) phục vụ huấn luyện và đánh giá năng lực gọi công cụ tiếng Việt đầu tiên ở quy mô lớn, bao gồm tập tổng quát song ngữ (Canonical Core Benchmark) và tập miền đời sống thực tế Việt Nam (CustomTools-VI).
-- **Mục tiêu 2**: Thiết kế và hiện thực hóa hai giải pháp kỹ thuật đối lập:
-  - Phương pháp 1: Tinh chỉnh mô hình ngôn ngữ nhỏ SLM (Qwen3.5 2B và 4B) sinh mã tự hồi quy end-to-end.
-  - Phương pháp 2: Xây dựng pipeline phân tách phi tạo sinh (Bi-Encoder BGE-M3 kết hợp Cross-Encoder XLM-RoBERTa-base đa đầu phân cấp).
-- **Mục tiêu 3**: Thực nghiệm đối đầu toàn diện, định lượng chính xác đường biên đánh đổi Pareto giữa độ chính xác, độ trễ, mức tiêu thụ bộ nhớ và giới hạn vật lý khi mở rộng quy mô danh mục công cụ ($N = 3 \to 1.000$).
+Mặc dù đạt được những thành tựu vượt bậc, phương thức tiếp cận dựa hoàn toàn vào mô hình tạo sinh tự hồi quy đang bộc lộ những rào cản kỹ thuật cố hữu. Bản chất xử lý tuần tự từng token (autoregressive decoding) trên chuỗi ngữ cảnh chứa hàng loạt lược đồ công cụ khiến thời gian đáp ứng phụ thuộc chặt chẽ vào độ dài prompt, quy mô tham số và năng lực phần cứng. Thực nghiệm trong khóa luận ghi nhận độ trễ suy luận của mô hình ngôn ngữ nhỏ (SLM) dao động từ khoảng 0.86 đến 3.31 giây tùy thuộc vào cấu hình và giao thức đánh giá, đặt ra thách thức lớn đối với các ứng dụng đòi hỏi tương tác thời gian thực. Đi kèm với gánh nặng thời gian là tính bất định về cấu trúc: bản chất xác suất của mô hình tạo sinh luôn tiềm ẩn rủi ro sinh chuỗi JSON không hợp lệ, thiếu sót dấu đóng mở ngoặc hoặc tự ý phát sinh các trường thuộc tính giả định (Syntax Hallucination). Hơn nữa, việc nạp toàn bộ lược đồ tham số vào ngữ cảnh làm chi phí tính toán của cơ chế tự chú ý tăng theo cấp số bậc hai $\mathcal{O}(L^2)$, phân tán sự tập trung và dễ dẫn tới cạn kiệt bộ nhớ đồ họa (CUDA Out of Memory) khi quy mô danh mục mở rộng.
 
-### 1.3. Các câu hỏi nghiên cứu cốt lõi (Research Questions)
-Khóa luận được dẫn dắt bởi 5 câu hỏi khoa học:
-- **RQ1 (Năng lực chuyển giao ngôn ngữ chéo)**: Mô hình có nhất thiết phải cần dữ liệu huấn luyện tiếng Việt hay có thể dựa hoàn toàn vào khả năng chuyển giao (cross-lingual transfer) từ tiếng Anh?
-- **RQ2 (Hiện tượng kích hoạt công cụ quá mức & Dữ liệu âm tính)**: Quá trình tinh chỉnh song ngữ phổ quát có gây ra hiện tượng kích hoạt công cụ thiếu kiểm soát (over-triggering pathology) trên các câu hội thoại thông thường, và vai trò của dữ liệu âm tính (negative calibration) là gì?
-- **RQ3 (Khả năng tổng quát hóa Zero-Shot trên công cụ chưa từng gặp)**: Khi đối mặt với các công cụ hoàn toàn mới trong đời sống Việt Nam (`test_unseen`), mô hình tạo sinh tự hồi quy (SLM) hay kiến trúc phân biệt (Bi+Cross Encoder) có năng lực tổng quát hóa vượt trội hơn?
-- **RQ4 (Đường biên đánh đổi Pareto giữa chất lượng và độ trễ)**: Kiến trúc chuyên biệt phân tách (Bi-Encoder Retrieval + Cross-Encoder Extraction) có thể đạt độ trễ thời gian thực và chi phí suy luận tối ưu tới mức nào so với phương pháp SLM End-to-End?
-- **RQ5 (Tính bền bỉ và điểm nghẽn vật lý dưới áp lực ngữ cảnh)**: Khi danh mục công cụ mở rộng từ quy mô nhỏ ($N=3$) đến quy mô thực tế ($N=1.000$), đường cong suy giảm độ chính xác và độ trễ của hai kiến trúc diễn biến ra sao, và đâu là giới hạn vật lý của mô hình tạo sinh?
+Bên cạnh những rào cản tính toán, cộng đồng nghiên cứu và ứng dụng trong nước còn đối diện với sự thiếu hụt nghiêm trọng các bộ tiêu chuẩn đánh giá bản địa hóa dành riêng cho tiếng Việt. Hầu hết các benchmark danh tiếng quốc tế như BFCL hay ToolBench đều được thiết kế trên ngữ liệu tiếng Anh, chưa phản ánh được đặc trưng hình thái học đơn lập, hệ thống thanh điệu phức tạp cùng các biến thể khẩu ngữ và đơn vị định lượng đời thường đặc thù của tiếng Việt. Xuất phát từ những trăn trở lý luận và đòi hỏi thực tiễn cấp bách đó, đề tài tập trung nghiên cứu bài toán Tool Calling cho tiếng Việt theo hướng tiếp cận kết hợp giữa truy hồi ngữ nghĩa (Semantic Tool Retrieval) và trích xuất tham số theo lược đồ (Schema-aware Parameter Extraction). Đồng thời, nghiên cứu kiến tạo bộ dữ liệu benchmark tiếng Việt quy chuẩn nhằm thiết lập môi trường thực nghiệm công bằng, mở đường cho việc xây dựng các giải pháp tác tử AI tự chủ, chính xác và tối ưu tài nguyên cho hệ sinh thái công nghệ trong nước.
 
-### 1.4. Đối tượng và phạm vi nghiên cứu
-- **Đối tượng nghiên cứu**: Các kỹ thuật gọi công cụ (Tool Calling), mô hình ngôn ngữ nhỏ (Small Language Models - Qwen3.5), mô hình mã hóa ngữ nghĩa (Dual Encoders - BGE-M3, XLM-RoBERTa), các phương pháp trích xuất tham số có cấu trúc và chuẩn hóa dữ liệu tiếng Việt.
-- **Phạm vi nghiên cứu**:
-  - Tập trung vào kịch bản đơn lượt (single-turn), hỗ trợ cả đơn lệnh gọi (single-call) và đa lệnh gọi đồng thời (multi-call).
-  - Không bao gồm việc thực thi trực tiếp mã lệnh (code execution sandbox) hoặc quản lý hội thoại đa lượt có nhớ ngữ cảnh (multi-turn dialogue state tracking).
+### 1.2. Mục tiêu của đề tài
+Mục tiêu tổng quát của khóa luận là nghiên cứu, hiện thực hóa và đánh giá có hệ thống giải pháp gọi công cụ (Tool Calling) tối ưu cho ngôn ngữ tiếng Việt. Thay vì phụ thuộc hoàn toàn vào các mô hình ngôn ngữ lớn tạo sinh (Generative LLMs) vốn đối mặt với rào cản chi phí tính toán đắt đỏ và độ trễ cao, nghiên cứu hướng tới việc xây dựng và đối chứng hai trường phái kỹ thuật mang tư duy thiết kế đối lập: phương pháp tinh chỉnh mô hình ngôn ngữ nhỏ tạo sinh end-to-end (SLM) và phương pháp phân tách phi tự hồi quy kết hợp giữa truy hồi ngữ nghĩa và trích xuất tham số theo lược đồ (Bi-Encoder + Cross-Encoder). Qua đó, đề tài xác lập một hệ quy chuẩn đối sánh toàn diện, làm sáng tỏ mối tương quan đánh đổi giữa độ chính xác, tốc độ đáp ứng thời gian thực và chi phí tài nguyên phần cứng.
 
-### 1.5. Đóng góp khoa học của khóa luận
-1. **Công bố hai bộ dữ liệu tiêu chuẩn cho tiếng Việt**: Cung cấp `Canonical Core Benchmark` (77,028 bản ghi song ngữ) và `CustomTools-VI` (8,000 mẫu thuộc 10 domain thực tế với phân chia seen/unseen chặt chẽ).
-2. **Khám phá hiện tượng "Kích hoạt công cụ quá mức" và giải pháp khắc phục**: Phát hiện và chứng minh bằng thực nghiệm rằng mô hình song ngữ phổ quát sụp đổ độ nhạy từ chối câu thường (Non-FC Recall chỉ 2.0%), đồng thời chứng minh việc tích hợp dữ liệu âm tính bản địa hóa khôi phục độ nhạy này lên 100%.
-3. **Hiện thực hóa pipeline phân tách đạt tốc độ thời gian thực**: Xây dựng thành công hệ thống Bi-Encoder + Hierarchical Cross-Encoder đạt độ trễ kỷ lục 54.68 ms, nhanh gấp 15–18 lần so với SLM, không phụ thuộc vào bộ sinh tự hồi quy và triệt tiêu 100% lỗi cú pháp JSON.
-4. **Xác lập kỷ lục SOTA mới trên mô hình ngôn ngữ nhỏ 4B**: Chứng minh mô hình `Qwen3.5-4B` đạt độ chính xác tham số 87.92% seen và 86.75% unseen, vượt qua mô hình đóng `GPT-5.6 Luna`.
-5. **Chỉ ra ranh giới sụp đổ vật lý (Physical Limit) của SLM trong Stress Test**: Định lượng điểm gãy tràn bộ nhớ CUDA OOM của mô hình tạo sinh tại ngưỡng $N \ge 500$ công cụ trên GPU 16GB.
+Để hiện thực hóa mục tiêu bao quát trên, khóa luận xác định và giải quyết đồng bộ các nhiệm vụ nghiên cứu khoa học trọng tâm. Trước hết, nghiên cứu tiến hành khảo cứu và phân tích có hệ thống các công trình lý thuyết cùng những bộ chuẩn đánh giá Tool Calling hiện đại trên thế giới, nhằm định vị rõ ràng các khoảng trống học thuật đối với ngữ liệu tiếng Việt. Trên cơ sở đó, đề tài xây dựng và chuẩn hóa bộ đôi ngữ liệu benchmark bản địa hóa có quy mô lớn và thiết kế kiểm soát nghiêm ngặt, tạo tiền đề cho công tác huấn luyện và đối chuẩn công bằng giữa các giải pháp.
+
+Tiếp theo, về mặt kiến trúc hệ thống, nghiên cứu hiện thực hóa đường ống phân biệt hai giai đoạn gồm bộ truy hồi ngữ nghĩa Bi-Encoder và bộ trích xuất tham số phân cấp Cross-Encoder tích hợp module chuẩn hóa giá trị thực thể tiếng Việt; đồng thời song song tối ưu hóa các mô hình ngôn ngữ nhỏ (Qwen3.5 2B và 4B) theo các chiến lược thích ứng ngôn ngữ và miền nghiệp vụ bản địa. Cuối cùng, một ma trận thực nghiệm đối đầu toàn diện được thiết lập nhằm so sánh chuyên sâu giữa hai phương pháp đề xuất với các mô hình thương mại đóng hàng đầu, qua đó giải đáp thấu đáo các câu hỏi nghiên cứu cốt lõi và định lượng giới hạn chịu tải thực tế thông qua bài kiểm thử áp lực quy mô lớn.
+
+### 1.3. Đối tượng và phạm vi nghiên cứu
+Đối tượng nghiên cứu trọng tâm của khóa luận là cơ chế gọi công cụ trong các hệ thống tác tử trí tuệ nhân tạo (AI Agents), cụ thể hóa qua hai nhiệm vụ thành phần cốt lõi: bài toán lựa chọn công cụ mục tiêu từ không gian mô tả ngữ nghĩa (Tool Retrieval) và bài toán trích xuất, chuẩn hóa các giá trị tham số tương ứng dựa trên lược đồ thuộc tính (Schema-aware Parameter Extraction). Về mặt dữ liệu, đối tượng khảo sát bao gồm các kho ngữ liệu gọi hàm quy mô quốc tế kết hợp cùng hệ thống dữ liệu nghiệp vụ đời sống đặc thù tại Việt Nam được chuẩn hóa theo định dạng Master Canonical Schema. Về mặt kỹ thuật, nghiên cứu tập trung khảo sát các kiến trúc học sâu phân biệt hai tháp (Dense Bi-Encoder), mạng biến đổi tương tác chéo đa nhiệm (Hierarchical Cross-Encoder) và các mô hình ngôn ngữ nhỏ tạo sinh thế hệ mới.
+
+Về phạm vi nghiên cứu, đề tài giới hạn tập trung vào các công đoạn tiền thực thi của quá trình gọi hàm — tức toàn bộ chu trình xử lý từ thời điểm tiếp nhận câu truy vấn ngôn ngữ tự nhiên của người dùng đến khi đóng gói hoàn chỉnh đối tượng JSON Schema hợp lệ, sẵn sàng để giao tiếp với các giao diện lập trình ứng dụng (APIs). Khóa luận khảo sát không gian tương tác đơn lượt (single-turn interaction) song hỗ trợ đầy đủ cả hai kịch bản: kích hoạt đơn lệnh (single-call) và đồng thời kích hoạt nhiều lệnh gọi công cụ trong một phát ngôn (multi-call). Các khía cạnh kỹ thuật nằm ngoài phạm vi khảo sát bao gồm: cơ chế thực thi mã lệnh trong môi trường sandbox, lập kế hoạch tác tử phức hợp (Tool Planning), điều phối đa tác tử (Multi-agent Orchestration) cũng như việc cập nhật danh mục công cụ động theo thời gian thực. Toàn bộ các kết luận khoa học và đánh giá hiệu năng đều được neo trên các chỉ số định lượng đo đạc trực tiếp từ hệ sinh thái thực nghiệm của đề tài.
+
+### 1.4. Phương pháp thực hiện
+Khóa luận được triển khai theo phương pháp luận nghiên cứu thực nghiệm (Empirical Research) kết hợp chặt chẽ với kỹ nghệ phát triển hệ thống (System Engineering). Khởi đầu bằng công tác khảo cứu toàn diện hệ thống tài liệu chuyên khảo cùng các công trình khoa học tiêu biểu trong và ngoài nước, nghiên cứu phân loại có hệ thống các trường phái kiến trúc gọi công cụ, nhận diện rào cản đặc thù của tiếng Việt và xác lập chính xác các khoảng trống học thuật cần giải quyết. Tiếp nối nền tảng lý thuyết là công tác kỹ thuật dữ liệu và kiến tạo bộ chuẩn đối sánh: thiết lập Master Canonical Schema thống nhất, chuẩn hóa quy trình dịch thuật kiểm soát chất lượng để tạo lập ngữ liệu song ngữ `Canonical Core Benchmark` ($77{,}028$ bản ghi trên $4{,}421$ APIs); đồng thời xây dựng tập dữ liệu nghiệp vụ bản địa `CustomTools-VI` ($8{,}000$ mẫu trên $40$ công cụ) với thiết kế phân tách nghiêm ngặt giữa miền đã học và miền chưa từng gặp, tích hợp tỷ lệ 50% mẫu âm tính đàm thoại.
+
+Trên cơ sở dữ liệu đã chuẩn hóa, nghiên cứu tiến hành hiện thực hóa và tối ưu hóa chuyên sâu các mô hình thành phần. Đối với nhánh phân tách phi tự hồi quy, module Semantic Tool Retrieval được xây dựng trên Bi-Encoder `BAAI/bge-m3` tối ưu qua hai vòng huấn luyện với hàm mất mát `CachedMNRL` và kỹ thuật khai thác mẫu âm khó; module Hierarchical Parameter Extractor được phát triển trên `xlm-roberta-base` với cơ chế định tuyến hướng schema và module Value Normalizer chuyên biệt cho thực thể tiếng Việt; song song với việc tinh chỉnh các mô hình SLM `Qwen3.5` (2B và 4B) theo kỹ thuật QLoRA trên các tập dữ liệu huấn luyện đối xứng. Cuối cùng, toàn bộ hệ thống được tích hợp thành đường ống xử lý hoàn chỉnh để triển khai ma trận thực nghiệm đối đầu đa chiều giữa hai trường phái đề xuất với các mô hình thương mại đóng hàng đầu (`GPT-5.6 Luna`, `Gemini 3.8 Flash`), đo đạc toàn diện về độ chính xác trích xuất, độ trễ phân vị P50/P95, thông lượng, mức chiếm dụng bộ nhớ VRAM và bài kiểm thử áp lực mở rộng không gian tìm kiếm tới $1{,}000$ công cụ nhằm cung cấp bức tranh đối chiếu khách quan, chuẩn xác.
+
+### 1.5. Kết quả mong đợi và đóng góp khoa học của đề tài
+Công trình nghiên cứu mang lại những đóng góp khoa học rõ nét cả về mặt lý luận, phương pháp luận lẫn giá trị thực tiễn ứng dụng thông qua hai nhóm đóng góp then chốt. Ở phương diện dữ liệu và tiêu chuẩn đánh giá, đề tài đóng góp cho cộng đồng nghiên cứu bộ đôi benchmark tiếng Việt quy chuẩn đầu tiên có quy mô lớn và thiết kế kiểm soát nghiêm ngặt gồm `Canonical Core Benchmark` và `CustomTools-VI`, kết hợp tỷ lệ cân bằng 50% mẫu âm tính đàm thoại cùng sự phân tách rạch ròi giữa miền đã học và miền zero-shot chưa từng gặp. Đi kèm với dữ liệu, nghiên cứu định vị và làm sáng tỏ hiện tượng "kích hoạt công cụ quá mức" (over-triggering pathology) khi tinh chỉnh mô hình ngôn ngữ trên dữ liệu dịch thuật đơn thuần, đồng thời chứng minh vai trò quyết định của dữ liệu âm tính bản địa hóa trong việc khôi phục hoàn toàn năng lực từ chối gọi hàm với Non-FC Recall đạt mức tuyệt đối 100.0%.
+
+Về mặt giải pháp kỹ thuật và hiệu năng hệ thống, nghiên cứu khẳng định tính khả thi của việc bản địa hóa các mô hình ngôn ngữ nhỏ: mô hình `Qwen3.5-4B` tinh chỉnh đạt độ chính xác tham số (ArgA) 87.92% trên tập seen và 86.75% trên tập unseen, vượt qua mô hình thương mại đóng `GPT-5.6 Luna` trên cùng tập kiểm thử nghiệp vụ tiếng Việt; đồng thời kiến trúc phân tách phi tự hồi quy Bi-Encoder kết hợp Hierarchical Cross-Encoder thể hiện ưu thế vượt trội về độ trễ đáp ứng (P50 khoảng 55–61 ms) và khả năng mở rộng ổn định tới quy mô $1{,}000$ công cụ trong bài kiểm thử áp lực, nơi mô hình tạo sinh gặp giới hạn bộ nhớ ngữ cảnh. Nhằm đảm bảo tính minh bạch và khả năng tái lập thực nghiệm (Reproducibility), toàn bộ mã nguồn xây dựng pipeline, các kịch bản huấn luyện, bộ chuẩn hóa giá trị thực thể cùng hai bộ dữ liệu benchmark đều được nhóm tác giả đóng gói và phát hành công khai tại kho lưu trữ mã nguồn mở: [https://github.com/TristanDao/tool_calling_with_retrieval_extraction](https://github.com/TristanDao/tool_calling_with_retrieval_extraction).
 
 ### 1.6. Bố cục của khóa luận
-Nội dung khóa luận được tổ chức thành 7 chương tiếp theo:
-- **Chương 2**: Trình bày cơ sở lý thuyết về Tool Calling, SLM, kiến trúc phân tách và các thách thức ngôn ngữ học của tiếng Việt.
-- **Chương 3**: Chi tiết quy trình xây dựng hai bộ benchmark Canonical Core và CustomTools-VI.
-- **Chương 4**: Trình bày chi tiết kiến trúc đề xuất của Phương pháp 1 và Phương pháp 2.
-- **Chương 5**: Báo cáo toàn diện kết quả thực nghiệm, giải đáp 5 RQs, nghiên cứu mở rộng quy mô 2B vs 4B và kiểm thử áp lực Stress Test.
-- **Chương 6**: Phân tích các dạng lỗi điển hình và thảo luận về giới hạn của đề tài.
-- **Chương 7 (Kết luận & Hướng phát triển)**: Tổng kết những thành quả đạt được và định hướng các nghiên cứu tiếp nối.
+Nội dung của khóa luận được cấu trúc chặt chẽ thành sáu chương chuyên đề và phần kết luận tổng kết:
+
+Chương 2 trình bày cơ sở lý thuyết về cơ chế gọi công cụ trong mô hình ngôn ngữ, kiến trúc mạng Transformer, kỹ thuật tinh chỉnh tham số hiệu quả PEFT/QLoRA, nguyên lý hệ thống phân tách truy hồi – trích xuất và những thách thức xử lý ngôn ngữ tự nhiên đặc thù của tiếng Việt. Tiếp theo, Chương 3 đặc tả chi tiết quy trình xây dựng bộ tiêu chuẩn đánh giá cho tiếng Việt, bao gồm Master Canonical Schema, quy trình chuyển ngữ kiểm soát chất lượng và hai bộ dữ liệu Canonical Core cùng CustomTools-VI.
+
+Chương 4 đi sâu vào phương pháp đề xuất và thiết kế kiến trúc hệ thống, đối chiếu chi tiết giữa mô hình tạo sinh SLM End-to-End và kiến trúc phân tách Bi-Encoder kết hợp Hierarchical Cross-Encoder cùng module Chuẩn hóa Giá trị tiếng Việt. Toàn bộ kết quả thực nghiệm đối đầu, phân tích 5 câu hỏi nghiên cứu (RQ1–RQ5), so sánh với các Frontier API thương mại và bài kiểm thử áp lực được trình bày tại Chương 5. Tiếp đó, Chương 6 tiến hành mổ xẻ định tính các ca lỗi thực tế, phân tích nguyên nhân suy giảm zero-shot qua các kịch bản đối chứng Oracle và thảo luận thẳng thắn về các giới hạn của nghiên cứu. Cuối cùng, phần Kết luận và Hướng phát triển tổng kết lại các đóng góp then chốt và gợi mở những hướng nghiên cứu mở rộng trong tương lai.
 
 ---
 
@@ -374,49 +324,128 @@ Nội dung khóa luận được tổ chức thành 7 chương tiếp theo:
 
 ## Chương 2. CƠ SỞ LÝ THUYẾT VÀ CÁC CÔNG TRÌNH LIÊN QUAN
 
-### 2.1. Cơ chế gọi công cụ (Tool Calling / Function Calling) trong LLM
-Khái niệm trao quyền sử dụng công cụ cho mô hình ngôn ngữ được khởi xướng bởi Toolformer (Schick et al., 2023), trong đó mô hình học cách tự chèn các thẻ gọi hàm thông qua cơ chế tự giám sát. Tiếp sau đó, Gorilla (Patil et al., 2023) và Berkeley Function-Calling Leaderboard (BFCL) (Yan et al., 2024) đã chuẩn hóa việc đánh giá khả năng sinh lệnh gọi API tuân thủ đúng định dạng JSON Schema.
+### 2.1. Cơ chế gọi công cụ (Tool Calling / Function Calling) trong Mô hình Ngôn ngữ
 
-Về bản chất, cơ chế sinh mã tự hồi quy của LLM tính toán xác suất có điều kiện của token tiếp theo $y_t$:
-$$P(Y|X, \mathcal{T}) = \prod_{t=1}^T P(y_t | y_{<t}, X, \mathcal{T})$$
-trong đó $X$ là câu truy vấn của người dùng, $\mathcal{T} = \{t_1, t_2, \dots, t_N\}$ là tập hợp các định nghĩa schema của $N$ công cụ khả dụng, và $Y$ là chuỗi văn bản cấu trúc đại diện cho lệnh gọi công cụ.
+Khái niệm trao quyền tương tác công cụ cho mô hình ngôn ngữ lớn (Tool-Augmented Language Models) đánh dấu bước chuyển dịch quan trọng từ các hệ thống đối thoại thông thường sang các tác nhân thông minh (AI Agents) có khả năng tác động đến thế giới thực. Ý tưởng nền tảng này được khởi xướng bởi công trình Toolformer (Schick et al., 2023), trong đó mô hình học cách tự chèn các thẻ gọi giao diện lập trình ứng dụng (API calls) thông qua cơ chế tự giám sát dựa trên hàm mất mát giảm thiểu sai số dự đoán văn bản kế tiếp. Tiếp nối hướng đi này, các nghiên cứu như Gorilla (Patil et al., 2023) và bộ chuẩn Berkeley Function-Calling Leaderboard (BFCL) (Yan et al., 2024) đã chính thức chuẩn hóa bài toán gọi công cụ dưới dạng sinh cấu trúc tuân thủ nghiêm ngặt đặc tả JSON Schema.
 
-### 2.2. Các nghiên cứu và bộ chuẩn đánh giá Tool Calling trên thế giới
-Các tập dữ liệu mở quy mô lớn phục vụ huấn luyện tool calling bao gồm:
-- **Glaive Function Calling**: Tập dữ liệu tổng hợp quy mô lớn cung cấp các lượt hội thoại gọi hàm và các câu trò chuyện thông thường.
-- **xLAM (Salesforce Large Action Models)**: Bộ dữ liệu chất lượng cao gồm 60,000 mẫu gọi hàm đơn lượt và đa lệnh (multi-call) tuân thủ nghiêm ngặt JSON Schema.
-- **Nghiên cứu của Ersoy et al. (2025)**: Công trình tiên phong nghiên cứu việc tinh chỉnh các mô hình SLM cho tiếng Ả Rập, chứng minh rằng dịch thuật và tinh chỉnh cục bộ có thể cạnh tranh sòng phẳng với các mô hình đóng thương mại. Khóa luận của chúng tôi kế thừa tư tưởng này nhưng phát triển thêm nhánh kiến trúc phân tách đối trọng và mở rộng kiểm thử áp lực danh mục lớn.
+Về mặt toán học, bài toán gọi công cụ trong mô hình ngôn ngữ tự hồi quy có thể được hình thức hóa như sau. Giả sử hệ thống tiếp nhận một câu truy vấn của người dùng biểu diễn dưới dạng chuỗi các token $X = (x_1, x_2, \dots, x_{|X|})$ cùng với một danh mục gồm $N$ công cụ khả dụng $\mathcal{T} = \{t_1, t_2, \dots, t_N\}$. Mỗi công cụ $t_i = (n_i, d_i, \mathcal{S}_i)$ được định nghĩa bởi tên định danh duy nhất $n_i$, đoạn văn bản mô tả chức năng $d_i$ viết bằng ngôn ngữ tự nhiên, và lược đồ cấu trúc tham số $\mathcal{S}_i$ tuân thủ chuẩn JSON Schema. Mục tiêu của hệ thống là ánh xạ cặp dữ liệu $(X, \mathcal{T})$ thành một chuỗi các hành động $\mathcal{Y} = [(t^*_1, \mathcal{A}_1), (t^*_2, \mathcal{A}_2), \dots, (t^*_K, \mathcal{A}_K)]$, trong đó $K \ge 0$ là số lượng lệnh gọi cần thực thi ($K=0$ biểu thị truy vấn thông thường không cần gọi công cụ, $K \ge 1$ biểu thị kịch bản đơn lệnh hoặc đa lệnh gọi), $t^*_k \in \mathcal{T}$ là công cụ được kích hoạt, và $\mathcal{A}_k = \{(p_{k,j}, v_{k,j})\}_{j=1}^{M_k}$ là tập hợp các cặp khóa - giá trị tham số tương ứng với lược đồ $\mathcal{S}_{t^*_k}$.
 
-### 2.3. Mô hình Ngôn ngữ Nhỏ (Small Language Models - SLMs) và Kỹ thuật Tinh chỉnh Tham số Hiệu quả (PEFT/QLoRA)
-Mô hình `Qwen3.5` (2B và 4B tham số) của Alibaba Cloud đại diện cho thế hệ SLM tiên tiến nhất hiện nay, được tiền huấn luyện trên hơn 18 nghìn tỷ token đa ngôn ngữ. Với kiến trúc Transformer cải tiến sử dụng SwiGLU, Rotary Position Embedding (RoPE) và Grouped Query Attention (GQA), Qwen3.5 đạt hiệu năng suy luận vượt trội so với kích thước nhỏ gọn của nó.
+Trong các hệ thống thương mại dựa trên LLM tạo sinh (chẳng hạn như OpenAI Function Calling hay Google Gemini), toàn bộ tập danh mục công cụ $\mathcal{T}$ được nhúng trực tiếp vào ngữ cảnh đầu vào (context prompt) của mô hình. Mô hình tối ưu hóa hàm phân phối xác suất có điều kiện của chuỗi token sinh ra:
+$$P(\mathcal{Y} \mid X, \mathcal{T}) = \prod_{t=1}^{|\mathcal{Y}|} P(y_t \mid y_{<t}, X, \mathcal{T})$$
+Phương thức tiếp cận tạo sinh nguyên khối này bộc lộ những rào cản vật lý rõ rệt khi triển khai trong môi trường sản xuất thực tế. Việc đưa đồng thời toàn bộ đặc tả schema của $N$ công cụ vào chuỗi ngữ cảnh làm bùng nổ độ dài đầu vào (prompt bloat). Khi quy mô danh mục mở rộng từ vài đơn vị lên hàng trăm hoặc hàng nghìn công cụ, số lượng token tăng tuyến tính khiến chi phí tính toán của cơ chế tự chú ý (Self-Attention) leo thang theo cấp số bậc hai $\mathcal{O}(L^2)$, nhanh chóng làm cạn kiệt cửa sổ ngữ cảnh hữu dụng. Đồng thời, sự tích tụ của quá nhiều định nghĩa công cụ tương đồng còn gây nhiễu loạn không gian chú ý của mô hình (hiện tượng kim đáy bể - Needle-in-a-Haystack), dẫn tới việc suy giảm nghiêm trọng độ chính xác chọn công cụ và gia tăng xác suất phát sinh các tham số ảo giác (hallucinated arguments).
 
-Để huấn luyện hiệu quả trên phần cứng giới hạn, phương pháp QLoRA (Dettmers et al., 2024) được áp dụng:
-- Lượng tử hóa trọng số cơ sở về định dạng 4-bit NormalFloat (NF4).
-- Gắn các ma trận thích ứng hạng thấp (LoRA adapters) vào các lớp attention và feed-forward:
-$$W' = W_0 + \frac{\alpha}{r} B \cdot A$$
-với $A \in \mathbb{R}^{r \times d_{in}}$, $B \in \mathbb{R}^{d_{out} \times r}$, hạng $r \ll \min(d_{in}, d_{out})$.
+### 2.2. Các công trình và bộ chuẩn đánh giá Tool Calling tiêu biểu trên thế giới
 
-### 2.4. Kiến trúc Phân tách: Truy hồi Dày (Bi-Encoder) và Trích xuất Tham số (Cross-Encoder)
-Thay vì sử dụng một mô hình duy nhất cho mọi công đoạn, kiến trúc phân tách chia bài toán thành hai giai đoạn độc lập:
-1. **Giai đoạn 1 - Lựa chọn công cụ (Bi-Encoder Retrieval)**:
-   Sử dụng mạng Si-a-mê (Siamese network) mã hóa độc lập câu truy vấn $q$ và mô tả công cụ $t$:
-   $$u = \text{Encoder}(q), \quad v = \text{Encoder}(t)$$
-   Điểm tương đồng được tính qua tích vô hướng chuẩn hóa (Cosine Similarity):
-   $$s(q, t) = \frac{u^\top v}{\|u\| \|v\|}$$
-   Mô hình được tối ưu qua hàm mất mát Xếp hạng Đa mẫu Âm tính (Multiple Negatives Ranking Loss - MNRL) kết hợp kỹ thuật đệm (CachedMNRL) để tăng quy mô batch size hiệu dụng.
-2. **Giai đoạn 2 - Trích xuất tham số (Cross-Encoder Extraction)**:
-   Mô hình đọc đồng thời câu truy vấn và schema của từng tham số dưới dạng bài toán Question Answering (BERT-QA):
-   $$\text{Input} = \text{[CLS]} \circ \text{Query} \circ \text{[SEP]} \circ \text{Parameter Schema} \circ \text{[SEP]}$$
-   Đầu ra của mô hình được định tuyến qua các đầu phân loại phân cấp (Hierarchical Heads):
-   - Đầu nhị phân `has_value`: Xác định tham số có xuất hiện trong câu hay không.
-   - Đầu trích xuất đoạn (`span_head`): Dự đoán vị trí bắt đầu và kết thúc cho tham số dạng chuỗi tự do.
-   - Đầu phân loại enum/boolean: Dự đoán lớp phân loại trực tiếp.
+Sự bùng nổ của các tác nhân AI đã thúc đẩy cộng đồng nghiên cứu xây dựng nhiều tập dữ liệu quy mô lớn nhằm huấn luyện và đánh giá năng lực tương tác công cụ. Điển hình trong số đó là tập ngữ liệu Glaive Function Calling v2, cung cấp hàng chục nghìn lượt đối thoại tổng hợp phản ánh đa dạng nhu cầu của người dùng trong đời sống hàng ngày, kết hợp hài hòa giữa các truy vấn kích hoạt API và các phản hồi trò chuyện thông thường. Tập dữ liệu này đóng vai trò bản lề trong việc định hình cấu trúc dữ liệu đối thoại có công cụ cho các mô hình mã nguồn mở.
 
-### 2.5. Những thách thức đặc thù của tiếng Việt trong bài toán Tool Calling
-Xử lý ngôn ngữ tự nhiên tiếng Việt trong bài toán trích xuất tham số gọi hàm đối mặt với các thách thức:
-- **Ngôn ngữ đơn lập, ranh giới từ không cố định**: Khác với tiếng Anh có khoảng trắng phân tách từ rõ ràng, tiếng Việt sử dụng khoảng trắng giữa các âm tiết ("máy tính bảng" gồm 3 âm tiết tạo thành 1 từ vị).
-- **Quy tắc biểu đạt thời gian và tiền tệ phong phú**: Các biểu thức như "thứ Năm tuần tới", "ngày rằm", "hai triệu rưỡi", "ba củ rưỡi", "năm trăm k" đòi hỏi phải có cơ chế chuẩn hóa giá trị (Value Normalization) chính xác để ánh xạ về dạng số tiêu chuẩn trong API.
-- **Sự đa dạng về dấu câu và dấu thanh điệu**: Việc nhận diện đúng các thực thể riêng (tên quận huyện, tên đường, biển số xe) rất nhạy cảm với việc gõ sai dấu hoặc thiếu dấu.
+Tiếp nối sự phát triển đó, Salesforce đã giới thiệu họ mô hình xLAM (Large Action Models) cùng bộ dữ liệu huấn luyện xLAM-60k chất lượng cao. Khác với các bộ dữ liệu trước đây chủ yếu tập trung vào đối thoại đơn lệnh, xLAM được chuẩn hóa nghiêm ngặt về mặt cấu trúc, hỗ trợ đầy đủ các kịch bản gọi đa hàm đồng thời (parallel function calls) với các ràng buộc kiểu dữ liệu phức tạp bao gồm chuỗi ký tự, giá trị số nguyên, số thực, mảng danh sách và kiểu liệt kê (enum). Đối với khía cạnh đánh giá độc lập, bộ chuẩn Berkeley Function-Calling Leaderboard (BFCL) (Yan et al., 2024) và ToolBench (Qin et al., 2024) hiện là các thước đo tiêu chuẩn vàng, cung cấp các kịch bản thử nghiệm đa dạng từ đơn giản đến phức tạp trong môi trường đa tác vụ.
+
+Tuy nhiên, phần lớn các công trình nêu trên đều tập trung tuyệt đối vào tiếng Anh. Đối với các ngôn ngữ có nguồn tài nguyên xử lý hạn chế, nghiên cứu tiên phong của Ersoy et al. (2025) tại hội nghị ArabicNLP 2025 đã chứng minh tính khả thi của việc biên dịch có kiểm soát các tập ngữ liệu Glaive và xLAM sang tiếng Ả Rập, kết hợp tinh chỉnh các mô hình ngôn ngữ nhỏ (SLM) nhằm đạt hiệu năng cạnh tranh trực tiếp với GPT-4o-mini. Kế thừa có chọn lọc tư tưởng của Ersoy et al., đề tài khóa luận của nhóm nghiên cứu mở rộng bài toán này sang tiếng Việt, đồng thời khảo sát phương pháp tinh chỉnh SLM tạo sinh (Method 1), đề xuất kiến trúc phân tách Bi-Encoder kết hợp Cross-Encoder (Method 2) và thiết lập môi trường kiểm thử áp lực khi quy mô công cụ mở rộng từ $N=3$ lên $N=1{,}000$ công cụ để phân định giới hạn vật lý của cả hai trường phái.
+
+### 2.3. Mô hình Ngôn ngữ Nhỏ (SLMs) và Kỹ thuật Tinh chỉnh Tham số Hiệu quả (PEFT/QLoRA)
+
+Trong bối cảnh bài toán triển khai thực tế đòi hỏi tối ưu hóa tài nguyên phần cứng và bảo vệ dữ liệu doanh nghiệp, các Mô hình Ngôn ngữ Nhỏ (Small Language Models - SLMs) với số lượng tham số từ 1 tỷ đến 4 tỷ là một hướng tiếp cận đáng khảo sát. Khóa luận sử dụng Qwen3.5 ở hai cấu hình 2B và 4B; năng lực của các cấu hình này được đánh giá trực tiếp trên benchmark thay vì suy ra chỉ từ quy mô tiền huấn luyện.
+
+Kiến trúc nội tại của họ mô hình Qwen3.5 tích hợp các cơ chế tối ưu hóa then chốt của mạng Transformer hiện đại. Cơ chế chú ý truy vấn nhóm Grouped-Query Attention (GQA) chia sẻ các đầu khóa (Key) và giá trị (Value) giữa nhiều đầu truy vấn (Query), qua đó giảm thiểu đáng kể dung lượng bộ nhớ đệm KV Cache trong quá trình giải mã tự hồi quy. Song song đó, kỹ thuật mã hóa vị trí quay Rotary Position Embedding (RoPE) áp dụng phép quay trực giao lên không gian biểu diễn ẩn, cho phép mô hình nắm bắt chính xác mối quan hệ vị trí tương đối giữa các token trên chuỗi ngữ cảnh dài:
+$$\mathbf{R}_{\Theta, m}^d = \text{diag}\left(\mathbf{R}_{\theta_1, m}, \mathbf{R}_{\theta_2, m}, \dots, \mathbf{R}_{\theta_{d/2}, m}\right)$$
+Bên cạnh đó, các tầng mạng truyền thẳng (Feed-Forward Networks) sử dụng hàm kích hoạt phi tuyến tính SwiGLU (Swish Gated Linear Unit) thay cho hàm GELU hay ReLU truyền thống, mang lại độ mượt mà cao hơn cho bề mặt tối ưu hóa và thúc đẩy tốc độ hội tụ của mô hình:
+$$\text{SwiGLU}(x) = \left(x W_{gate} \cdot \sigma(x W_{gate})\right) \otimes (x W_{up})$$
+
+Để tinh chỉnh các mô hình SLM này trên hạ tầng máy chủ phổ thông có tài nguyên bộ nhớ đồ họa hạn chế, kỹ thuật QLoRA (Quantized Low-Rank Adaptation) (Dettmers et al., 2024) được áp dụng. QLoRA kết hợp ba cơ chế kỹ thuật: lượng tử hóa 4-bit NormalFloat (NF4) theo phân phối chuẩn của trọng số nơ-ron, lượng tử hóa kép (Double Quantization) để nén các hằng số lượng tử hóa và cơ chế quản lý bộ nhớ đệm trang (Paged Optimizers) nhằm giảm áp lực bộ nhớ khi xử lý chuỗi ngữ cảnh dài. Trong quá trình huấn luyện, toàn bộ ma trận trọng số gốc $W_0 \in \mathbb{R}^{d_{out} \times d_{in}}$ được cố định ở định dạng lượng tử hóa 4-bit NF4, và gradient chỉ lan truyền qua hai ma trận thích ứng hạng thấp khả vi $A \in \mathbb{R}^{r \times d_{in}}$ và $B \in \mathbb{R}^{d_{out} \times r}$:
+$$W = W_0 + \Delta W = W_0 + \frac{\alpha}{r} (B \cdot A)$$
+với hạng ma trận $r \ll \min(d_{in}, d_{out})$ và hệ số co giãn siêu tham số $\alpha$. Cơ chế này làm giảm số lượng tham số cần cập nhật so với tinh chỉnh toàn bộ; mức tiết kiệm bộ nhớ và khả năng chạy trên một GPU cụ thể phụ thuộc vào kích thước mô hình, độ dài ngữ cảnh và cấu hình huấn luyện.
+
+### 2.4. Kiến trúc Phân tách: Truy hồi Ngữ nghĩa Dày (Bi-Encoder) và Trích xuất Tham số (Cross-Encoder)
+
+Nhằm giảm ảnh hưởng của quá tải ngữ cảnh và độ trễ sinh từ tự hồi quy, hướng tiếp cận phân tách (Method 2) chia bài toán Tool Calling thành hai khối thành phần chuyên biệt và xử lý tuần tự theo mô hình suy luận phân biệt (Discriminative Pipeline):
+
+```mermaid
+graph TD
+    classDef io fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#01579b;
+    classDef model fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20;
+    classDef inter fill:#fff8e1,stroke:#ffa000,stroke-width:2px,color:#e65100;
+    classDef head fill:#ede7f6,stroke:#512da8,stroke-width:2px,color:#311b92;
+
+    Query["Câu truy vấn của người dùng (User Query)"]:::io
+    ToolPool["Kho danh mục công cụ (Tool Pool: N APIs)"]:::io
+
+    subgraph Stage1 ["Giai đoạn 1: Lựa chọn công cụ (Tool Retrieval)"]
+        BiEncoder["Mô hình Bi-Encoder (BGE-M3 + LoRA)"]:::model
+        CosineSim["Xếp hạng tương đồng Cosine & Lọc ngưỡng tau, delta"]:::inter
+    end
+
+    subgraph Stage2 ["Giai đoạn 2: Trích xuất tham số theo lược đồ (Cross-Encoder Extraction)"]
+        CrossEncoder["Mô hình Cross-Encoder (XLM-RoBERTa Backbone)"]:::model
+        subgraph HierarchicalHeads ["Các đầu phân loại phân cấp (Hierarchical Heads)"]
+            HasValue["has_value Head (Phân loại nhị phân Có/Không)"]:::head
+            SpanHead["span_head (Dự đoán vị trí Start / End)"]:::head
+            EnumHead["enum_head (Phân loại danh mục tĩnh)"]:::head
+            BoolHead["bool_head (Phân loại giá trị True / False)"]:::head
+        end
+        Normalizer["Module Chuẩn hóa Giá trị (Vietnamese Value Normalizer)"]:::inter
+    end
+
+    Output["Lệnh gọi hàm hoàn chỉnh (JSON Function Call)"]:::io
+
+    Query --> BiEncoder
+    ToolPool --> BiEncoder
+    BiEncoder --> CosineSim
+    CosineSim -->|"Top-K công cụ ứng viên"| CrossEncoder
+    Query -->|"Ngữ cảnh truy vấn (Context)"| CrossEncoder
+
+    CrossEncoder --> HasValue
+    CrossEncoder --> SpanHead
+    CrossEncoder --> EnumHead
+    CrossEncoder --> BoolHead
+
+    HasValue -->|"Tham số có mặt"| Normalizer
+    SpanHead --> Normalizer
+    EnumHead --> Normalizer
+    BoolHead --> Normalizer
+
+    Normalizer --> Output
+```
+
+*Hình 2.1: Sơ đồ nguyên lý hoạt động của kiến trúc phân tách hai giai đoạn (Bi-Encoder Retrieval kết hợp Cross-Encoder Extraction).*
+
+
+#### 2.4.1. Giai đoạn 1: Truy hồi công cụ ngữ nghĩa dày (Bi-Encoder Retrieval)
+
+Giai đoạn đầu tiên có nhiệm vụ định vị chính xác tập hợp các công cụ $t^* \in \mathcal{T}$ có khả năng đáp ứng truy vấn của người dùng từ một kho công cụ quy mô lớn. Nhóm nghiên cứu sử dụng mạng nơ-ron hai nhánh tương đồng (Siamese Network) dựa trên nền tảng mô hình BGE-M3 (Chen et al., 2024). Mạng mã hóa chuỗi truy vấn người dùng $q$ và văn bản mô tả của từng công cụ $t$ thành các vector nhúng ngữ nghĩa dày đặc $u, v \in \mathbb{R}^d$ thông qua phép gom trung bình có trọng số (Mean Pooling):
+$$u = \text{BiEncoder}(q), \quad v = \text{BiEncoder}(t)$$
+Mức độ phù hợp giữa truy vấn và công cụ được xác định qua hàm khoảng cách Cosine Similarity:
+$$s(q, t) = \frac{u^\top v}{\|u\|_2 \|v\|_2}$$
+
+Để tối ưu hóa không gian biểu diễn ngữ nghĩa của các công cụ tiếng Việt, mô hình được huấn luyện bằng hàm mất mát Xếp hạng Đa mẫu Âm tính (Multiple Negatives Ranking Loss - MNRL) kết hợp kỹ thuật đệm gradient CachedMNRL (Gao et al., 2021). Hàm mất mát cho một lô huấn luyện gồm $B$ cặp mẫu dương $(q_i, t_i^+)$ được định nghĩa như sau:
+$$\mathcal{L}_{\text{MNRL}} = -\frac{1}{B} \sum_{i=1}^B \log \frac{\exp\left(s(q_i, t_i^+) / \tau\right)}{\exp\left(s(q_i, t_i^+) / \tau\right) + \sum_{j \neq i} \exp\left(s(q_i, t_j^+) / \tau\right) + \sum_{k=1}^{M} \exp\left(s(q_i, n_{i,k}^-) / \tau\right)}$$
+trong đó $\tau$ là siêu tham số nhiệt độ (temperature scaling), $t_j^+$ là các mẫu âm ngẫu nhiên nội lô (in-batch negatives), và $n_{i,k}^-$ là các mẫu âm tính khó (hard negatives) được khai phá độc lập thông qua mô hình giáo viên ở vòng huấn luyện đầu tiên. Chiến lược này buộc mô hình phải phân biệt ranh giới ngữ nghĩa cực kỳ tinh tế giữa các công cụ có chức năng tương đồng trong cùng một lĩnh vực nghiệp vụ.
+
+#### 2.4.2. Giai đoạn 2: Trích xuất tham số theo lược đồ (Cross-Encoder Extraction)
+
+Sau khi Top-$K$ công cụ ứng viên được truy xuất, giai đoạn thứ hai tiến hành trích xuất giá trị cụ thể cho từng thuộc tính tham số được định nghĩa trong lược đồ $\mathcal{S}$. Bài toán được mô hình hóa theo cấu trúc Hỏi - Đáp trích xuất (Extractive Question Answering), sử dụng mô hình nền tảng đa ngôn ngữ XLM-RoBERTa (Conneau et al., 2020). Đối với mỗi tham số $p_j$ của công cụ được chọn, chuỗi đầu vào được cấu tạo bằng cách ghép nối câu truy vấn của người dùng đóng vai trò ngữ cảnh (Context) và mô tả thuộc tính của tham số đóng vai trò câu hỏi (Question):
+$$\mathbf{X}_{\text{input}} = \text{[CLS]} \circ \text{Query} \circ \text{[SEP]} \circ \text{Parameter Prompt}(p_j, \mathcal{S}) \circ \text{[SEP]}$$
+
+Biểu diễn ngữ cảnh tương tác sâu giữa truy vấn và câu hỏi tại đầu ra của mô hình được định tuyến qua hệ thống các đầu phân loại phân cấp chuyên biệt. Đầu phân loại nhị phân hiện diện (`has_value_head`) áp dụng hàm kích hoạt Sigmoid lên biểu diễn ẩn của token `[CLS]` để xác định xem tham số $p_j$ có thực sự xuất hiện và cần được gán giá trị trong truy vấn hay không:
+$$\hat{y}_{\text{exist}} = \sigma\left(\mathbf{w}_{\text{exist}}^\top \mathbf{h}_{\text{[CLS]}} + b_{\text{exist}}\right)$$
+với hàm mất mát tương ứng là entropy chéo nhị phân $\mathcal{L}_{\text{exist}} = \text{BCE}(\hat{y}_{\text{exist}}, y_{\text{exist}})$.
+
+Khi tham số được xác nhận tồn tại, biểu diễn ẩn được định tuyến tới các nhánh chuyên biệt tùy theo kiểu dữ liệu. Đối với các tham số dạng chuỗi tự do, số thực hoặc số nguyên, đầu trích xuất đoạn văn bản (`span_head`) dự đoán phân phối xác suất của vị trí bắt đầu $i$ và kết thúc $j$ trên chuỗi token truy vấn:
+$$P_{\text{start}}(i) = \frac{\exp(\mathbf{w}_s^\top \mathbf{h}_i)}{\sum_k \exp(\mathbf{w}_s^\top \mathbf{h}_k)}, \quad P_{\text{end}}(j) = \frac{\exp(\mathbf{w}_e^\top \mathbf{h}_j)}{\sum_k \exp(\mathbf{w}_e^\top \mathbf{h}_k)}$$
+Hàm mất mát tương ứng là tổng entropy chéo phân loại: $\mathcal{L}_{\text{span}} = \text{CE}(P_{\text{start}}, y_s) + \text{CE}(P_{\text{end}}, y_e)$. Đối với các tham số có miền giá trị hữu hạn, các đầu phân loại rời rạc gồm `enum_head` và `bool_head` tiến hành dự đoán trực tiếp nhãn mục tiêu, giúp triệt tiêu hoàn toàn rủi ro sai lệch cú pháp hoặc phát sinh giá trị ngoài danh mục quy chuẩn.
+
+Tổng hàm mất mát liên hợp của mô hình Cross-Encoder là sự kết hợp có trọng số của các mục tiêu:
+$$\mathcal{L}_{\text{total}} = \lambda_1 \mathcal{L}_{\text{exist}} + \mathbb{I}(y_{\text{exist}}=1) \cdot \left[ \lambda_2 \mathcal{L}_{\text{span}} + \lambda_3 \mathcal{L}_{\text{enum}} + \lambda_4 \mathcal{L}_{\text{bool}} \right]$$
+Kiến trúc này cho phép suy luận độc lập cho từng tham số; bước hậu xử lý theo schema giúp đầu ra tuân thủ ràng buộc cú pháp trong protocol structured-output được sử dụng.
+
+### 2.5. Những thách thức đặc thù của ngôn ngữ tiếng Việt trong bài toán Tool Calling
+
+Bài toán gọi công cụ trên ngữ liệu tiếng Việt đặt ra những rào cản mang tính bản chất so với các ngôn ngữ biến hình thuộc ngữ hệ Ấn-Âu, xuất phát từ các đặc trưng loại hình học và văn hóa giao tiếp bản địa. 
+
+Rào cản nền tảng bắt nguồn từ đặc tính đơn lập không biến hình từ (Isolating Language) của tiếng Việt, nơi đơn vị cơ sở là các âm tiết độc lập mang thanh điệu. Ranh giới từ vựng không được phân tách tường minh bằng khoảng trắng mà hình thành thông qua các cụm từ ghép đa âm tiết biến hóa linh hoạt (như "máy tính xách tay", "hợp đồng bảo hiểm nhân thọ"). Hiện tượng nhập nhằng ranh giới từ vựng kết hợp cùng thuật toán tách từ phụ (subword tokenization) khiến các mô hình trích xuất đoạn văn bản (Span Prediction) rất dễ phạm lỗi cắt cụt ranh giới hoặc trích xuất thừa từ tố ở các biên thực thể, xâm phạm tính toàn vẹn của giá trị tham số đích.
+
+Bên cạnh đặc trưng hình thái học, hệ thống biểu thức quy ước đời thường và tiếng lóng phong phú trong giao tiếp người Việt tạo nên rào cản ngữ nghĩa sâu sắc, đặc biệt ở các thông tin định lượng tiền tệ và mốc thời gian tương đối. Người dùng bản địa thường sử dụng các phương thức biểu đạt phi quy chuẩn như "hai củ rưỡi" ($2{,}500{,}000$ đồng), "ba vé" ($300{,}000$ đồng), "năm xị" ($500{,}000$ đồng), hoặc các mốc lịch âm ("ngày rằm tháng Bảy", "thứ Năm tuần tới"). Một mô hình trích xuất chỉ dừng lại ở bề mặt chuỗi văn bản (surface text) sẽ khiến lời gọi API hạ nguồn thất bại do không tương thích với các kiểu dữ liệu nguyên thủy (`integer`, `number`, `ISO-8601 string`), xác lập tính tất yếu của một module Chuẩn hóa Giá trị (Value Normalizer) đứng sau bộ trích xuất.
+
+Cuối cùng, sự nhạy cảm tuyệt đối với hệ thống sáu thanh điệu và các biến thể phương ngữ vùng miền đòi hỏi năng lực hiểu ngữ nghĩa đa tầng từ bộ truy hồi. Hiện tượng sai dấu hoặc thiếu dấu thanh do thói quen gõ bàn phím Telex/VNI có thể làm biến đổi hoàn toàn thực thể địa danh và ngữ nghĩa câu lệnh (như sự khác biệt giữa "Hà Nam" và "Hà Nội", "Tam Kỳ" và "Tam Điệp"). Đồng thời, sự phong phú của các từ viết tắt phổ dụng ("TP.HCM", "HN", "ĐN", "SG") và các từ ngữ đồng nghĩa theo vùng miền ("xe gắn máy", "xe honda", "xe máy") đặt ra yêu cầu khắt khe về việc tối ưu hóa không gian biểu diễn nhúng, nhằm ánh xạ chuẩn xác mọi biến thể ngôn ngữ tự nhiên về cùng một định danh công cụ mục tiêu duy nhất.
 
 ---
 
@@ -425,7 +454,7 @@ Xử lý ngôn ngữ tự nhiên tiếng Việt trong bài toán trích xuất t
 ## Chương 3. XÂY DỰNG BỘ TIÊU CHUẨN ĐÁNH GIÁ (BENCHMARK) CHO TIẾNG VIỆT
 
 ### 3.1. Thiết kế Schema Chuẩn hóa Dữ liệu (Master Canonical Schema)
-Để phục vụ huấn luyện và đánh giá công bằng giữa hai phương pháp tiếp cận, chúng tôi thiết kế một cấu trúc dữ liệu JSON duy nhất (Master Canonical Schema), hỗ trợ đồng thời kịch bản đơn lệnh và đa lệnh gọi:
+Một trong những rào cản kỹ thuật lớn nhất khi tiến hành so sánh đối đầu giữa mô hình sinh nguyên khối (Generative SLM) và hệ thống phân biệt hai giai đoạn (Bi-Encoder kết hợp Cross-Encoder) là sự bất đồng bộ về cấu trúc dữ liệu đầu vào và đầu ra. Nhằm thiết lập một khuôn khổ đánh giá công bằng, khách quan và có khả năng truy xuất nguồn gốc nhất quán, nghiên cứu đề xuất và chuẩn hóa cấu trúc dữ liệu JSON duy nhất mang tên *Master Canonical Schema*. Cấu trúc này đóng vai trò là nguồn dữ liệu chân lý duy nhất (Single Source of Truth), hỗ trợ trọn vẹn cả kịch bản gọi đơn lệnh (single-call) lẫn đa lệnh (multi-call), đồng thời cho phép chuyển đổi không tổn hao thông tin sang định dạng tin nhắn hội thoại tự nhiên (native chat messages) của SLM hoặc các cặp ngữ cảnh – lược đồ phục vụ đường ống phân biệt:
 
 ```json
 {
@@ -458,56 +487,84 @@ Xử lý ngôn ngữ tự nhiên tiếng Việt trong bài toán trích xuất t
 }
 ```
 
-### 3.2. Bộ chuẩn quy mô lớn Canonical Core Benchmark
-Từ hai nguồn dữ liệu quốc tế chất lượng cao Glaive Function Calling và xLAM, chúng tôi thiết lập quy trình lọc bỏ các câu đa lượt (chỉ giữ first-turn) và các bản ghi trùng lặp cấu trúc, sau đó tiến hành chuyển ngữ sang tiếng Việt thông qua mô hình dịch thuật chuyên dụng `Qwen-MT` của Alibaba kết hợp với hệ thống luật kiểm định chất lượng (QA Validation Rules) nghiêm ngặt:
-- Bảo toàn nguyên vẹn tên hàm và tên tham số bằng tiếng Anh (snake_case).
-- Dịch tự nhiên nội dung truy vấn của người dùng và mô tả công cụ sang tiếng Việt.
-- Bảo toàn cấu trúc JSON và các định danh mã hóa (UUID, biển số xe, mã hiệu).
+Trong cấu trúc quy chuẩn trên, mỗi bản ghi được kiểm soát chặt chẽ qua bốn thành phần cốt lõi: trường `id` định danh duy nhất mẫu dữ liệu; trường `query` ghi nhận câu truy vấn tự nhiên của người dùng; trường `function_calls` lưu trữ danh sách các công cụ mục tiêu cần kích hoạt cùng tập tham số gán nhãn chuẩn xác; và trường `tools` định nghĩa đầy đủ lược đồ kỹ thuật theo chuẩn JSON Schema (bao gồm tên hàm, mô tả chức năng, các thuộc tính tham số, kiểu dữ liệu, ràng buộc giá trị liệt kê `enum` và danh sách tham số bắt buộc `required`). Thiết kế này bảo đảm không gian ngữ nghĩa giữa hai phương pháp tiếp cận luôn được đồng bộ tuyệt đối trên cùng một điểm tựa thông tin.
 
-Bộ dữ liệu sau khi tinh lọc đạt quy mô **77,028 cặp bản ghi song ngữ** hoàn chỉnh (chia thành train: 61,615; val: 7,701; test: 7,712 bản ghi tương ứng cho mỗi ngôn ngữ) bao phủ **4,421 công cụ duy nhất**.
+### 3.2. Bộ chuẩn quy mô lớn Canonical Core Benchmark
+Nhằm trang bị cho các mô hình khả năng hiểu sâu và khái quát hóa trên đa dạng lĩnh vực nghiệp vụ, nghiên cứu tiến hành kế thừa và chuẩn hóa hai kho dữ liệu quốc tế có độ tin cậy cao là Glaive Function Calling v2 và Salesforce xLAM-60k. Trong đó, tập dữ liệu Glaive đóng vai trò cung cấp các ngữ cảnh đàm thoại đơn lệnh phong phú kèm theo tập mẫu âm tính chất lượng cao, còn tập xLAM bổ sung các mẫu truy vấn phức tạp đòi hỏi kích hoạt đồng thời nhiều công cụ với cấu trúc tham số lồng ghép. Quy trình tiền xử lý được thực hiện qua các bước lọc bỏ các lượt hội thoại đa bước (chỉ lưu giữ first-turn nhằm cô lập năng lực gọi công cụ thuần túy) và loại bỏ $42{,}762$ bản ghi trùng lặp cấu trúc hoặc $944$ mẫu dị dạng cú pháp. 
+
+Dữ liệu sau khi tinh lọc được chuyển ngữ sang tiếng Việt thông qua mô hình dịch thuật chuyên dụng `Qwen-MT` của Alibaba, vận hành dưới sự giám sát của hệ thống luật kiểm định chất lượng nghiêm ngặt (QA Validation Rules). Hệ thống quy tắc này đảm bảo giữ nguyên tuyệt đối tên hàm và tên tham số kỹ thuật bằng tiếng Anh theo định dạng snake_case nhằm duy trì tính tương thích chuẩn với các API thực tế, chuyển ngữ mượt mà truy vấn người dùng và mô tả công cụ sang văn phong tiếng Việt chuẩn mực, đồng thời bảo toàn cấu trúc JSON và các định danh chuyên biệt (như UUID, mã bưu chính, biển số xe). Kết quả của giai đoạn này là bộ dữ liệu `Canonical Core Benchmark` quy mô **$77{,}028$ cặp bản ghi song ngữ** đối xứng 1:1, bao phủ **$4{,}421$ công cụ duy nhất** và được phân bổ theo tỷ lệ chuẩn hóa 80/10/10 thành tập huấn luyện ($61{,}615$ mẫu), tập xác thực ($7{,}701$ mẫu) và tập kiểm thử độc lập ($7{,}712$ mẫu) cho mỗi ngôn ngữ.
 
 ### 3.3. Bộ chuẩn miền thực tế bản địa hóa CustomTools-VI
-Để kiểm tra năng lực xử lý ngôn ngữ thực tế trong bối cảnh văn hóa và dịch vụ tại Việt Nam, chúng tôi xây dựng bộ dữ liệu `CustomTools-VI` gồm **8,000 mẫu** bao phủ 40 công cụ thuộc 10 nhóm lĩnh vực đời sống thiết yếu:
-1. Tra cứu hành chính & dịch vụ công (phạt nguội, tra cứu CCCD, thuế cá nhân).
-2. Tài chính & Ngân hàng số (chuyển khoản VietQR, nạp tiền điện tử).
-3. Đặt vé & Giao thông nội địa (đặt vé xe khách, tra cứu tàu hỏa, đặt xe ôm công nghệ).
-4. Thương mại điện tử & Vận chuyển (tra cứu vận đơn bưu điện, kiểm tra đơn hàng).
-5. Viễn thông & Tiện ích (thanh toán hóa đơn điện lực EVN, nạp thẻ cước di động).
-6. Y tế & Đặt lịch khám bệnh.
-7. Giáo dục & Tra cứu điểm thi tuyển sinh.
-8. Du lịch & Nhà hàng khách sạn.
-9. Bất động sản & Thuê nhà ở.
-10. Tiện ích đời sống (dự báo thời tiết địa phương, giá vàng SJC).
+Bên cạnh kho dữ liệu quy mô lớn dịch chuyển từ nguồn quốc tế, việc đánh giá năng lực tương tác thực tế trong môi trường số hóa và văn hóa bản địa tại Việt Nam đòi hỏi một bộ chuẩn đặc thù. Nhóm nghiên cứu đã xây dựng bộ dữ liệu `CustomTools-VI` gồm **$8{,}000$ mẫu dữ liệu bản địa hóa**, bao phủ 40 công cụ thuộc 10 nhóm lĩnh vực đời sống thiết yếu được phân bổ hài hòa qua bốn nhóm trụ cột nghiệp vụ: Dịch vụ công và tiện ích dân sinh (tra cứu phạt nguội giao thông, căn cước công dân, mã số thuế, hóa đơn điện lực EVN, thời tiết địa phương); Tài chính số và thương mại điện tử (chuyển khoản VietQR, nạp ví điện tử, tra cứu vận đơn bưu chính, quản lý đơn hàng); Giao thông và du lịch (đặt vé xe khách liên tỉnh, tra cứu lịch trình đường sắt, gọi xe công nghệ, đặt phòng khách sạn); Y tế, giáo dục và đời sống xã hội (đặt lịch khám chữa bệnh, tra cứu điểm thi tuyển sinh, giao dịch bất động sản, cập nhật giá vàng). Các mẫu truy vấn được thu thập và biên soạn tỉ mỉ nhằm phản ánh văn phong tự nhiên, đa dạng từ ngữ địa phương, phương ngữ ba miền (Bắc - Trung - Nam), từ viết tắt chuyên ngành và các biến thể chính tả thông dụng trong giao tiếp hàng ngày của người Việt.
 
-Điểm mấu chốt trong thiết kế thực nghiệm là việc phân chia nghiêm ngặt thành hai tập:
-- **Tập đã học (Seen Tools)**: Gồm 20 công cụ xuất hiện trong cả tập huấn luyện và tập kiểm thử.
-- **Tập chưa từng gặp (Unseen Tools)**: Gồm 20 công cụ hoàn toàn mới, chỉ xuất hiện trong tập kiểm thử (`test_unseen`) nhằm đo lường chính xác năng lực tổng quát hóa Zero-Shot của mô hình.
+Nhằm thiết lập thước đo khách quan định lượng năng lực khái quát hóa không mẫu (Zero-Shot Generalization) – một yêu cầu sống còn của các hệ thống AI khi được triển khai trong thực tế – bộ dữ liệu `CustomTools-VI` áp dụng cơ chế phân tách nghiêm ngặt không gian công cụ. Toàn bộ 40 công cụ được chia đều thành hai nhóm độc lập: Tập đã học (`Seen Tools`, gồm 20 công cụ với $5{,}600$ mẫu huấn luyện, $400$ mẫu xác thực và $800$ mẫu kiểm thử) và Tập chưa từng gặp (`Unseen Tools`, gồm 20 công cụ với $0$ mẫu huấn luyện, $400$ mẫu xác thực và $800$ mẫu kiểm thử hoàn toàn mới lạ). Thiết kế phân ly tuyệt đối này ngăn ngừa hiện tượng mô hình học vẹt định danh API, buộc hệ thống phải suy luận thuần túy dựa trên ngữ nghĩa của bản mô tả và lược đồ công cụ khi tiếp nhận các dịch vụ mới.
 
 ### 3.4. Chiến lược tạo lập và kiểm soát dữ liệu âm tính (Negative Samples)
-Trong thực tế, người dùng thường xuyên đưa ra các câu hỏi trò chuyện xã giao hoặc các câu hỏi không liên quan đến công cụ hiện có. Nếu mô hình chỉ được học trên dữ liệu luôn luôn có lệnh gọi hàm, nó sẽ bị mắc thiên kiến kích hoạt mù quáng.
+Trong môi trường vận hành thực tế, người tương tác không chỉ đưa ra các mệnh lệnh điều khiển mà còn thường xuyên gửi các câu hỏi giao tiếp xã giao hoặc các yêu cầu nằm hoàn toàn ngoài phạm vi hỗ trợ của hệ thống API hiện có. Nếu mô hình chỉ được rèn luyện trên các mẫu dữ liệu luôn luôn có lời gọi công cụ, nó sẽ hình thành thiên kiến kích hoạt quá mức (over-triggering bias) – xu hướng gượng ép ánh xạ mọi truy vấn của người dùng vào một API bất kỳ ngay cả khi không có công cụ nào phù hợp.
 
-Trong `CustomTools-VI`, chúng tôi thiết lập tỷ lệ âm tính cân bằng chính xác **50%**:
-- 800 mẫu `test_seen`: gồm 400 mẫu dương tính (yêu cầu gọi công cụ) và 400 mẫu âm tính (câu hội thoại hoặc truy vấn ngoài phạm vi công cụ).
-- 800 mẫu `test_unseen`: gồm 400 mẫu dương tính và 400 mẫu âm tính tương tự.
+Nhằm khắc phục triệt để lỗ hổng này, nghiên cứu tích hợp chiến lược mẫu âm tính có kiểm soát trong cả hai bộ dữ liệu. Tại `CustomTools-VI`, nghiên cứu áp dụng tỷ lệ mẫu âm tính cân bằng chính xác **50%** trên cả hai tập kiểm thử độc lập. Cụ thể, tập `test_seen` ($800$ mẫu) và tập `test_unseen` ($800$ mẫu) đều được cấu thành từ $400$ mẫu dương tính yêu cầu kích hoạt công cụ chuẩn xác và $400$ mẫu âm tính gồm các câu hội thoại xã giao đời thường hoặc các truy vấn vượt ra ngoài phạm vi cung cấp của danh mục API mục tiêu. Khi tiếp nhận mẫu âm tính, hệ thống được kỳ vọng sẽ từ chối gọi hàm và phản hồi bằng văn bản tự nhiên thông thường. Thiết kế đối xứng này đảm bảo rằng các thang đo độ chính xác và F1 không bị thổi phồng bởi các hành vi dự đoán thiên lệch, phản ánh đúng độ tin cậy vận hành của hệ thống.
 
 ### 3.5. Quy trình xây dựng tập kiểm thử áp lực (Stress Test Benchmark)
-Để kiểm tra độ bền vững của hệ thống khi quy mô danh mục công cụ tăng vọt, chúng tôi trích xuất **200 mẫu thử nghiệm mỏ neo (Anchor queries)** chuẩn, sau đó tiến hành nhồi thêm các công cụ gây nhiễu (distractor tools) để tạo ra các tập kiểm thử có quy mô $N \in \{3, 10, 50, 100, 500, 1.000\}$ công cụ. Các công cụ gây nhiễu được lấy từ kho 4,421 công cụ thực tế của Core Benchmark, mô phỏng chính xác kịch bản triển khai trong các tập đoàn quy mô lớn.
+Nhằm khảo sát toàn diện tính bền vững và khả năng mở rộng của các phương pháp khi không gian tìm kiếm công cụ gia tăng đột biến, nghiên cứu thiết lập quy trình kiểm thử áp lực (Stress Test Benchmark) lấy cảm hứng từ chuẩn RAG-MCP. Quy trình này khởi đầu bằng việc trích xuất **$200$ truy vấn mỏ neo (anchor queries)** chuẩn tiếng Việt từ tập kiểm thử. Với mỗi truy vấn mỏ neo mang công cụ mục tiêu cần gọi, không gian ngữ cảnh được mở rộng có hệ thống bằng cách bổ sung thêm các công cụ gây nhiễu (distractor tools) từ kho $4{,}421$ công cụ của Core Benchmark, tạo nên các môi trường thử nghiệm với quy mô tăng dần theo các mốc $N \in \{3, 10, 50, 100, 500, 1{,}000\}$.
+
+Nghiên cứu triển khai song song hai chiến lược chọn công cụ gây nhiễu nhằm đánh giá đa chiều năng lực phân biệt: chiến lược gây nhiễu ngẫu nhiên (Random Distractors) bằng cách lấy ngẫu nhiên các công cụ từ các miền dịch vụ khác nhau; và chiến lược gây nhiễu cùng miền ngữ nghĩa (Same-Domain Distractors) bằng cách chủ động chọn các công cụ có mô tả chức năng hoặc từ khóa tương đồng cao với công cụ mục tiêu. Tổng số trường hợp kiểm thử đối đầu trên cả bốn phương pháp đạt $200 \times 6 \times 2 = 2{,}400$ kịch bản thực nghiệm, tạo lập cơ sở dữ liệu thực nghiệm chuẩn mực để phân tích sự suy giảm độ chính xác và tốc độ bùng nổ độ trễ tính toán khi số lượng công cụ trong hệ thống tăng từ vài đơn vị lên hàng nghìn đơn vị.
+
+```mermaid
+graph TD
+    classDef source fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1;
+    classDef process fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#e65100;
+    classDef dataset fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20;
+
+    subgraph Sources ["1. Nguồn dữ liệu thô (Raw Data Sources)"]
+        Glaive["Glaive Function Calling v2<br/>(60,734 mẫu đơn/đa lượt)"]:::source
+        xLAM["Salesforce xLAM-60k<br/>(60,000 mẫu cấu trúc phức tạp)"]:::source
+        CustomRaw["Tập chuyên biệt nghiệp vụ Việt Nam<br/>(8,000 mẫu 10 nhóm lĩnh vực)"]:::source
+    end
+
+    subgraph Pipeline ["2. Tiền xử lý & Chuyển ngữ có kiểm soát"]
+        Filter["Lọc hội thoại Single-turn<br/>& Khử trùng lặp cú pháp (Dedup)"]:::process
+        Translate["Chuyển ngữ với Alibaba Qwen-MT<br/>(Bảo toàn snake_case API & JSON Schema)"]:::process
+        QACheck["Kiểm định chất lượng với QA Rules<br/>(Xác thực cú pháp & tính nguyên vẹn)"]:::process
+        StratifiedSplit["Phân tầng dữ liệu Train / Val / Test<br/>(Tỷ lệ chuẩn hóa 80 / 10 / 10)"]:::process
+    end
+
+    subgraph Targets ["3. Các bộ chuẩn đánh giá hoàn thiện"]
+        CoreBenchmark["Canonical Core Benchmark (Song ngữ EN–VI đối sánh 1:1)<br/>(61,615 Train / 7,701 Val / 7,712 Test)"]:::dataset
+        CustomSeen["CustomTools-VI (Seen Tools: 20 công cụ)<br/>(5,600 Train / 400 Val / 800 Test)"]:::dataset
+        CustomUnseen["CustomTools-VI (Unseen Tools: 20 công cụ Zero-Shot)<br/>(0 Train / 400 Val / 800 Test)"]:::dataset
+        StressSet["Tập kiểm thử áp lực Stress Test<br/>(200 anchors × N = 3 đến 1,000 distractors)"]:::dataset
+    end
+
+    Glaive --> Filter
+    xLAM --> Filter
+    Filter --> Translate
+    Translate --> QACheck
+    QACheck --> StratifiedSplit
+    CustomRaw --> StratifiedSplit
+
+    StratifiedSplit --> CoreBenchmark
+    StratifiedSplit --> CustomSeen
+    StratifiedSplit --> CustomUnseen
+    CoreBenchmark --> StressSet
+```
+
+*Hình 3.1: Quy trình xử lý dữ liệu và xây dựng các bộ tiêu chuẩn đánh giá Benchmark.*
 
 **Bảng 3.1: Thống kê định lượng các bộ dữ liệu trong Benchmark Tool Calling Tiếng Việt**  
-*(Ghi chú: Core Benchmark là tập dữ liệu song ngữ đối xứng 1:1 (Paired EN–VI). CustomTools-VI có tỷ lệ mẫu âm tính cân bằng chính xác 50% ở mọi tập kiểm thử).*
+*(Ghi chú: Core Benchmark là tập dữ liệu song ngữ đối xứng 1:1 (Paired EN–VI). CustomTools-VI duy trì tỷ lệ mẫu âm tính cân bằng 50% ở mọi tập kiểm thử. Tỷ lệ phân chia Train / Val / Test tuân thủ nghiêm ngặt quy chuẩn 80/10/10).*
 
-| Bộ dữ liệu | Mục đích & Đặc tính | Ngôn ngữ | Lệnh gọi | Mẫu Dương (FC) | Mẫu Âm (Non-FC) | Tập Train | Tập Test | Số công cụ (Tools) |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| *Nhóm 1: Canonical Core Benchmark (77,028 cặp bản ghi song ngữ đối sánh 1:1)* | | | | | | | | |
-| **Canonical Glaive** | Khái quát hóa đơn lệnh + Âm tính | Song ngữ EN–VI (Paired) | Đơn lệnh (Single) | 14,568 | 3,642 | 18,210 | 2,276 | 972 |
-| **Canonical xLAM** | Cấu trúc phức tạp + Đa lệnh gọi | Song ngữ EN–VI (Paired) | Đa lệnh (Multi) | 47,047 | 0 | 47,047 | 5,891 | 3,449 |
-| **Tổng Core Benchmark** | **Khung chuẩn quy mô lớn** | **Song ngữ EN–VI** | **Đơn & Đa lệnh** | **57,750 (×2)** | **3,865 (×2)** | **61,615 (×2)** | **7,712 (×2)** | **4,421** |
-| *Nhóm 2: CustomTools-VI Benchmark (8,000 mẫu đặc thù đời sống Việt Nam)* | | | | | | | | |
-| **CustomTools-VI (Seen)** | 20 công cụ đã học (10 nhóm miền) | Tiếng Việt (VI) | Đơn & Đa lệnh | 2,800 | 2,800 | 5,600 | 800 | 20 (Seen) |
-| **CustomTools-VI (Unseen)**| 20 công cụ Zero-Shot (10 nhóm miền)| Tiếng Việt (VI) | Đơn & Đa lệnh | 400 | 400 | 0 *(Zero-Shot)* | 800 | 20 (Unseen) |
-| **Tổng CustomTools-VI** | **Khung chuẩn miền thực tế** | **Tiếng Việt (VI)** | **Đơn & Đa lệnh** | **3,200** | **3,200** | **5,600** | **1,600** | **40** |
+| Bộ dữ liệu | Mục đích & Đặc tính | Ngôn ngữ | Lệnh gọi | Mẫu Dương (FC) | Mẫu Âm (Non-FC) | Tập Train | Tập Val | Tập Test | Số công cụ (Tools) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| *Nhóm 1: Canonical Core Benchmark (77,028 cặp bản ghi song ngữ đối sánh 1:1)* | | | | | | | | | |
+| **Canonical Glaive** | Khái quát hóa đơn lệnh + Âm tính | Song ngữ EN–VI (Paired) | Đơn lệnh (Single) | 13,393 | 4,817 | 14,561 | 1,819 | 1,830 | 864 |
+| **Canonical xLAM** | Cấu trúc phức tạp + Đa lệnh gọi | Song ngữ EN–VI (Paired) | Đa lệnh (Multi) | 58,818 | 0 | 47,054 | 5,882 | 5,882 | 3,602 |
+| **Tổng Core Benchmark** | **Khung chuẩn quy mô lớn** | **Song ngữ EN–VI** | **Đơn & Đa lệnh** | **72,211 (×2)** | **4,817 (×2)** | **61,615 (×2)** | **7,701 (×2)** | **7,712 (×2)** | **4,421** |
+| *Nhóm 2: CustomTools-VI Benchmark (8,000 mẫu đặc thù đời sống Việt Nam)* | | | | | | | | | |
+| **CustomTools-VI (Seen)** | 20 công cụ đã học (10 nhóm miền) | Tiếng Việt (VI) | Đơn & Đa lệnh | 4,200 | 2,600 | 5,600 | 400 | 800 | 20 (Seen) |
+| **CustomTools-VI (Unseen)**| 20 công cụ Zero-Shot (10 nhóm miền)| Tiếng Việt (VI) | Đơn & Đa lệnh | 600 | 600 | 0 *(Zero-Shot)* | 400 | 800 | 20 (Unseen) |
+| **Tổng CustomTools-VI** | **Khung chuẩn miền thực tế** | **Tiếng Việt (VI)** | **Đơn & Đa lệnh** | **4,800** | **3,200** | **5,600** | **800** | **1,600** | **40** |
 
-*\*Ghi chú chuyển đổi biểu diễn dữ liệu (Data Representation Mapping): Số liệu trong Bảng 3.1 đại diện cho các bản ghi hội thoại gốc (Master Conversational Records). Khi đưa vào huấn luyện đường ống phân biệt Method 2, các mẫu này được trích xuất thành 78,435 cặp (query, tool_description) cho Bi-Encoder (loại bỏ hoàn toàn định danh của 20 công cụ unseen để bảo toàn tính strict zero-shot) và 145,383 cặp (query, param_schema) phân cấp cho Cross-Encoder. Trên Core Benchmark, Method 2 được kiểm thử trên tập 10,555 truy vấn dương tính chuẩn hóa.*
+*(Ghi chú chuyển đổi biểu diễn dữ liệu (Data Representation Mapping): Số liệu trong Bảng 3.1 thể hiện số lượng bản ghi hội thoại gốc (Master Conversational Records). Khi đưa vào huấn luyện đường ống phân biệt Method 2 Shared E4, các bản ghi này được trích xuất thành $70{,}988$ cặp dương tính (query, tool_description) cho bộ truy hồi Bi-Encoder (loại trừ hoàn toàn định danh của 20 công cụ unseen để bảo toàn tính nghiêm ngặt zero-shot) và $135{,}617$ cặp (query, param_schema) phân cấp cho bộ trích xuất Cross-Encoder. Trên Core Benchmark, Method 2 được kiểm định đồng bộ trên toàn bộ $7{,}712$ mẫu kiểm thử tiếng Việt (VI Test) và $7{,}712$ mẫu kiểm thử tiếng Anh (EN Test) chuẩn hóa).*
 
 ---
 
@@ -516,16 +573,15 @@ Trong `CustomTools-VI`, chúng tôi thiết lập tỷ lệ âm tính cân bằn
 ## Chương 4. PHƯƠNG PHÁP ĐỀ XUẤT VÀ THIẾT KẾ KIẾN TRÚC HỆ THỐNG
 
 ### 4.1. Kiến trúc tổng quan của hai trường phái kỹ thuật
-Sơ đồ so sánh tổng thể giữa hai trường phái được minh họa trực quan tại Hình 4.1.
+Nhằm giải quyết toàn diện bài toán gọi công cụ trong môi trường tiếng Việt, khóa luận nghiên cứu và đối chứng thực nghiệm hai trường phái kỹ thuật mang tư duy kiến trúc đối lập: phương pháp tiếp cận tạo sinh nguyên khối (End-to-End Generative SLM) và phương pháp tiếp cận phân biệt hai giai đoạn (Decoupled Discriminative Pipeline). Sơ đồ kiến trúc tổng quan và luồng luân chuyển dữ liệu của hai phương pháp được mô tả trực quan tại Hình 4.1.
 
-![Hình 4.1: Sơ đồ kiến trúc tổng quan đối chiếu giữa Phương pháp 1 và Phương pháp 2](paper/figures/fig1_system_architecture.png)
+![Hình 4.1: Sơ đồ kiến trúc tổng quan đối chiếu giữa Phương pháp 1 và Phương pháp 2](../paper/figures/fig1_system_architecture.png)
 
 *Hình 4.1: Sơ đồ kiến trúc tổng quan đối chiếu giữa Phương pháp 1 (SLM End-to-End sinh mã tự hồi quy) và Phương pháp 2 (Kiến trúc phân tách không tự hồi quy kết hợp Bi-Encoder BGE-M3 và Cross-Encoder XLM-R).*
 
 ### 4.2. Phương pháp 1: SLM End-to-End dựa trên Qwen3.5 (2B và 4B)
-Phương pháp 1 tiếp cận bài toán theo hướng end-to-end: mô hình tiếp nhận toàn bộ định nghĩa các công cụ khả dụng và câu truy vấn của người dùng trong cùng một prompt, sau đó tự hồi quy sinh ra cấu trúc lệnh gọi công cụ theo định dạng XML chuẩn của Qwen3.5.
+Phương pháp 1 tiếp cận bài toán theo trường phái tạo sinh nguyên khối (End-to-End Generative Approach). Trong mô hình này, mạng nơ-ron tiếp nhận toàn bộ định nghĩa các công cụ khả dụng cùng câu truy vấn của người dùng trong cùng một cửa sổ ngữ cảnh duy nhất. Cơ chế tự chú ý (Self-Attention) cho phép mô hình liên kết trực tiếp các điều kiện ràng buộc trong mô tả API với các thực thể trong câu hỏi, từ đó tự hồi quy sinh ra cấu trúc lệnh gọi công cụ theo định dạng XML chuẩn của họ mô hình Qwen3.5:
 
-Ví dụ định dạng đầu ra của mô hình:
 ```xml
 <tool_call>
 <function=tra_cuu_phat_nguoi>
@@ -534,7 +590,7 @@ Ví dụ định dạng đầu ra của mô hình:
 </function>
 </tool_call>
 ```
-Nếu câu truy vấn là câu trò chuyện thông thường hoặc không có công cụ nào thỏa mãn, mô hình sinh trực tiếp câu trả lời bằng ngôn ngữ tự nhiên và tuyệt đối không tạo thẻ `<tool_call>`.
+Khi câu truy vấn chỉ mang tính giao tiếp thông thường hoặc không có công cụ nào trong hệ thống đáp ứng được yêu cầu, mô hình sẽ trực tiếp sản sinh câu trả lời bằng ngôn ngữ tự nhiên và từ chối tạo lập thẻ `<tool_call>`. Cơ chế này giúp hợp nhất năng lực đàm thoại tự nhiên và khả năng gọi hàm vào một mô hình thống nhất.
 
 **Quy trình huấn luyện và thiết lập siêu tham số**:
 Mô hình được tinh chỉnh trên hạ tầng GPU NVIDIA A100-40GB thông qua thư viện Unsloth và chuẩn kỹ thuật QLoRA 4-bit với các siêu tham số được mô tả chi tiết tại Bảng 4.1.
@@ -545,39 +601,97 @@ Mô hình được tinh chỉnh trên hạ tầng GPU NVIDIA A100-40GB thông qu
 | :--- | :---: | :---: |
 | **Kỹ thuật lượng tử hóa (Quantization)** | 4-bit NormalFloat (NF4) | 4-bit NormalFloat (NF4) |
 | **Hạng thích ứng LoRA ($r$)** | 16 | 16 |
-| **Hệ số tỷ lệ LoRA ($\alpha$)** | 32 | 32 |
+| **Hệ số tỷ lệ LoRA ($\alpha$)** | 16 | 16 |
 | **Target Modules** | Toàn bộ Q, K, V, O, Gate, Up, Down Proj | Toàn bộ Q, K, V, O, Gate, Up, Down Proj |
-| **Tốc độ học (Learning Rate)** | $2 \times 10^{-4}$ | $5 \times 10^{-7}$ |
+| **Tốc độ học (Learning Rate)** | $5 \times 10^{-7}$ | $5 \times 10^{-7}$ |
 | **Bộ lập lịch tốc độ học (Scheduler)** | Cosine decay | Cosine decay |
-| **Batch Size hiệu dụng (Effective BS)** | 64 ($32 \times 2$ grad accum) | 64 ($32 \times 2$ grad accum) |
-| **Độ dài ngữ cảnh tối đa (Max Length)** | 2,048 tokens | 2,048 tokens |
+| **Batch Size cấu hình** | $64 \times 1$ (Per-device: 64, Accum: 1) | $32 \times 2$ (Per-device: 32, Accum: 2) |
+| **Batch Size hiệu dụng (Effective BS)** | **64** (Đồng nhất 100%) | **64** (Đồng nhất 100%) |
+| **Thuật toán tối ưu (Optimizer)** | AdamW 8-bit (`adamw_8bit`) | AdamW 8-bit (`adamw_8bit`) |
+| **Tỷ lệ khởi động ấm (Warmup Ratio)** | $0.05$ ($5\%$) | $0.05$ ($5\%$) |
+| **Hệ số tắt dần LoRA (Dropout)** | $0.0$ | $0.0$ |
+| **Độ dài ngữ cảnh tối đa (Max Length)** | $2{,}048$ tokens | $2{,}048$ tokens |
+| **Định dạng dữ liệu tính toán** | bfloat16 (BF16) | bfloat16 (BF16) |
+| **Kỹ thuật Gradient Checkpointing** | Kích hoạt (Unsloth Fast Gradient) | Kích hoạt (Unsloth Fast Gradient) |
 | **Tính toán hàm mất mát (Loss Masking)**| Chỉ tính trên phản hồi của Assistant | Chỉ tính trên phản hồi của Assistant |
-| **Thời gian huấn luyện E4 (1× A100)** | 54 phút | 2 giờ 05 phút |
-| **Checkpoint Loss hội tụ** | 0.0198 | **0.0103** |
+
+Hệ thống siêu tham số trên được áp dụng đồng bộ và nhất quán xuyên suốt các chu trình huấn luyện (từ các cấu hình thực nghiệm đơn ngữ E1, E2 đến cấu hình song ngữ E3 và thích ứng miền chuyên biệt E4), bảo đảm tính kiểm soát biến số và khả năng đối sánh khách quan giữa các giai đoạn nghiên cứu.
 
 ### 4.3. Phương pháp 2: Kiến trúc Phân tách Bi-Encoder + Cross-Encoder
-Kiến trúc này tách biệt triệt để hai công đoạn:
-1. **Module Truy hồi Công cụ (Semantic Tool Retriever)**:
-   - Dựa trên nền tảng `BAAI/bge-m3`.
-   - Huấn luyện theo 2 vòng: Vòng 1 huấn luyện mô hình teacher với hàm mất mát CachedMNRL; Vòng 2 khai thác các mẫu âm tính khó (hard negative mining) từ chính dự đoán của Vòng 1 để tái huấn luyện mô hình sinh viên.
-   - Cơ chế hiệu chuẩn ngưỡng từ chối: Sử dụng ngưỡng tuyệt đối $\tau = 0.35$ và ngưỡng biên tương đối $\delta = 0.21$. Nếu điểm tương đồng cao nhất $s_{\max} < \tau$ hoặc khoảng cách giữa Top-1 và Top-2 nhỏ hơn $\delta$, hệ thống kích hoạt cơ chế No-call (từ chối gọi công cụ).
-2. **Module Trích xuất Tham số Phân cấp (Hierarchical Parameter Extractor)**:
-   - Xây dựng trên nền tảng mô hình đa ngôn ngữ `xlm-roberta-base`.
-   - Đầu vào nhận đồng thời truy vấn và schema của từng tham số của công cụ đã chọn.
-   - Cơ chế định tuyến schema (Schema-driven routing): Mô hình không cần học phân loại kiểu dữ liệu vì kiểu dữ liệu đã được cung cấp sẵn từ schema. Mô hình kích hoạt đầu nhị phân `has_value` để xác định tham số có giá trị hay không, sau đó kích hoạt duy nhất một đầu ra tương ứng: `span_head` cho kiểu chuỗi/số, `enum_head` cho kiểu liệt kê, hoặc `bool_head` cho kiểu boolean.
 
-> [!NOTE] GHI CHÚ ĐỐI CHIẾU DÀNH CHO TÁC GIẢ METHOD 2 (HÀ QUANG ĐẠT)
-> *Các thông số kỹ thuật và số lượng mẫu biểu diễn của Phương pháp 2 dưới đây được trích xuất từ tài liệu thực nghiệm `docs/bao_cao_method2.md`. Tác giả Hà Quang Đạt vui lòng rà soát và cập nhật thêm các thông tin chi tiết (nếu có bổ sung mới từ các notebook Kaggle):*
-> - **Bi-Encoder (BGE-M3 + LoRA $r=16, \alpha=32$)**: 94,634 hàng cặp dữ liệu ban đầu $\to$ 78,435 cặp huấn luyện thực tế đưa vào hàm mất mát `CachedMNRL`. Bảo toàn 100% nguyên tắc *Strict Unseen* (loại bỏ hoàn toàn 20 công cụ `unseen` trong cả tập gốc và tập mined hard negatives).
-> - **Ngưỡng quyết định (Calibration Thresholds)**: Ngưỡng tuyệt đối $\tau = 0.35$, ngưỡng biên Top-1 vs Top-2 $\delta = 0.21$.
-> - **Cross-Encoder (`xlm-roberta-base` Hierarchical Heads)**: 145,383 cặp huấn luyện `(query, param_schema)` sau vòng sửa lỗi gán nhãn (`repair_v1`). Gồm đầu nhị phân `has_value` cùng 3 sub-heads phân cấp (`span_head`, `enum_head`, `bool_head`).
-> - **Phạm vi kiểm thử thực tế**: Core Benchmark đánh giá trên 10,555 truy vấn dương tính (4,447 Glaive + 6,108 xLAM); CustomTools-VI đánh giá trên đủ 800 mẫu `seen` và 800 mẫu `unseen` (mỗi tập 400 mẫu dương tính / 400 mẫu âm tính).
+Trái ngược căn bản với cách tiếp cận tạo sinh tự hồi quy vốn tiêu tốn tài nguyên tính toán theo chiều dài ngữ cảnh, Phương pháp 2 giải quyết bài toán gọi công cụ thông qua kiến trúc phân tách hai giai đoạn độc lập (Decoupled Two-Stage Architecture). Hệ thống chia nhỏ quy trình thành hai bài toán phân loại chuyên biệt: truy hồi công cụ ngữ nghĩa thông qua mô hình Bi-Encoder và trích xuất tham số theo lược đồ thông qua mô hình Cross-Encoder. Thiết kế phân mô-đun này cho phép tối ưu hóa riêng biệt từng thành phần, triệt tiêu nguy cơ sinh ảo cú pháp và duy trì độ trễ suy luận ổn định ngay cả khi số lượng công cụ trong hệ sinh thái gia tăng đột biến.
+
+#### 4.3.1. Module Truy hồi Công cụ Ngữ nghĩa (Semantic Tool Retriever)
+Module đầu tiên chịu trách nhiệm thu hẹp không gian tìm kiếm từ kho hàng nghìn công cụ xuống một tập ứng viên rút gọn. Nhóm nghiên cứu sử dụng kiến trúc mạng hai tháp (Bi-Encoder) dựa trên nền tảng mô hình nhúng đa ngôn ngữ `BAAI/bge-m3`. Quá trình tối ưu hóa mô hình được triển khai thông qua quy trình huấn luyện hai vòng (two-round training): vòng thứ nhất huấn luyện mô hình cơ sở (teacher model) với hàm mất mát xếp hạng đa mẫu âm tính có bộ đệm (`CachedMNRL`); vòng thứ hai thực hiện khai thác các mẫu âm tính khó (hard negative mining) từ chính các dự đoán sai lệch của vòng 1 để tái huấn luyện mô hình cuối cùng.
+
+Nhằm kiểm soát khả năng từ chối gọi công cụ đối với các câu hội thoại thông thường, hệ thống tích hợp cơ chế hiệu chuẩn ngưỡng kép (dual-threshold calibration) dựa trên điểm tương đồng ngữ nghĩa. Trong run Shared E4, ngưỡng tuyệt đối được hiệu chuẩn là $\tau = 0.35$ và ngưỡng biên tương đối là $\delta = 0.21$. Một công cụ mục tiêu chỉ được chấp thuận kích hoạt khi điểm tương đồng cao nhất thỏa mãn $s_{\max} \ge \tau$ và khoảng cách giữa điểm tương đồng Top-1 so với Top-2 đạt $s_{\text{top1}} - s_{\text{top2}} \ge \delta$. Các trường hợp không thỏa điều kiện được dự đoán là No-call.
+
+#### 4.3.2. Module Trích xuất Tham số Phân cấp (Hierarchical Parameter Extractor)
+Sau khi công cụ mục tiêu được xác định, module thứ hai tiếp nhận chuỗi truy vấn của người dùng cùng với lược đồ thuộc tính (Tool Schema) của công cụ đó để trích xuất các giá trị tham số tương ứng. Module được xây dựng trên nền tảng mô hình biến đổi đa ngôn ngữ `xlm-roberta-base` với kiến trúc đầu ra phân cấp theo định hướng schema (Schema-driven routing).
+
+Thay vì buộc mô hình phải học cách phân loại kiểu dữ liệu vốn đã được đặc tả tường minh trong schema của lập trình viên, hệ thống tận dụng trực tiếp siêu dữ liệu (metadata) của schema để định tuyến luồng suy luận. Đối với mỗi tham số cần trích xuất, mô hình trước tiên kích hoạt đầu phân loại nhị phân `has_value` để xác định sự hiện diện của tham số trong câu truy vấn. Khi và chỉ khi giá trị này được khẳng định tồn tại, hệ thống mới định tuyến biểu diễn ẩn sang một đầu ra chuyên biệt duy nhất phù hợp với kiểu dữ liệu: đầu trích xuất đoạn (`span_head`) đối với các tham số dạng chuỗi tự do hoặc số lượng, đầu phân loại danh mục (`enum_head`) đối với các tham số dạng tập hợp liệt kê hữu hạn, hoặc đầu phân loại nhị phân (`bool_head`) đối với các cờ giá trị boolean. Thiết kế này giúp triệt tiêu hoàn toàn rủi ro sai lệch kiểu dữ liệu và tối ưu hóa tài nguyên tính toán.
+
+**Quy chuẩn dữ liệu huấn luyện và hiệu chuẩn Method 2 (Shared E4)**:
+Nhằm đảm bảo tính công bằng thực nghiệm tuyệt đối khi đối chiếu với Phương pháp 1 (SLM), Phương pháp 2 được đồng bộ hóa toàn diện trên cùng nguồn ngữ liệu huấn luyện Shared E4 gồm $65{,}600$ bản ghi hội thoại gốc ($30{,}000$ mẫu EN, $30{,}000$ mẫu VI và $5{,}600$ mẫu CustomTools-VI Seen).
+
+Trong khâu huấn luyện Bi-Encoder (`BAAI/bge-m3` tích hợp LoRA $r=16, \alpha=32$), hệ thống trích xuất chính xác $70{,}988$ cặp dương tính `(query, tool_description)` để lan truyền gradient tối ưu hóa hàm mất mát `CachedMNRL`. Toàn bộ 20 công cụ thuộc tập `unseen` bị loại trừ nghiêm ngặt khỏi dữ liệu huấn luyện dương tính, âm tính ngẫu nhiên cũng như quy trình khai thác mẫu âm khó nhằm duy trì tính độc lập hoàn toàn của miền zero-shot (*Strict Zero-Shot Isolation*). Các mẫu không kích hoạt công cụ (no-call) không tham gia tính toán gradient thứ hạng mà được bảo lưu độc lập phục vụ cho việc hiệu chuẩn bộ tham số ngưỡng quyết định ($\tau = 0.35, \delta = 0.21$) trên tập kiểm định.
+
+Đối với khâu huấn luyện Cross-Encoder (`xlm-roberta-base` với kiến trúc Hierarchical Heads), ngữ liệu được phân rã thành $135{,}617$ cặp `(query, param_schema)` gióng hàng trực tiếp, phục vụ huấn luyện liên hợp đầu nhị phân `has_value` và ba nhánh phân cấp chuyên biệt. Quy trình kiểm thử đối chuẩn sau đó được triển khai đồng bộ trên toàn bộ $7{,}712$ mẫu kiểm thử Core tiếng Việt (gồm $7{,}221$ mẫu có lệnh gọi và $491$ mẫu âm tính), $7{,}712$ mẫu Core tiếng Anh và hai tập kiểm thử `CustomTools-VI` Seen/Unseen với mỗi tập $800$ mẫu cân bằng 50% âm tính.
+
+Chi tiết toàn bộ cấu hình siêu tham số và tài nguyên tính toán của Phương pháp 2 được tổng hợp tại Bảng 4.2.
+
+**Bảng 4.2: Thiết lập siêu tham số và cấu hình huấn luyện của Phương pháp 2 (Bi-Encoder BGE-M3 và Cross-Encoder XLM-R)**
+
+| Thành phần kỹ thuật | Bộ truy hồi Bi-Encoder (BGE-M3) | Bộ trích xuất Cross-Encoder (XLM-R) |
+| :--- | :--- | :--- |
+| **Kiến trúc mô hình gốc** | `BAAI/bge-m3` (Dense Bi-Encoder) | `xlm-roberta-base` (Hierarchical Cross-Encoder) |
+| **Kỹ thuật thích ứng (PEFT)** | LoRA ($r=16, \alpha=32$, dropout $0.05$) | Huấn luyện liên hợp toàn diện (End-to-End Head Tuning) |
+| **Target Modules (LoRA)** | `query`, `key`, `value`, `dense` | — |
+| **Chiều dài chuỗi tối đa** | 192 tokens | 256 tokens (Question: 96, Context: 160) |
+| **Kích thước Batch (Batch size)**| 256 (Mini-batch: 32) | 32 (Gradient Accumulation Steps: 2 $\to$ 64) |
+| **Tốc độ học (Learning Rate)** | $2 \times 10^{-5}$ | Core: $3 \times 10^{-5}$, Custom: $1 \times 10^{-5}$, Heads: $1 \times 10^{-4}$ |
+| **Chiến lược huấn luyện** | 2 Rounds (Round 1 Teacher $\to$ Hard Negative Mining) | Curriculum Learning (2 Epochs Core $\to$ 2 Epochs Custom) |
+| **Hàm mất mát (Loss function)**| `CachedMultipleNegativesRankingLoss` | Binary Cross-Entropy (`has_value`, `bool`) + Cross-Entropy (`span`, `enum`) |
+| **Quy chuẩn quyết định (Policy)**| Gap selection: $\tau = 0.35, \delta = 0.21, k_{\max} = 3$ | Schema-driven routing + Regex Value Normalizer |
+| **Thời gian huấn luyện (Tesla T4)**| 6.15 giờ (Round 2 trên $70{,}988$ cặp dương tính) | 0.72 giờ ($4{,}240$ bước tối ưu hóa trên $135{,}617$ cặp) |
+| **Đỉnh chiếm dụng VRAM huấn luyện**| $10{,}888$ MB | $7{,}693$ MB |
 
 ### 4.4. Cơ chế chuẩn hóa giá trị thực thể tiếng Việt (Vietnamese Value Normalizer)
-Để chuyển đổi các đoạn văn bản trích xuất (surface spans) thành các giá trị số và định dạng chuẩn phù hợp với API, chúng tôi xây dựng bộ chuẩn hóa bằng tập luật biểu thức chính quy (Regex) và phân tích cú pháp số học tiếng Việt:
-- Chuyển đổi số chữ tiếng Việt: "hai triệu rưỡi" $\to$ `2500000`, "ba mươi lăm" $\to$ `35`.
-- Chuẩn hóa định dạng ngày tháng: "ngày 15 tháng 8 năm 2026" $\to$ `2026-08-15`.
-- Chuẩn hóa biển số xe và mã khách hàng: tự động loại bỏ khoảng trắng thừa, đưa về dạng chữ hoa chuẩn `30A-999.88`.
+
+Trong kiến trúc phân tách Method 2, đầu trích xuất đoạn văn bản (`span_head`) của Cross-Encoder chỉ có nhiệm vụ định vị và trích xuất chuỗi ký tự bề mặt (surface text string) xuất hiện trực tiếp trong câu truy vấn của người dùng. Tuy nhiên, các giao diện lập trình ứng dụng (API) đòi hỏi các giá trị tham số đầu vào phải tuân thủ nghiêm ngặt các kiểu dữ liệu nguyên thủy được định nghĩa trong JSON Schema (`integer`, `number`, `boolean`, hoặc định dạng chuỗi chuẩn hóa như `date-time`). Nếu đưa trực tiếp chuỗi ký tự thô vào lời gọi hàm (chẳng hạn gán chuỗi `"hai triệu rưỡi"` cho một tham số yêu cầu kiểu số thực `float`), hệ thống phía máy chủ sẽ từ chối thực thi do lỗi định dạng kiểu dữ liệu.
+
+Nhằm thu hẹp khoảng cách biểu diễn giữa ngôn ngữ tự nhiên đời thường và các đặc tả kỹ thuật nghiêm ngặt của API, nhóm nghiên cứu thiết kế một module Chuẩn hóa Giá trị tiếng Việt (Vietnamese Value Normalizer) hoạt động theo cơ chế tiền định (deterministic rule-based pipeline) bốn giai đoạn nối tiếp:
+
+Giai đoạn đầu tiên thực hiện phân đoạn từ vựng và ánh xạ từ lóng bản địa (Lexical Tokenization and Slang Mapping). Module tiến hành rà soát các từ vựng chỉ lượng mang tính khẩu ngữ đặc thù trong đời sống xã hội Việt Nam để chuyển đổi về các lượng từ chuẩn tắc. Cụ thể, các định danh tiền tệ khẩu ngữ như "củ", "chai" được chuẩn hóa thành đơn vị triệu đồng ($10^6$); "lít", "xị", "loét" được ánh xạ về đơn vị trăm nghìn đồng ($10^5$); "cành", "k" tương ứng với đơn vị nghìn đồng ($10^3$); và các cách diễn đạt tương đối như "rưỡi" được tính toán theo nửa đơn vị của hàng chữ số liền trước (chẳng hạn "hai củ rưỡi" được quy đổi tương đương với "$2{,}500{,}000$").
+
+Giai đoạn thứ hai là bộ giải mã và phân tích cú pháp số chữ tiếng Việt (Vietnamese Written Number Parser). Module triển khai một máy trạng thái hữu hạn (Deterministic Finite Automaton) có khả năng phân tích đệ quy các chuỗi số chữ phức hợp gồm nhiều lớp đơn vị (tỷ, triệu, nghìn, trăm, mươi, lăm, mốt). Thuật toán tích lũy giá trị dựa trên thứ bậc hàng số, xử lý trơn tru các biến thể phát âm ngữ âm địa phương (chẳng hạn "mười lăm" so với "hai mươi nhăm", "bốn mươi" so với "bốn chục") và ánh xạ chuỗi văn bản thành giá trị số học nguyên thủy trong hệ thập phân.
+
+Giai đoạn thứ ba phụ trách chuẩn hóa các thực thể định dạng có cấu trúc thông qua biểu thức chính quy (Regex Pattern Canonicalization). Đối với các tham số thời gian, module phân tích các cụm từ chỉ ngày tháng theo lịch dương và lịch âm phổ biến, tự động tính toán mốc thời gian tuyệt đối dựa trên thời điểm neo của hệ thống (system anchor time) và định dạng lại theo tiêu chuẩn quốc tế ISO-8601 (`YYYY-MM-DD`). Đối với các định danh phương tiện giao thông và mã giao dịch hành chính, hệ thống tự động loại bỏ khoảng trắng ngẫu nhiên, chuẩn hóa dấu gạch ngang phân tách và chuyển đổi toàn bộ ký tự sang dạng chữ hoa chuẩn mực (ví dụ: chuyển đổi `"59 x1 999.88"` thành `"59X1-999.88"`).
+
+Giai đoạn cuối cùng là khâu áp đặt kiểu dữ liệu theo lược đồ (Schema-driven Type Casting). Căn cứ vào định nghĩa kiểu thuộc tính trong `tools[].parameters.properties[key].type`, module tự động ép kiểu giá trị đã chuẩn hóa về kiểu dữ liệu đích tương ứng: chuyển đổi về kiểu số nguyên `int`, số thực `float`, giá trị logic `bool`, hoặc giữ nguyên chuỗi ký tự đã làm sạch `string`. Các giá trị thuộc những dạng biểu thức mà bộ chuẩn hóa hỗ trợ được ép về kiểu dữ liệu theo schema trước khi tạo lệnh gọi. Đầu ra sau đó vẫn cần được xác thực bằng JSON Schema Validator trước khi chuyển tiếp tới môi trường thực thi; tỷ lệ lỗi cú pháp bằng 0% không đồng nghĩa mọi lệnh gọi đều đầy đủ hoặc đúng nhãn chuẩn.
+
+Sơ đồ tuần tự các bước xử lý của module được trực quan hóa tại Hình 4.2.
+
+```mermaid
+graph LR
+    classDef io fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#01579b;
+    classDef step fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c;
+
+    Raw["Chuỗi văn bản thô trích xuất từ span_head"]:::io
+    S1["Bước 1: Phân đoạn từ vựng & Ánh xạ từ lóng<br/>('hai củ rưỡi' -> 2,500,000, 'năm xị' -> 500,000)"]:::step
+    S2["Bước 2: Phân tích cú pháp số chữ tiếng Việt<br/>(Giải mã đệ quy hàng đơn vị, chục, trăm, triệu)"]:::step
+    S3["Bước 3: Chuẩn hóa Regex có cấu trúc<br/>(Định dạng biển số xe, ngày tháng ISO-8601)"]:::step
+    S4["Bước 4: Áp đặt kiểu dữ liệu theo Schema<br/>(Ép kiểu nguyên thủy integer, float, bool, string)"]:::step
+    Clean["Giá trị tham số chuẩn hóa (JSON Compliant)"]:::io
+
+    Raw --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> Clean
+```
+
+*Hình 4.2: Quy trình bốn giai đoạn của module Chuẩn hóa Giá trị tiếng Việt (Vietnamese Value Normalizer).*
 
 ---
 
@@ -586,20 +700,42 @@ Kiến trúc này tách biệt triệt để hai công đoạn:
 ## Chương 5. THỰC NGHIỆM, ĐÁNH GIÁ VÀ BÀN LUẬN KẾT QUẢ
 
 ### 5.1. Thiết lập thực nghiệm và hạ tầng phần cứng
-- **Hạ tầng Huấn luyện**: 01 GPU NVIDIA A100-SXM4-40GB (trên nền tảng Google Colab Pro Compute Engine), bộ nhớ RAM hệ thống 83.5 GB.
-- **Hạ tầng Kiểm thử & Đo độ trễ**: Cụm 2× GPU NVIDIA Tesla T4 16GB (nền tảng Kaggle Cloud Serverless), CUDA 12.4, PyTorch 2.5, vLLM / Unsloth inference engine.
-- Toàn bộ kết quả đo độ trễ suy luận đều được thực hiện độc lập, lấy giá trị trung vị P50 và P95 sau khi đã chạy khởi động ấm (warm-up) 10 lượt để loại trừ độ trễ khởi tạo CUDA ban đầu.
+
+Nhằm bảo đảm tính khách quan, khả năng tái lập (reproducibility) và đối chiếu công bằng giữa hai trường phái kỹ thuật, toàn bộ quy trình huấn luyện và đánh giá thực nghiệm được chúng em thiết lập trên hệ thống hạ tầng điện toán và quy chuẩn đo đạc đồng nhất:
+
+Về hạ tầng huấn luyện, các mô hình ngôn ngữ nhỏ tạo sinh thuộc Phương pháp 1 (`Qwen3.5-2B` và `Qwen3.5-4B`) được huấn luyện trên hạ tầng điện toán đám mây Google Colab Pro với một GPU đơn lẻ NVIDIA A100-SXM4-40GB VRAM (bộ nhớ khả dụng 39.49 GB), hệ thống bộ nhớ RAM 83.5 GB và băng thông kết nối PCIe Gen4 tốc độ cao. Môi trường phần mềm vận hành trên hệ điều hành Ubuntu 22.04 LTS, nền tảng tính toán song song CUDA 12.4, thư viện PyTorch 2.5 và framework tối ưu hóa Unsloth kết hợp kỹ thuật lượng tử hóa QLoRA 4-bit (NF4) nhằm duy trì tính nhất quán về dung lượng bộ nhớ. Đối với Phương pháp 2, cả hai thành phần Bi-Encoder (`BGE-M3`) và Cross-Encoder (`xlm-roberta-base`) được huấn luyện độc lập trên GPU NVIDIA Tesla T4 16GB (Kaggle Cloud Platform), chứng minh tính khả thi và khả năng tiếp cận của kiến trúc phân tách ngay trên các phần cứng phổ thông có kinh phí thấp.
+
+Về quy chuẩn kiểm thử và đo lường thời gian thực, toàn bộ các bài đánh giá độ chính xác và độ trễ suy luận (wall-clock latency) của cả hai phương pháp đều được thực thi đồng nhất trên phần cứng GPU NVIDIA Tesla T4 16GB. Nhằm mô phỏng sát thực tế tương tác thời gian thực giữa người dùng với các tác tử AI cá nhân, kích thước lô suy luận (batch size) được cố định nghiêm ngặt ở mức $B = 1$. Trước khi ghi nhận thời gian xử lý chính thức, hệ thống luôn thực hiện 10 lượt suy luận khởi động ấm (warm-up runs) để tải toàn bộ trọng số mô hình vào bộ nhớ VRAM và kích hoạt các kernel tính toán CUDA, qua đó loại bỏ hoàn toàn ảnh hưởng của độ trễ nạp dữ liệu ban đầu. Độ trễ suy luận của từng mẫu được đo bằng đồng hồ bấm giờ độ chính xác cao của hệ điều hành, ghi nhận cả giá trị trung vị P50 và phân vị thứ 95 (P95) trên toàn bộ tập dữ liệu kiểm thử. Nhằm bảo đảm tính ổn định và khả năng tái lặp tuyệt đối giữa các lần chạy, hạt giống ngẫu nhiên (random seed) được cố định ở giá trị 42 cho toàn bộ các thư viện Python, PyTorch và CUDA.
 
 ### 5.2. Hệ thống độ đo đánh giá (Evaluation Metrics)
-Chúng tôi sử dụng 5 chỉ số đánh giá tiêu chuẩn:
-1. **Tool Selection Accuracy (Tool Acc %)**: Tỷ lệ lựa chọn chính xác công cụ mục tiêu trên các mẫu dương tính.
-2. **Argument Accuracy (ArgA / Exact Match %)**: Tỷ lệ dự đoán chính xác tuyệt đối 100% tất cả các tham số (cả tên tham số lẫn giá trị tương ứng).
-3. **Non-FC Recall (%)**: Tỷ lệ nhận diện chính xác các câu hỏi hội thoại thông thường (không gọi công cụ khi không có nhu cầu).
-4. **Syntax Error Rate (%)**: Tỷ lệ mô hình sinh ra cú pháp JSON/XML lỗi, không thể parse được bằng các thư viện chuẩn.
-5. **Wall-clock Latency (P50 ms)**: Thời gian xử lý trung vị từ lúc nhận câu hỏi đến khi xuất ra kết quả cấu trúc hoàn chỉnh.
+
+Kế thừa phương pháp luận đánh giá từ các bộ chuẩn quốc tế uy tín như BFCL (Yan et al., 2024) và nghiên cứu của Ersoy et al. (2025), chúng em thiết lập hệ thống 5 độ đo toán học chặt chẽ nhằm phản ánh toàn diện năng lực của các mô hình trên cả hai khía cạnh chất lượng suy luận và chi phí vận hành kỹ thuật:
+
+**1. Độ chính xác lựa chọn công cụ (Tool Selection Accuracy - $\text{Tool Acc}$, %)**: Đo lường tỷ lệ các câu truy vấn dương tính mà mô hình chọn đúng danh sách công cụ mục tiêu. Đối với các câu hỏi đòi hỏi đa lệnh gọi (multi-call), toàn bộ danh sách tên công cụ dự đoán phải khớp chính xác cả về thành phần định danh lẫn thứ tự xuất hiện:
+
+$$\text{Tool Acc} = \frac{N_{\text{tool-exact, positive}}}{N_{\text{positive}}}$$
+
+**2. Độ chính xác khớp toàn bộ đầu ra (Argument Population Accuracy - $\text{ArgA}$, %)**: Là thước đo toàn diện và khắt khe nhất trong bài toán gọi công cụ. Một câu truy vấn chỉ được ghi nhận là chính xác khi và chỉ khi mô hình chọn đúng công cụ đồng thời trích xuất hoàn hảo toàn bộ các cặp khóa–giá trị tham số (không chấp nhận bất kỳ sai lệch nào về tên tham số hay giá trị thực tế sau khi qua bộ chuẩn hóa). Chỉ số báo cáo mặc định trên toàn bộ tập kiểm thử (bao gồm cả các mẫu âm tính từ chối gọi hàm chính xác) được xác định bởi:
+
+$$\text{ArgA}_{\text{all}} = \frac{N_{\text{exact, all}}}{N_{\text{all}}}$$
+
+Khi cần phân tích chuyên sâu trên riêng nhóm câu hỏi thực sự đòi hỏi kích hoạt công cụ, chỉ số độ chính xác tham số trên tập dương tính được tính theo:
+
+$$\text{ArgA}_{\text{positive}} = \frac{N_{\text{exact, positive}}}{N_{\text{positive}}}$$
+
+*(Trong toàn bộ khóa luận này, quy ước thuật ngữ "$\text{ArgA}$" được hiểu mặc định là $\text{ArgA}_{\text{all}}$ trừ khi có chú thích riêng).*
+
+**3. Độ thu hồi từ chối gọi hàm (Non-Function-Calling Recall - $\text{Non-FC Recall}$, %)**: Đo lường năng lực kiềm chế và nhận diện đúng các truy vấn giao tiếp thông thường không liên quan đến công cụ nhằm kiểm soát rủi ro kích hoạt giả (False Positive) và thiên kiến kích hoạt công cụ quá mức (over-triggering pathology):
+
+$$\text{Non-FC Recall} = \frac{N_{\text{true negative}}}{N_{\text{negative}}}$$
+
+**4. Tỷ lệ lỗi cú pháp (Syntax Error Rate, %)**: Ghi nhận tỷ lệ phần trăm các chuỗi phản hồi do mô hình sinh ra không thể phân tích được thành cấu trúc JSON hoặc XML hợp lệ bởi các bộ phân tích chuẩn (parser). Đối với Phương pháp 2, do cấu trúc đầu ra được kiến tạo trực tiếp từ schema định sẵn thay vì sinh tự hồi quy, chỉ số này luôn đạt mức 0.00% tuyệt đối theo thiết kế kiến trúc.
+
+**5. Độ trễ suy luận thời gian thực (Wall-clock Latency P50/P95, ms)**: Thời gian xử lý từ lúc hệ thống tiếp nhận câu truy vấn của người dùng đến khi xuất ra cấu trúc gọi hàm hoàn chỉnh, được tổng hợp bằng giá trị trung vị P50 và phân vị thứ 95 (P95) trên toàn bộ tập kiểm thử dưới điều kiện đo lường đơn luồng ($B = 1$).
 
 ### 5.3. Kết quả tổng thể và giải đáp 5 câu hỏi nghiên cứu
-Bảng 5.1 và Bảng 5.2 tổng hợp toàn bộ kết quả thực nghiệm trên hai bộ benchmark.
+
+Bảng 5.1 và Bảng 5.2 tổng hợp toàn bộ kết quả thực nghiệm đối đầu trên hai bộ dữ liệu tiêu chuẩn CustomTools-VI và Canonical Core Benchmark.
 
 **Bảng 5.1: Kết quả thực nghiệm đối đầu trên benchmark CustomTools-VI (Seen vs. Unseen)**
 
@@ -611,109 +747,157 @@ Bảng 5.1 và Bảng 5.2 tổng hợp toàn bộ kết quả thực nghiệm tr
 | **Qwen3.5-2B** | E2 (Đơn ngữ VI 60k) | 91.00% | 51.50% | 67.50% | 96.25% | 59.62% | 67.75% | 7.18% |
 | **Qwen3.5-2B** | E3 (Song ngữ 60k) | 92.25% | 19.38% | 3.00% | 96.00% | 27.88% | 2.00% | 4.31% |
 | **Qwen3.5-2B** | E4 (Song ngữ + Miền VI) | 93.25% | 87.00% | **100.00%** | 97.00% | 86.38% | **100.00%** | 2.44% |
-| **Qwen3.5-4B** | E3 (Song ngữ 60k) | 92.00% | 62.00% | 94.30% | 97.50% | 69.75% | 94.30% | **0.32%** |
-| **Qwen3.5-4B** | **E4 (Song ngữ + Miền VI)** | **94.66%** | **87.92%** | **100.00%** | 96.75% | **86.75%** | **100.00%** | *[0.32%]* |
+| **Qwen3.5-4B** | E3 (Song ngữ 60k) | 92.00% | 62.00% | 71.25% | 97.50% | 69.75% | 74.50% | 12.00% |
+| **Qwen3.5-4B** | **E4 (Song ngữ + Miền VI)** | **94.66%** | **87.92%** | **100.00%** | 96.75% | **86.75%** | **100.00%** | 2.90% |
 | *Nhóm Phân tách Không tự hồi quy* | | | | | | | | |
-| **Method 2** | Bi-Encoder + Cross-Encoder | 85.25% | 67.75% | 75.00% | 74.50% | 22.75% | 71.75% | **0.00%** |
+| **Method 2** | Bi-Encoder + Cross-Encoder | 92.25% | 85.38% | 92.75% | 79.50% | 60.25% | 93.75% | **0.00%** |
 | *Nhóm Frontier APIs Đám mây (Closed-source)* | | | | | | | | |
 | **GPT-5.6 Luna** | OpenAI API ($T=0$) | 93.25% | 78.25% | 100.00% | 97.25% | 79.50% | 100.00% | 0.00% |
 | **Gemini 3.8 Flash** | Google API ($T=0$) | **100.00%** | **93.62%** | 100.00% | **100.00%** | **92.12%** | 99.75% | 0.06% |
 
-![Hình 5.1: So sánh đối đầu hiệu năng trên CustomTools-VI](paper/figures/fig2_performance_comparison.png)
+![Hình 5.1: So sánh đối đầu hiệu năng trên CustomTools-VI](../paper/figures/fig2_performance_comparison.png)
 
-*Hình 5.1: So sánh đối đầu toàn diện hiệu năng trích xuất tham số (ArgA %) và độ chính xác chọn công cụ (Tool Acc %) trên benchmark CustomTools-VI (Seen vs. Unseen). Mô hình SLM thể hiện sự bền bỉ vượt bậc ở năng lực Zero-shot (Unseen ArgA 86.38% ở 2B và 86.75% ở 4B), trong khi Method 2 bị sụt giảm trích xuất nghiêm trọng khi gặp công cụ mới.*
+*Ghi chú: Benchmark CustomTools-VI bao gồm 1,600 mẫu (800 mẫu test_seen và 800 mẫu test_unseen), trong đó mỗi tập gồm 50% truy vấn dương tính đòi hỏi gọi công cụ và 50% truy vấn âm tính từ chối gọi hàm. Tool Accuracy (%) được tính trên các truy vấn dương tính; ArgA (%) là tỷ lệ khớp chính xác toàn bộ cuộc gọi và tham số trên tổng số mẫu; Non-FC Recall (%) đo lường năng lực từ chối kích hoạt trên các truy vấn âm tính. Tỷ lệ lỗi cú pháp (%) biểu thị mức trung bình giữa hai tập kiểm thử đối với các trường hợp đầu ra sai cấu trúc định dạng hoặc vượt ngưỡng độ dài token tối đa. Các mô hình thương mại đóng (GPT-5.6 Luna, Gemini 3.8 Flash) được đánh giá tại nhiệt độ T = 0.*
+
+*Hình 5.1: So sánh đối đầu toàn diện hiệu năng trích xuất tham số (ArgA %) và độ chính xác chọn công cụ (Tool Acc %) trên benchmark CustomTools-VI (Seen vs. Unseen). Mô hình SLM thể hiện sự bền bỉ vượt bậc ở năng lực Zero-shot (Unseen ArgA 86.38% ở 2B và 86.75% ở 4B), trong khi Method 2 đạt kết quả cao trên Seen (85.38%) nhưng suy giảm xuống 60.25% khi gặp công cụ mới (Unseen).*
+
+---
+
+**Bảng 5.2: Kết quả thực nghiệm trên Canonical Core Benchmark (7,712 mẫu / ngôn ngữ)**
+
+| Mô hình | Cấu hình huấn luyện | VI Test: Tool Acc (%) | VI Test: ArgA (%) | VI Test: Non-FC (%) | EN Test: Tool Acc (%) | EN Test: ArgA (%) | EN Test: Non-FC (%) | Độ trễ VI (ms) |
+|---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Qwen3.5-2B** | E0 (Zero-Shot) | 56.34% | 40.48% | 96.33% | 85.18% | 60.63% | 94.50% | 707 ms |
+| **Qwen3.5-2B** | E1 (Đơn ngữ EN 60k) | 93.67% | 65.57% | 94.30% | 94.07% | **73.66%** | 94.30% | 878 ms |
+| **Qwen3.5-2B** | E2 (Đơn ngữ VI 60k) | 90.25% | 64.90% | 94.30% | 93.45% | 71.36% | 93.08% | 872 ms |
+| **Qwen3.5-2B** | E3 (Song ngữ 60k) | 94.00% | 69.76% | 94.30% | 94.27% | 73.22% | 94.30% | 864 ms |
+| **Qwen3.5-2B** | E4 (Song ngữ + Miền VI) | 93.92% | 69.75% | 94.30% | 94.17% | 73.15% | 94.30% | 970 ms |
+| **Qwen3.5-4B** | E3 (Song ngữ 60k) | **98.73%** | **72.86%** | 94.30% | **96.63%** | **74.71%** | 94.30% | 2,432 ms |
+| **Qwen3.5-4B** | E4 (Song ngữ + Miền VI) | 86.22% | 64.94% | 94.30% | 85.03% | 66.66% | 94.30% | 2,485 ms |
+| **Method 2** | Shared E4 (Bi+Cross) | 59.20% | 30.26% | 94.09% | 62.60% | 35.52% | 94.30% | **59.55 ms** |
+
+*\*Ghi chú: Độ trễ của các mô hình SLM biểu thị thời gian xử lý trung bình mỗi câu truy vấn (Average Latency per Query) khi thực thi suy luận trên cụm 2× GPU NVIDIA Tesla T4. Đối với Method 2, các chỉ số được đánh giá trên toàn bộ 7,712 mẫu VI Test và 7,712 mẫu EN Test với cùng nguồn dữ liệu Shared E4; độ trễ pipeline đo lường P50 đạt 59.55 ms (mean 61.50 ms) khi sử dụng cache embedding công cụ.*
+
+---
 
 #### 5.3.1. RQ1: Năng lực chuyển giao tri thức ngôn ngữ chéo (Cross-Lingual Transfer)
-Đối chiếu giữa cấu hình E1 (chỉ học tiếng Anh) và E2 (chỉ học tiếng Việt) trên Bảng 5.2:
-- Khi đánh giá trên tập Core Test tiếng Việt, E1 đạt **65.57%** ArgA, cao hơn cả E2 (**64.90%**). Trên tập Custom Unseen, E1 đạt **70.50%**, vượt xa mức **59.62%** của E2.
-- Kết quả này chứng minh rằng mô hình nền tảng Qwen3.5 sở hữu không gian biểu diễn đa ngôn ngữ liên kết rất chặt chẽ. Cấu trúc tư duy suy luận gọi hàm học được từ tiếng Anh có khả năng chuyển giao tự nhiên sang tiếng Việt mà không nhất thiết phải có tập dữ liệu tiếng Việt tương đương về kích cỡ.
-- Tuy nhiên, sự chuyển giao có tính bất đối xứng: khi đánh giá trên tiếng Anh, E2 bị tụt hậu nhẹ so với E1 (71.36% vs. 73.66%). Cấu hình song ngữ cân bằng (E3) giải quyết hoàn hảo sự bất đối xứng này, nâng Core VI ArgA lên đỉnh cao **69.76%** ở mô hình 2B và **72.86%** ở mô hình 4B.
+
+Khi tiến hành đối chiếu sâu giữa cấu hình E1 (chỉ huấn luyện trên dữ liệu tiếng Anh) và E2 (chỉ huấn luyện trên dữ liệu tiếng Việt) trên Bảng 5.2, một hiện tượng ngôn ngữ học đáng chú ý đã được ghi nhận. Cụ thể, khi đánh giá trên tập Core Test tiếng Việt, cấu hình E1 đạt **65.57%** ArgA, thậm chí nhỉnh hơn cả cấu hình bản địa hóa thuần túy E2 (**64.90%**). Khoảng cách này càng được nới rộng rõ nét trên tập dữ liệu nghiệp vụ Custom Unseen khi E1 đạt tới **70.50%**, vượt xa mức **59.62%** của E2.
+
+Hiện tượng thực nghiệm này gợi ý rằng mô hình nền tảng Qwen3.5 sở hữu không gian biểu diễn đa ngôn ngữ đủ liên kết để chuyển giao một phần năng lực phân tích JSON Schema và logic ánh xạ tham số từ tiếng Anh sang tiếng Việt. Cấu trúc suy luận tiếp thu từ kho ngữ liệu tiếng Anh phong phú có thể hỗ trợ hiệu quả cho ngữ cảnh tiếng Việt mà không đòi hỏi tập dữ liệu tiếng Việt phải có quy mô tương đương. Tuy nhiên, sự chuyển giao này vẫn mang tính bất đối xứng: khi đánh giá ngược lại trên tập dữ liệu tiếng Anh, mô hình thuần Việt E2 bị suy giảm đáng kể so với E1 (71.36% so với 73.66%). Cấu hình song ngữ (E3) đã giải quyết triệt để sự mất cân bằng này, nâng ArgA trên Core VI lên mức đỉnh **69.76%** ở mô hình 2B và **72.86%** ở mô hình 4B.
 
 #### 5.3.2. RQ2: Hiện tượng kích hoạt công cụ quá mức và vai trò của dữ liệu âm tính
-Thực nghiệm ghi nhận một phát hiện then chốt: mô hình E3 (học trên 60k mẫu song ngữ phổ quát không có mẫu âm tính đặc thù miền) bị mắc hội chứng "nghiện gọi công cụ" cực kỳ nghiêm trọng trên tập CustomTools-VI:
-- Độ nhạy từ chối câu thường (Non-FC Recall) sụp đổ xuống chỉ còn **2.00%–3.00%** (mô hình cố tình gọi bừa công cụ cho 98% các câu hội thoại thông thường).
-- Điều này kéo tụt toàn bộ ArgA của E3 xuống mức thảm hại: **19.38%** (seen) và **27.88%** (unseen).
-- **Khắc phục triệt để**: Bổ sung tập dữ liệu âm tính bản địa hóa ở cấu hình E4 đã khôi phục hoàn hảo Non-FC Recall lên mức tuyệt đối **100.00%**, đồng thời giải phóng toàn diện năng lực trích xuất của mô hình, đưa ArgA tăng vọt lên **87.00%** (seen) và **86.38%** (unseen) ở mô hình 2B.
+
+Trên bộ benchmark bản địa CustomTools-VI, cấu hình E3 (vốn chỉ được huấn luyện bằng 60,000 mẫu song ngữ phổ quát và thiếu vắng các mẫu âm tính đặc thù miền) đã bộc lộ một điểm yếu nghiêm trọng trong khâu kiểm soát hành vi. Chỉ số Non-FC Recall của cấu hình này bị sụt giảm chạm đáy **2.00%–3.00%**, đồng nghĩa với việc hơn 97% các câu truy vấn giao tiếp thông thường bị mô hình nhận định nhầm thành lệnh gọi công cụ. Kết quả này phản ánh bệnh lý thiên kiến kích hoạt quá mức (over-triggering pathology) khi mô hình bị ép sinh mã gọi hàm ngay cả trong các ngữ cảnh không phù hợp.
+
+Thiên kiến kích hoạt quá mức đã làm sụp đổ hoàn toàn độ chính xác tham số tổng hợp ArgA-all của E3, chỉ còn **19.38%** trên tập seen và **27.88%** trên tập unseen. Tuy nhiên, sau khi được bổ sung 5,600 mẫu dữ liệu có chứa các truy vấn âm tính tiếng Việt bản địa trong cấu hình E4, Non-FC Recall ngay lập tức phục hồi đạt mức hoàn hảo **100.00%** trên cả hai tập kiểm thử; đồng thời ArgA-all của phiên bản 2B tăng vọt lên **87.00%** trên seen và **86.38%** trên unseen. Phát hiện này khẳng định tính bắt buộc của việc hiệu chuẩn mẫu âm tính tại miền dữ liệu đích: dữ liệu âm tính không đơn thuần là tăng cường số lượng, mà là điều kiện biên cốt tử để bảo đảm sự an toàn và tin cậy cho tác tử AI trong môi trường sản xuất.
 
 #### 5.3.3. RQ3: Khả năng tổng quát hóa Zero-Shot trên công cụ chưa từng gặp
-So sánh đối đầu giữa SLM (E4) và Method 2 trên tập `test_unseen`:
-- Mô hình SLM thể hiện năng lực tổng quát hóa xuất sắc: ArgA trên unseen đạt **86.38%** (2B) và **86.75%** (4B), gần như không suy giảm so với tập seen (ArgA Gap chỉ từ $-0.62\%$ đến $+1.17\%$). Mô hình dễ dàng hiểu mô tả của API mới và trích xuất đúng tham số nhờ cơ chế attention toàn cục giữa query và schema.
-- Ngược lại, Phương pháp 2 bị sụt giảm nghiêm trọng: Tool Acc giảm từ 85.25% xuống 74.50%, và ArgA sụp đổ từ **67.75% xuống chỉ còn 22.75%** (giảm tới $-45.00\%$). Nguyên nhân do Cross-Encoder phụ thuộc nhiều vào các mẫu span thực thể đã gặp trong quá trình huấn luyện và gặp khó khăn khi phải khái quát hóa ranh giới tham số của một schema hoàn toàn xa lạ.
+
+Khi so sánh đối đầu trực diện giữa mô hình tạo sinh SLM (E4) và kiến trúc phân tách Method 2 trên tập dữ liệu kiểm thử zero-shot `test_unseen`, hai trường phái kỹ thuật bộc lộ sự phân hóa sâu sắc về cơ chế thích ứng với các công cụ mới chưa từng quan sát trong quá trình huấn luyện.
+
+Mô hình tạo sinh SLM duy trì sự kiên cường vượt bậc khi ghi nhận ArgA trên tập unseen ở mức **86.38%** đối với phiên bản 2B và **86.75%** đối với phiên bản 4B. So với tập seen, mức suy giảm hiệu năng là không đáng kể, chỉ dao động từ $-0.62\%$ đến $+1.17\%$. Cơ chế tự chú ý (Self-Attention) cho phép mô hình SLM đọc hiểu đồng thời toàn bộ mô tả API, câu truy vấn và các ràng buộc schema trong prompt, từ đó kích hoạt năng lực suy luận trong ngữ cảnh (*in-context reasoning*) để sinh ra lệnh gọi chính xác mà không đòi hỏi phải tái huấn luyện.
+
+Trái lại, Phương pháp 2 đạt ArgA **85.38%** trên tập `test_seen` (chỉ kém SLM 1.62 điểm phần trăm), nhưng lại suy giảm rõ rệt khi chuyển sang `test_unseen`. Tool Acc của Bi-Encoder giảm từ 92.25% xuống 79.50%, kéo theo ArgA tổng hợp còn **60.25%** và ArgA trên riêng truy vấn dương tính còn 26.75%. Sự suy giảm này bắt nguồn từ bản chất phân loại phân biệt của Cross-Encoder: mô hình học quy luật trích xuất span và ánh xạ enum dựa trên các phân phối schema cố định trong dữ liệu huấn luyện, do đó gặp rào cản ngoại suy lớn khi đối mặt với các nhãn tham số và ngữ cảnh API hoàn toàn mới. Kết quả đối chứng Oracle ở Chương 6 sẽ làm sáng tỏ thêm rằng sự suy giảm này diễn ra đồng thời ở cả hai tầng truy hồi và trích xuất.
 
 #### 5.3.4. RQ4: Đánh đổi Pareto giữa độ chính xác, độ trễ và chi phí tính toán
-Bảng 5.3 mô tả đường biên đánh đổi đa chiều giữa các phương pháp tiếp cận.
+
+Nhằm cung cấp góc nhìn toàn diện phục vụ việc lựa chọn giải pháp kiến trúc trong thực tế triển khai, Bảng 5.3 tổng hợp đường biên đánh đổi đa chiều giữa các phương pháp tiếp cận đại diện trên các trục tiêu chí kỹ thuật cốt lõi.
 
 **Bảng 5.3: Bảng so sánh đa chiều toàn diện giữa các phương pháp tiếp cận**
 
-| Tiêu chí đánh giá | Method 1: SLM Qwen-2B (E4) | Method 1: SLM Qwen-4B (E4) | Method 2: Bi+Cross Pipeline | Frontier Closed: GPT-5.6 Luna |
-| :--- | :---: | :---: | :---: | :---: |
-| **Kiến trúc mô hình** | Tạo sinh tự hồi quy (Decoder) | Tạo sinh tự hồi quy (Decoder) | Phân tách phân biệt (Encoders) | Mô hình đóng thương mại (Cloud API) |
-| **Tham số hoạt động** | 2.2 tỷ | 4.56 tỷ | 560 triệu + 278 triệu | Hàng trăm tỷ (MoE) |
-| **Seen ArgA (%)** | 87.00% | **87.92%** | 67.75% | 78.25% |
-| **Unseen ArgA (%)** | 86.38% | **86.75%** | 22.75% | 79.50% |
-| **Tỷ lệ lỗi cú pháp (%)** | 2.44% | **0.32%** | **0.00%** | 0.00% |
-| **Độ trễ trung vị P50 (ms)** | 864–970 ms | 2,432 ms | **54.68–58.16 ms** | ~1,200–1,800 ms |
-| **Tốc độ tương đối** | 1.0× | 0.35× | **15.9× – 18.2×** | ~0.6× |
-| **VRAM tối thiểu** | ~5.5 GB | ~9.5 GB | **< 1.2 GB** | 0 GB (Cloud) |
-| **Chi phí suy luận / 1k queries**| ~$0.0002 (Local GPU) | ~$0.0004 (Local GPU) | **~$0.00003 (Local CPU/GPU)** | ~$0.30 – $0.60 |
-| **Khả năng chạy biên (Edge)** | Yêu cầu GPU rời $\ge 8$GB | Yêu cầu GPU rời $\ge 12$GB | **Chạy mượt trên CPU / Mini PC**| Phụ thuộc hoàn toàn Internet |
+| Trục đánh giá kỹ thuật | Method 1: SLM Qwen3.5-2B (E4) | Method 1: SLM Qwen3.5-4B (E4) | Method 2: Bi+Cross (BGE-M3 + XLM-R) | Frontier Closed: GPT-5.6 Luna | Khuyến nghị lựa chọn kỹ thuật |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Kiến trúc mô hình** | Tự hồi quy (Decoder-only) | Tự hồi quy (Decoder-only) | Phân tách phân biệt (Encoders) | Mô hình đám mây (Cloud API) | Tùy biến theo năng lực hạ tầng |
+| **Quy mô tham số** | 2.22 tỷ (QLoRA 10.9M) | 4.56 tỷ (QLoRA 21.2M) | 567M (Bi) + 278M (Cross) | Hàng trăm tỷ tham số (MoE) | Method 2 gọn nhẹ nhất |
+| **Độ chính xác Seen (ArgA)** | 87.00% | **87.92%** | 85.38% | 78.25% | Cả hai phương pháp nội bộ đều vượt GPT-5.6 |
+| **Độ chính xác Unseen (ArgA)** | 86.38% | **86.75%** | 60.25% | 79.50% | **SLM vượt trội ở năng lực Zero-shot** |
+| **Rủi ro cú pháp JSON** | 2.44% | 2.90% | **0.00% (Bảo đảm tuyệt đối)** | 0.00% | Method 2 an toàn tuyệt đối về định dạng |
+| **Độ trễ suy luận P50 (ms)\*** | 864–970 ms | 2,432–2,485 ms | **55.13–59.55 ms** | ~1,200–1,800 ms | **Method 2 ưu thế vượt trội về phản xạ thời gian thực** |
+| **Mức tiêu thụ VRAM (đo đạc)\*** | ~4.8–5.5 GB VRAM | ~9.5 GB VRAM | **~3.21 GiB Allocated (3.77 GiB Peak)** | Không tiêu tốn VRAM cục bộ | Method 2 vận hành tối ưu trên GPU phổ thông |
+| **Khả năng mở rộng danh mục** | Giới hạn bởi cửa sổ ngữ cảnh | Giới hạn bởi cửa sổ ngữ cảnh | Mở rộng qua Vector Index ($N \le 1000$) | Chi phí token tăng theo danh mục | Method 2 tối ưu cho hệ thống API lớn |
+| **Kịch bản ứng dụng tối ưu** | Tác tử đa năng, API động | Tác tử cần độ chính xác cao | Hệ thống nhúng, tra cứu API cố định | Thử nghiệm nhanh, không nhạy cảm dữ liệu | Phân hóa rõ theo bài toán thực tế |
+
+*\*Ghi chú học thuật: Các chỉ số độ trễ và bộ nhớ VRAM được đo đạc theo các giao thức kỹ thuật chuyên biệt phù hợp với từng kiến trúc (Method 1 đo trên 2× Tesla T4; Method 2 đo đơn luồng batch 1 trên 1× Tesla T4 kèm bộ đệm vector; Frontier API phụ thuộc độ trễ mạng Internet). Bảng đối chiếu nhằm mục đích mô tả đặc trưng vận hành kỹ thuật nội tại, không quy đổi trực tiếp thành hệ số gia tốc tuyệt đối.*
+
+Từ bức tranh so sánh trên, chúng em rút ra kết luận định hướng triển khai: Đối với các hệ thống trợ lý ảo thông minh có danh mục công cụ biến động liên tục và yêu cầu khả năng thích ứng linh hoạt với API mới, **Method 1 (SLM)** là giải pháp vượt trội nhờ năng lực zero-shot xuất sắc. Ngược lại, đối với các hệ thống nhúng, ứng dụng biên hoặc dịch vụ vi mô đòi hỏi phản hồi cực nhanh dưới 100 ms với danh mục công cụ cố định, **Method 2 (Bi+Cross)** mang lại ưu thế tuyệt đối về tính an toàn định dạng (0% lỗi cú pháp) và chi phí tài nguyên tối thiểu.
 
 #### 5.3.5. RQ5: Kiểm thử áp lực quy mô lớn và giới hạn vật lý của mô hình tạo sinh
-Kết quả Stress Test đối đầu trực diện khi quy mô danh mục công cụ mở rộng từ $N = 3$ đến $N = 1.000$ được trình bày tại Bảng 5.4 và trực quan hóa tại Hình 5.2.
 
-**Bảng 5.4: Kết quả Stress Test đối đầu trực diện ($N = 3 \to 1.000$ công cụ)**
+Để kiểm chứng tính bền bỉ của hai trường phái kiến trúc khi quy mô danh mục công cụ mở rộng từ dải nhỏ ($N = 3$) đến quy mô thực tế của các nền tảng doanh nghiệp ($N = 1000$ công cụ), nghiên cứu tiến hành bài kiểm thử áp lực (**Stress Test**) đối đầu trực diện giữa đại diện tiêu biểu của Method 1 (`Qwen3.5-2B` E4) và Method 2 trên cùng 200 truy vấn Custom Seen (1,200 mẫu thử nghiệm lồng nhau). Kết quả được chi tiết hóa tại Bảng 5.4 và trực quan hóa tại Hình 5.2.
 
-| Số lượng công cụ ($N$) | SLM Tool Acc (%) | M2 Tool Acc (%) | SLM ArgA (%) | M2 ArgA (%) | SLM P50 Latency (ms) | M2 P50 Latency (ms) | Tăng tốc (M2 vs. SLM) |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **$N = 3$** | 94.0% | **100.0%** | **85.5%** | 81.0% | 1,258.94 ms | **58.16 ms** | **21.6×** |
-| **$N = 10$** | 93.0% | **98.0%** | **84.5%** | 79.0% | 1,604.68 ms | **57.15 ms** | **28.1×** |
-| **$N = 50$** | 93.0% | **96.0%** | **85.5%** | 78.0% | 4,703.39 ms | **55.82 ms** | **84.3×** |
-| **$N = 100$** | 92.0% | **95.0%** | **83.0%** | 77.0% | 9,318.21 ms | **58.55 ms** | **159.2×** |
-| **$N = 500$** | *OOM* | **78.0%** | *OOM* | **62.0%** | *OOM* | **87.44 ms** | $\infty$ |
-| **$N = 1000$** | *OOM* | **68.0%** | *OOM* | **54.0%** | *OOM* | **91.88 ms** | $\infty$ |
+**Bảng 5.4: Kết quả Stress Test đối đầu trực diện ($N = 3 \to 1000$ công cụ)**
 
-![Hình 5.2: Kết quả thực nghiệm Stress Test đối đầu trực diện](paper/figures/fig3_stress_test_curves.png)
+| Số lượng công cụ ($N$) | SLM Tool Acc (%) | M2 Tool Acc (%) | SLM ArgA (%) | M2 ArgA (%) | SLM P50 Latency (ms) | M2 P50 Latency (ms) | M2 P95 (ms) | M2 VRAM Alloc. | Đối chiếu protocol |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **$N = 3$** | **94.0%** | 89.0% | 85.5% | **87.5%** | 1,258.94 ms | **55.13 ms** | 84.92 ms | 3,277 MiB | Không quy đổi |
+| **$N = 10$** | **93.0%** | 89.0% | 84.5% | **87.5%** | 1,604.68 ms | **55.05 ms** | 84.74 ms | 3,282 MiB | Không quy đổi |
+| **$N = 50$** | **93.0%** | 89.0% | 85.5% | **87.5%** | 4,703.39 ms | **56.07 ms** | 86.46 ms | 3,278 MiB | Không quy đổi |
+| **$N = 100$** | **92.0%** | 89.0% | 83.0% | **87.0%** | 9,318.21 ms | **61.01 ms** | 85.09 ms | 3,283 MiB | Không quy đổi |
+| **$N = 500$** | *OOM* | **87.0%** | *OOM* | **85.0%** | *OOM* | **92.27 ms** | 128.82 ms | 3,283 MiB | Không quy đổi |
+| **$N = 1000$** | *OOM* | **87.0%** | *OOM* | **84.0%** | *OOM* | **107.68 ms** | 148.21 ms | 3,283 MiB | Không quy đổi |
 
-*Hình 5.2: Kết quả thực nghiệm Stress Test đối đầu trực diện: (a) Đường cong suy giảm độ chính xác và ranh giới sụp đổ tràn bộ nhớ (CUDA OOM) của SLM tại N ≥ 500; (b) Đường cong độ trễ suy luận P50 (ms) trên thang đo log, minh chứng ưu thế gia tốc lên tới 159.2× của kiến trúc phân tách Method 2.*
+![Hình 5.2: Kết quả thực nghiệm Stress Test đối đầu trực diện](../paper/figures/fig3_stress_test_curves.png)
 
-**3 Phát hiện then chốt từ Stress Test:**
-1. **Gia tốc độ trễ bùng nổ theo hàm mũ**: Ở dải $N \le 100$, độ trễ của Method 2 gần như bằng phẳng tuyệt đối quanh mức $\sim 55–58$ ms, trong khi độ trễ của SLM tăng vọt từ $1.26$ s ($N=3$) lên tới **$9.32$ s ($N=100$)** — tức chậm hơn tới **159.2 lần**, khiến SLM trở nên bất khả thi trong môi trường tương tác thực.
-2. **Sự đánh đổi chính xác ở quy mô nhỏ**: Khi danh mục nhỏ ($N \le 100$), SLM nhỉnh hơn về ArgA (+4.5% đến +6.0%) nhờ năng lực liên kết prompt, nhưng Method 2 lại vượt trội về Tool Selection (+2% đến +6%) nhờ cơ chế Contrastive Learning học sâu ranh giới vector giữa các công cụ tương đồng.
-3. **Giới hạn vật lý sụp đổ bộ nhớ (CUDA OOM) tại $N \ge 500$**: Tại $N \ge 500$, độ dài context vượt quá 32,000 tokens. Cơ chế tự chú ý $O(L^2)$ đòi hỏi hơn 32 GiB VRAM chỉ riêng cho ma trận attention prefill, dẫn tới sụp đổ hoàn toàn dịch vụ (Denial of Service) trên phần cứng GPU 16GB. Ngược lại, Method 2 chỉ mất 91.88 ms và tiêu tốn dưới 1.5 GB VRAM tại $N=1.000$, duy trì độ chính xác Tool Acc 68% và ArgA 54%.
+*Hình 5.2: Kết quả thực nghiệm Stress Test đối đầu trực diện: (a) Đường cong suy giảm độ chính xác và ranh giới sụp đổ tràn bộ nhớ (CUDA OOM) của SLM tại N ≥ 500; (b) Đường cong độ trễ suy luận P50 (ms) trên thang đo log. Hai phương pháp được đo theo protocol riêng nên hình chỉ minh họa xu hướng, không quy đổi thành hệ số tăng tốc.*
+
+Thực nghiệm Stress Test đã đem lại ba phát hiện khoa học then chốt về sự khác biệt bản chất giữa hai mô thức thiết kế:
+
+Thứ nhất, về tính ổn định độ chính xác, trên quy trình kiểm thử bảo toàn công cụ mục tiêu trong không gian tìm kiếm, kiến trúc phân tách Method 2 thể hiện độ bền bỉ đáng kinh ngạc: ArgA chỉ suy giảm nhẹ 3.50 điểm phần trăm khi quy mô công cụ mở rộng hơn 330 lần (từ 87.50% tại $N = 3$ xuống 84.00% tại $N = 1000$). Trong dải $N \le 100$, Method 2 duy trì ArgA nhỉnh hơn SLM từ 2.0 đến 4.0 điểm phần trăm, đồng thời chỉ số Non-FC Recall đạt mức 95.00% tại $N = 1000$. Điều này chứng minh cơ chế hiệu chuẩn ngưỡng kép ($\tau = 0.35, \delta = 0.21$) tiếp tục duy trì khả năng kiểm soát nhiễu vượt trội ngay cả trong không gian dày đặc công cụ cạnh tranh.
+
+Thứ hai, về động học độ trễ, Method 2 thể hiện đặc tính tăng trưởng dưới tuyến tính vô cùng ấn tượng. Nhờ cơ chế lưu vết vector nhúng (embedding caching) của danh mục công cụ, độ trễ P50 của pipeline phân tách gần như đi ngang trong khoảng 55.05–61.01 ms ở dải $N \le 100$ và chỉ tăng nhẹ lên 107.68 ms khi mở rộng tới $N=1000$ (chủ yếu do chi phí tính toán khoảng cách vector $k$-NN). Ngược lại, thời gian phản hồi của mô hình tạo sinh SLM bùng nổ theo độ dài ngữ cảnh, từ 1,258.94 ms ($N=3$) vọt lên 9,318.21 ms ($N=100$), phản ánh sự gia tăng chi phí xử lý của bước nạp trước ngữ cảnh (prefill stage).
+
+Thứ ba, về giới hạn vật lý phần cứng, bài kiểm thử đã xác lập chính xác ranh giới sụp đổ của mô hình tạo sinh tự hồi quy: khi $N \ge 500$, độ dài chuỗi ngữ cảnh JSON Schema vượt quá 32,000 tokens. Chi phí bộ nhớ của thuật toán chú ý $\mathcal{O}(L^2)$ bùng nổ vượt quá khả năng cấp phát của GPU 16GB, dẫn đến lỗi tràn bộ nhớ đồ họa (CUDA Out of Memory) và đình trệ toàn bộ hệ thống. Trái lại, kiến trúc phân tách cô lập hoàn toàn khâu tìm kiếm vector khỏi khâu trích xuất tham số, nhờ đó lượng bộ nhớ đồ họa thực tế do PyTorch cấp phát (Allocated VRAM) duy trì cố định ở mức 3.21 GiB (3,283 MiB) xuyên suốt từ $N=3$ đến $N=1000$. Đây là bằng chứng thực nghiệm rõ ràng nhất khẳng định ưu thế sống còn của kiến trúc phân tách khi triển khai trên các hệ thống doanh nghiệp quy mô lớn với tài nguyên phần cứng giới hạn.
 
 ### 5.4. Nghiên cứu mở rộng quy mô mô hình: Qwen3.5-2B vs. Qwen3.5-4B
-Để kiểm chứng tác động của kích thước mô hình, chúng tôi mở rộng huấn luyện lên `Qwen3.5-4B` (4.56 tỷ tham số). Kết quả so sánh được trình bày tại Bảng 5.5, Bảng 5.6 và trực quan hóa tại Hình 5.3.
+
+Để kiểm chứng tác động của việc mở rộng tham số mô hình đối với năng lực hiểu schema và độ ổn định cú pháp, chúng em mở rộng huấn luyện lên mô hình `Qwen3.5-4B` (4.56 tỷ tham số). Kết quả so sánh chi tiết được trình bày tại Bảng 5.5, Bảng 5.6 và trực quan hóa tại Hình 5.3.
 
 **Bảng 5.5: So sánh quy mô tham số mô hình (Scaling Study: 2B vs. 4B)**
 
 | Cấu hình | Backbone | Core VI ArgA (%) | Custom Seen ArgA (%) | Custom Unseen ArgA (%) | ArgA Gap | Cú pháp lỗi Core VI (%) | Độ trễ P50 (ms) |
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|
 | **E3 (Song ngữ)** | Qwen3.5-2B | 69.76% | 19.38% | 27.88% | +8.50% | 4.31% | 863 ms |
-| **E3 (Song ngữ)** | **Qwen3.5-4B** | **72.86%** | **62.00%** | **69.75%** | -7.75% | **0.32%** | 2,432 ms |
+| **E3 (Song ngữ)** | **Qwen3.5-4B** | **72.86%** | **62.00%** | **69.75%** | +7.75% | **0.32%** | 2,432 ms |
 | **E4 (Đặc thù miền)** | Qwen3.5-2B | 69.75% | 87.00% | 86.38% | -0.62% | 4.67% | 970 ms |
-| **E4 (Đặc thù miền)** | **Qwen3.5-4B** | *[Đang thực nghiệm]* | **87.92%** | **86.75%** | **+1.17%** | *[0.32%]* | *[2,450 ms]* |
+| **E4 (Đặc thù miền)** | **Qwen3.5-4B** | 64.94% | **87.92%** | **86.75%** | **-1.17%** | 9.75% | 2,485 ms |
 
-**Bảng 5.6: Hiệu năng chi tiết của Qwen3.5-4B (E3) trên Canonical Core Benchmark**
+**Bảng 5.6: Hiệu năng đối đầu chi tiết của Qwen3.5-4B (E3 vs. E4) trên Canonical Core Benchmark**
 
-| Tập kiểm thử | Số mẫu (Samples) | Tool Selection Acc (%) | ArgA / Exact Match (%) | Non-FC Recall (%) | Tỷ lệ lỗi cú pháp (%) | Độ trễ trung bình (ms) |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Core VI Test** | 7,712 (7,221 pos / 491 neg) | **98.73%** | **72.86%** | 94.30% | **0.32%** | 2,431.83 ms |
-| **Core EN Test** | 7,712 (7,221 pos / 491 neg) | **96.63%** | **74.71%** | 94.30% | **1.97%** | 3,289.59 ms |
+| Cấu hình | Tập kiểm thử | Số mẫu (Samples) | Tool Selection Acc (%) | ArgA / Exact Match (%) | Non-FC Recall (%) | Tỷ lệ lỗi cú pháp (%) | Độ trễ trung bình (ms) |
+|---|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **E3 (Song ngữ)** | Core VI Test | 7,712 (7,221 pos / 491 neg) | **98.73%** | **72.86%** | 94.30% | **0.32%** | 2,431.83 ms |
+| **E3 (Song ngữ)** | Core EN Test | 7,712 (7,221 pos / 491 neg) | **96.63%** | **74.71%** | 94.30% | **1.97%** | 3,289.59 ms |
+| **E4 (Đặc thù miền)** | Core VI Test | 7,712 (7,221 pos / 491 neg) | 86.22% | 64.94% | 94.30% | 9.75% | 2,485.12 ms |
+| **E4 (Đặc thù miền)** | Core EN Test | 7,712 (7,221 pos / 491 neg) | 85.03% | 66.66% | 94.30% | 11.36% | 3,310.25 ms |
 
-![Hình 5.3: Nghiên cứu mở rộng quy mô mô hình (2B vs. 4B)](paper/figures/fig4_model_scaling.png)
+![Hình 5.3: Nghiên cứu mở rộng quy mô mô hình (2B vs. 4B)](../paper/figures/fig4_model_scaling.png)
 
-*Hình 5.3: Nghiên cứu mở rộng quy mô mô hình (2B vs. 4B): (a) Nâng cao độ chính xác trích xuất tham số và chọn công cụ trên Core Benchmark; (b) Triệt tiêu lỗi cú pháp JSON từ 4.31% xuống chỉ còn 0.32% (giảm hơn 13 lần).*
+*Hình 5.3: Nghiên cứu mở rộng quy mô mô hình (2B vs. 4B): (a) So sánh độ chính xác trích xuất tham số và chọn công cụ trên Core Benchmark; (b) tỷ lệ lỗi cú pháp JSON giảm từ 4.31% xuống 0.32% trong phép đối chiếu E3 trên Core VI.*
 
-**Những cải tiến đột phá của mô hình 4B:**
-1. **Triệt tiêu lỗi cú pháp JSON**: Tỷ lệ lỗi cú pháp giảm sâu **từ 4.31% xuống chỉ còn 0.32%** (giảm hơn 13 lần), giúp loại bỏ gần như hoàn toàn các lỗi hỏng JSON trong vận hành thực tế.
-2. **Nâng trần hiệu năng Core Benchmark**: Tool Acc trên Core VI chạm mốc kỷ lục **98.73%** (+4.73% so với 2B), đưa ArgA lên **72.86%** (tăng +3.10%).
-3. **Nội lực kháng cự lệch miền ở E3**: Ở cấu hình E3 chưa có dữ liệu âm tính miền, mô hình 4B không bị sụp đổ hoàn toàn như 2B mà vẫn đạt ArgA **62.00%** (seen) và **69.75%** (unseen), cao hơn mô hình 2B tới +42%, chứng minh dung lượng tham số lớn giúp duy trì năng lực suy luận bám sát schema tốt hơn nhiều.
-4. **Thiết lập đỉnh cao SOTA ở E4**: Đạt **87.92%** seen và **86.75%** unseen ArgA, giữ vững khoảng cách gap dương +1.17%.
+Việc tăng quy mô dung lượng tham số từ 2.2 tỷ lên 4.56 tỷ đã mang lại những biến chuyển sâu sắc về quy luật mở rộng (scaling laws) và năng lực biểu diễn ngữ nghĩa:
 
-### 5.5. So sánh đối đầu với các Frontier API thương mại đóng
-Khi so sánh với các mô hình đóng thương mại hàng đầu:
-- Cả hai mô hình nội bộ `Qwen3.5-2B` (87.00% / 86.38%) và `Qwen3.5-4B` (87.92% / 86.75%) đều **đánh bại `GPT-5.6 Luna`** (78.25% seen, 79.50% unseen) với khoảng cách vượt trội từ +6.88% đến +8.75%.
-- Mặc dù `Gemini 3.8 Flash` vẫn dẫn đầu về ArgA tuyệt đối (~92–93%), việc một mô hình mã nguồn mở 2B và 4B tinh chỉnh cục bộ có thể vượt qua mô hình của OpenAI đã khẳng định giá trị chiến lược to lớn của việc làm chủ dữ liệu và tinh chỉnh mô hình bản địa hóa cho các doanh nghiệp Việt Nam.
+Thứ nhất, quy mô mô hình lớn hơn giúp triệt tiêu gần như hoàn toàn lỗi định dạng cú pháp JSON. Ở cấu hình song ngữ E3, tỷ lệ vi phạm cấu trúc cú pháp trên tập Core VI giảm ngoạn mục từ 4.31% ở mô hình 2B xuống chỉ còn **0.32%** ở mô hình 4B (giảm hơn 13 lần). Điều này khẳng định dung lượng tham số lớn cung cấp khả năng bám sát các ràng buộc ngữ pháp hình thức vượt trội.
+
+Thứ hai, quy mô tham số nâng cao trần hiệu năng trên tập chuẩn tổng quát. Trên Core VI Test, Tool Selection Acc của Qwen3.5-4B E3 đạt đỉnh **98.73%** (tăng 4.73 điểm phần trăm so với 2B), kéo theo ArgA chạm mốc **72.86%** (tăng 3.10 điểm phần trăm). Không gian vector biểu diễn rộng lớn hơn cho phép mô hình tách biệt chính xác các công cụ có ngữ nghĩa gần gũi nhau trong kho công cụ hơn 4,400 APIs của Core Benchmark.
+
+Thứ ba, quy mô lớn tăng cường khả năng chống lệch phân phối miền. Trong khi cấu hình 2B E3 bị suy sụp trên CustomTools-VI (ArgA chỉ 19.38% seen và 27.88% unseen), phiên bản 4B E3 vẫn duy trì được ArgA ở mức 62.00% (seen) và 69.75% (unseen). Năng lực trừu tượng hóa của backbone 4B giúp mô hình duy trì logic suy luận tốt hơn khi đối mặt với dữ liệu nằm ngoài phân phối huấn luyện ban đầu.
+
+Cuối cùng, kết quả thực nghiệm làm sáng tỏ bài toán đánh đổi giữa năng lực tổng quát hóa đa miền và sự chuyên biệt hóa bản địa. Việc bổ sung 5,600 mẫu dữ liệu nghiệp vụ Việt Nam ở cấu hình E4 giúp Qwen3.5-4B đạt đỉnh ArgA trên CustomTools-VI (**87.92%** seen và **86.75%** unseen), nhưng lại đi kèm sự suy giảm hiệu năng trên Core Benchmark (ArgA giảm xuống 64.94% và lỗi cú pháp tăng lên 9.75%). Hiện tượng này chỉ ra rằng đối với các bài toán nghiệp vụ chuyên sâu tại Việt Nam, cấu hình E4 là lựa chọn tối ưu; trong khi đối với các tác tử phục vụ đa mục đích trên diện rộng, cấu hình song ngữ E3 mang lại sự cân bằng tổng thể bền vững hơn.
+
+### 5.5. So sánh đối đầu với các Frontier API thương mại đóng (GPT-5.6 Luna, Gemini 3.8 Flash)
+
+Để định vị chính xác vị thế công nghệ của các giải pháp đề xuất, nghiên cứu tiến hành đánh giá đối đầu trực diện giữa các mô hình nội bộ và hai dịch vụ thương mại đám mây hàng đầu thế giới: `GPT-5.6 Luna` và `Gemini 3.8 Flash`. Cả hai mô hình thương mại đều tiếp nhận cùng định dạng prompt hệ thống, cùng danh mục JSON Schema và được thực thi tại nhiệt độ cố định $\text{temperature} = 0.0$ qua Kaggle Benchmark SDK nhằm triệt tiêu biến thiên ngẫu nhiên.
+
+Bức tranh thực nghiệm trên bộ chuẩn bản địa `CustomTools-VI` (Bảng 5.1) ghi nhận phát hiện khoa học mang tính bước ngoặt: các mô hình ngôn ngữ nhỏ nội bộ sau khi tinh chỉnh bản địa hóa đã vượt qua đại diện thương mại đóng `GPT-5.6 Luna` về độ chính xác trích xuất tham số tuyệt đối (ArgA). Cụ thể, mô hình `Qwen3.5-4B (E4)` đạt ArgA **87.92%** trên tập seen và **86.75%** trên tập unseen, thiết lập khoảng cách vượt trội so với `GPT-5.6 Luna` (đạt 78.25% seen và 79.50% unseen) lần lượt là **+9.67** và **+7.25** điểm phần trăm. Ngay cả phiên bản nhỏ hơn `Qwen3.5-2B (E4)` cũng vượt qua `GPT-5.6 Luna` tới 8.75 điểm phần trăm trên seen và 6.88 điểm phần trăm trên unseen. Sự phân hóa này khẳng định ưu thế quyết định của việc tinh chỉnh thích nghi có kiểm soát: trong khi các mô hình thương mại lớn sở hữu tri thức bách khoa đa miền rộng lớn nhưng dễ vấp ngã trước các biến thể khẩu ngữ, từ lóng định lượng tiền tệ VND hoặc quy ước địa danh hành chính phức tạp của Việt Nam, các mô hình SLM cục bộ được căn chỉnh đúng miền dữ liệu đã thể hiện năng lực hiểu và trích xuất chuẩn xác vượt bậc.
+
+Mặc dù `Gemini 3.8 Flash` vẫn duy trì vị thế trần hiệu năng thương mại với ArgA chạm mốc 92%–93%, việc lựa chọn giữa mô hình cục bộ và dịch vụ API đám mây trong triển khai thực tế đòi hỏi bài toán cân nhắc toàn diện trên ba khía cạnh chiến lược:
+
+Về phương diện an ninh và tuân thủ pháp lý, việc vận hành mô hình cục bộ (on-premise) cho phép toàn bộ dữ liệu nghiệp vụ và thông tin cá nhân của khách hàng được lưu chuyển khép kín trong trung tâm dữ liệu nội bộ. Đây là yếu tố then chốt giúp các doanh nghiệp, tổ chức tài chính và cơ quan nhà nước tuân thủ nghiêm ngặt Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân cũng như Luật An ninh mạng Việt Nam, loại bỏ hoàn toàn nguy cơ rò rỉ dữ liệu qua các máy chủ trung gian đặt tại nước ngoài.
+
+Về phương diện cấu trúc chi phí vận hành, việc làm chủ mô hình nội bộ giúp doanh nghiệp chuyển hóa chi phí biến đổi (OPEX tính theo lượng token API tiêu thụ tăng dần theo quy mô người dùng) thành chi phí đầu tư hạ tầng phần cứng một lần (CAPEX). Đối với các hệ sinh thái có thông lượng hàng triệu truy vấn mỗi ngày, giải pháp cục bộ mang lại khả năng hoạch định ngân sách dài hạn ổn định và tối ưu hơn đáng kể.
+
+Cuối cùng, về tính sẵn sàng và tự chủ công nghệ, giải pháp nội bộ loại bỏ hoàn toàn sự phụ thuộc vào đường truyền Internet quốc tế và rủi ro gián đoạn dịch vụ do chính sách thay đổi từ các nhà cung cấp bên thứ ba. Nhờ đó, doanh nghiệp hoàn toàn làm chủ hệ thống, sẵn sàng tích hợp và mở rộng các tính năng nghiệp vụ một cách chủ động và bền vững.
 
 ---
 
@@ -722,19 +906,78 @@ Khi so sánh với các mô hình đóng thương mại hàng đầu:
 ## Chương 6. PHÂN TÍCH LỖI VÀ THẢO LUẬN GIỚI HẠN
 
 ### 6.1. Phân loại các dạng lỗi phổ biến trong trích xuất tham số tiếng Việt
-Phân tích 200 trường hợp thất bại của các mô hình cho thấy 3 nhóm lỗi chính:
-1. **Lỗi nhập nhằng ranh giới thực thể (Entity Boundary Ambiguity)** (chiếm 42%): Thường xuất hiện trong các địa chỉ hành chính có cấu trúc phức tạp ("phường 12 quận Tân Bình" bị cắt thành "12 quận Tân Bình").
-2. **Lỗi chuyển đổi kiểu dữ liệu và từ ngữ lóng (Slang & Implicit Format)** (chiếm 34%): Các từ lóng diễn đạt tiền tệ như "ba củ rưỡi", "năm trăm cành", hoặc biển số xe viết liền không dấu gạch ngang đôi khi khiến bộ chuẩn hóa trích xuất sai giá trị.
-3. **Lỗi ảo giác tham số ngầm định (Implicit Default Hallucination)** (chiếm 24%): Mô hình tự động điền các tham số tùy chọn (optional) bằng giá trị mặc định phỏng đoán thay vì bỏ trống khi người dùng không nhắc tới trong câu.
+
+Phân tích định tính trên 200 trường hợp dự đoán sai lệch điển hình thu thập từ cả hai phương pháp tiếp cận đã làm sáng tỏ những thách thức mang tính bản chất của ngôn ngữ tự nhiên tiếng Việt cũng như sự khác biệt sâu sắc trong cơ chế biểu diễn giữa các kiến trúc mô hình. Các sai sót thực nghiệm này được quy nạp thành bốn nhóm hiện tượng chính:
+
+Hiện tượng nhập nhằng ranh giới thực thể (Entity Boundary Ambiguity) chiếm tỷ trọng lớn nhất với 42% tổng số trường hợp lỗi được khảo sát. Nhóm lỗi này phát sinh chủ yếu tại các thực thể định danh hành chính có cấu trúc phức tạp hoặc chứa nhiều đơn vị phân cấp liên tiếp, chẳng hạn như cụm từ "phường 12 quận Tân Bình", "xã Phước Kiển huyện Nhà Bè", hay "số 45 đường 3 tháng 2". Do đặc thù của thuật toán tách từ phụ (subword tokenization như BPE hay SentencePiece) trên ngữ liệu tiếng Việt thường phân rã các con số và danh từ riêng thành các mảnh token rời rạc, mô hình trích xuất ranh giới trực tiếp (như đầu phân loại span của Cross-Encoder) có xu hướng chỉ nắm bắt được một phần thực thể (chẳng hạn chỉ trích xuất "12 quận Tân Bình" thay vì toàn bộ chuỗi địa chỉ). Ngược lại, mô hình tạo sinh SLM ít gặp lỗi cắt cụt ranh giới hơn nhờ cơ chế tự chú ý toàn cục, song lại có xác suất tự động chèn thêm từ nối hoặc thay đổi trật tự từ ngữ so với văn bản gốc.
+
+Nhóm lỗi chuyển đổi kiểu dữ liệu và phương thức biểu đạt phi quy chuẩn (Slang and Implicit Formatting) chiếm 34% các trường hợp sai lệch. Trong giao tiếp đời thường của người Việt, các thông tin định lượng thường được diễn đạt thông qua tiếng lóng bản địa (như "ba củ rưỡi", "năm trăm cành", "hai xị") hoặc các quy ước viết tắt (như biển số xe viết liền không dấu gạch nối "59X112345", định dạng ngày âm lịch "ngày rằm tháng bảy"). Mặc dù module Value Normalizer đã xử lý thành công phần lớn các biến thể quy chuẩn phổ biến, những mẫu câu có mật độ từ lóng cao hoặc cấu trúc ngữ pháp đảo ngữ phức tạp vẫn tạo ra thách thức lớn đối với bộ phân loại span, dẫn đến hiện tượng không thể nhận diện (trả về giá trị rỗng) hoặc chuyển đổi sai định dạng kiểu dữ liệu mục tiêu.
+
+Hiện tượng ảo giác tham số ngầm định (Implicit Default Hallucination) chiếm 24% số ca lỗi còn lại, bộc lộ rõ hơn ở mô hình tạo sinh tự hồi quy SLM. Khi người dùng không cung cấp thông tin cho tham số tùy chọn trong Tool Schema, mô hình có xu hướng điền một giá trị phỏng đoán dựa trên phân phối xác suất tiên nghiệm đã học trong quá trình tiền huấn luyện, chẳng hạn tự gán phương thức thanh toán là "tiền mặt" hoặc thời gian giao hàng là "sáng mai" dù truy vấn hoàn toàn không đề cập. Trong khi đó, đầu phân loại nhị phân `has_value` của Method 2 được thiết kế để nhận diện tường minh các trường vắng mặt trước khi trích xuất giá trị, giúp triệt tiêu gần như hoàn toàn hiện tượng tự động gán giá trị mặc định sai lệch này.
+
+Hiện tượng sai lệch thứ tự sắp xếp trong các truy vấn đa lệnh gọi (Call Order Misalignment) là một đặc thù đáng chú ý trong bài toán gọi đa công cụ đồng thời. Quy chuẩn đánh giá Tool Accuracy mặc định yêu cầu danh sách dự đoán khớp cả tên lẫn thứ tự xuất hiện so với nhãn chuẩn (Ordered Match). Khi nới lỏng ràng buộc thứ tự và đánh giá theo tập hợp đa phần tử (Multiset Match), Tool Acc của Method 2 tăng từ 59.20% lên **65.79%** trên Core VI, từ 62.60% lên **69.98%** trên Core EN và từ 92.25% lên **98.00%** trên CustomTools-VI Seen. Chênh lệch này cho thấy Bi-Encoder thường nhận diện chính xác toàn bộ các công cụ mục tiêu, song điểm tương đồng cosine giữa các công cụ đôi khi làm đảo vị trí xếp hạng của các lệnh gọi độc lập.
+
+Để làm sáng tỏ cơ chế sai lệch của từng nhóm lỗi, Bảng 6.3 tổng hợp các trường hợp nghiên cứu điển hình (Case Studies) thu thập từ các lần chạy thực nghiệm, đối chiếu trực tiếp giữa câu truy vấn gốc của người dùng, nhãn chuẩn (Gold Function Call) và kết quả dự đoán thực tế của các mô hình.
+
+**Bảng 6.3: Các ví dụ thực tế (Case Studies) minh họa 4 dạng lỗi trích xuất tham số điển hình**
+
+| Dạng lỗi | Câu truy vấn thực tế | Nhãn chuẩn (Gold Call) | Kết quả dự đoán (Predicted Call) | Phân tích nguyên nhân học thuật |
+| :--- | :--- | :--- | :--- | :--- |
+| **Nhập nhằng ranh giới thực thể** *(Entity Boundary Ambiguity)* | "Đặt lịch khám tại Bệnh viện Đại học Y Dược cơ sở 2 vào sáng thứ Hai." | `book_clinic(hospital="Bệnh viện Đại học Y Dược cơ sở 2", date="2026-09-21")` | *Cross-Encoder:* `book_clinic(hospital="Đại học Y Dược", date="2026-09-21")` | Thuật toán tách từ phụ phân rã danh từ riêng thành các mảnh token; đầu phân loại span cắt cụt tiền tố hành chính "Bệnh viện" và hậu tố định danh "cơ sở 2". |
+| **Biểu đạt phi quy chuẩn / Từ lóng** *(Slang & Implicit Formatting)* | "Chuyển gấp cho mẹ hai củ rưỡi vào số tài khoản 1903338888." | `transfer_money(amount=2500000, account="1903338888")` | *SLM 2B (E1):* `transfer_money(amount=2.5, account="1903338888")` | Mô hình thiếu tri thức bản địa hóa về tiếng lóng tiền tệ ("củ rưỡi"), dẫn đến trích xuất giá trị literal $2.5$ thay vì đơn vị chuẩn $2{,}500{,}000$ đồng. |
+| **Ảo giác tham số ngầm định** *(Implicit Default Hallucination)* | "Tìm quán cà phê yên tĩnh có wifi gần hồ Con Rùa." | `search_coffee(location="hồ Con Rùa", amenities=["wifi", "yên tĩnh"])` | *SLM 4B (E3):* `search_coffee(location="hồ Con Rùa", amenities=["wifi"], price_range="bình dân")` | Mô hình tạo sinh tự hồi quy tự ý bổ sung tham số tùy chọn `price_range="bình dân"` dựa trên phân phối xác suất tiên nghiệm của tập dữ liệu huấn luyện dù truy vấn không đề cập. |
+| **Sai lệch thứ tự đa lệnh gọi** *(Call Order Misalignment)* | "Kiểm tra thời tiết Đà Nẵng và đặt vé xe đi Nha Trang vào ngày mai." | `[check_weather(city="Đà Nẵng"), book_bus(destination="Nha Trang")]` | *Method 2:* `[book_bus(destination="Nha Trang"), check_weather(city="Đà Nẵng")]` | Bi-Encoder gán điểm tương đồng cosine cho công cụ đặt xe nhỉnh hơn công cụ thời tiết, dẫn tới đảo ngược vị trí hai lệnh gọi dù đã nhận diện đúng 100% công cụ và tham số. |
 
 ### 6.2. Phân tích nguyên nhân suy giảm zero-shot của Method 2
-Phương pháp 2 bị sụt giảm từ 67.75% xuống 22.75% ArgA trên tập unseen vì:
-- Cross-Encoder được huấn luyện để phân loại token trực tiếp trên các câu hỏi và schema mẫu. Khi gặp một công cụ có tên tham số và mô tả chưa từng thấy trong tập huấn luyện, các đặc trưng ngữ nghĩa của token question không kích hoạt đủ mạnh các span logits tương ứng trên câu context.
-- Để khắc phục nhược điểm này trong tương lai, cần bổ sung kỹ thuật Meta-learning hoặc tiền huấn luyện Cross-Encoder trên hàng nghìn schema tổng hợp đa dạng trước khi tinh chỉnh.
+
+Sự phân hóa rõ nét về hiệu năng giữa tập công cụ đã học (`test_seen`, ArgA đạt 85.38%) và tập công cụ chưa từng gặp (`test_unseen`, ArgA giảm xuống 60.25%, và chỉ đạt 26.75% trên các truy vấn dương tính) của kiến trúc phân tách Method 2 là một hiện tượng học thuật quan trọng cần được luận giải thấu đáo dưới góc độ biểu diễn không gian vector và ranh giới quyết định.
+
+Bản chất của Cross-Encoder dựa trên backbone `xlm-roberta-base` là một mạng phân biệt (discriminative model) được huấn luyện để phân loại token trực tiếp dựa trên sự tương tác chéo giữa chuỗi câu hỏi và chuỗi schema tham số. Khi hoạt động trên tập `seen`, mô hình đã thích nghi sâu sắc với các đặc trưng từ vựng và cấu trúc ngữ nghĩa quen thuộc, từ đó xác định chính xác các điểm ranh giới bắt đầu và kết thúc của span giá trị. Tuy nhiên, khi đối mặt với một Tool Schema hoàn toàn mới lạ trên tập `unseen`, việc xuất hiện các tên tham số và phần mô tả chưa từng có trong tập huấn luyện đã gây ra hiện tượng dịch chuyển phân phối biểu diễn (representation distribution shift) nghiêm trọng. Trong điều kiện này, các trọng số ẩn của đầu phân loại span không nhận được các tín hiệu kích hoạt đủ mạnh từ các biểu diễn token trong chuỗi ngữ cảnh, dẫn tới việc dự đoán sai lệch vị trí span hoặc kích hoạt nhầm đầu phân loại nhị phân `has_value`.
+
+Ngược lại, mô hình tạo sinh SLM (như Qwen3.5 2B và 4B) hoạt động theo cơ chế mô hình hóa ngôn ngữ tự hồi quy, nơi tri thức tiền huấn luyện về ngôn ngữ và thế giới thực được tích lũy trên quy mô lớn. Khi tiếp nhận một schema công cụ mới, cơ chế tự chú ý cho phép mô hình sử dụng thông tin trong mô tả công cụ và câu truy vấn để sinh lời gọi theo schema. Đây là một giả thuyết phù hợp với chênh lệch ArgA nhỏ giữa seen và unseen của SLM trong CustomTools-VI, từ -0.62 đến -1.17 điểm phần trăm. Tuy nhiên, nguyên nhân suy giảm zero-shot của Cross-Encoder cần được diễn giải thận trọng vì còn chịu ảnh hưởng của supervision alignment, repeated calls và giới hạn $k_{\max}=3$.
+
+Bên cạnh sự dịch chuyển phân phối biểu diễn trên công cụ mới, một nguyên nhân có thể góp phần tạo ra khoảng cách giữa Method 2 và SLM E4 2B trên Core VI (ArgA 30.26% so với 69.75%) là **hiện tượng mất mát tín hiệu giám sát do rào cản căn chỉnh chuỗi (Supervision Alignment Gap)**. Trong quá trình phân rã dữ liệu master Shared E4 thành các cặp huấn luyện cho Cross-Encoder, **36,667 trên tổng số 156,966 tham số ứng viên (23.36%) bị loại bỏ** vì giá trị không thể gióng hàng trực tiếp (exact string match) với một chuỗi span trong truy vấn. Các trường hợp này thường liên quan đến giá trị suy diễn, giá trị mặc định hoặc chuỗi số đã biến đổi định dạng. Do đó, dù hai phương pháp cùng tiếp cận nguồn dữ liệu 65,600 mẫu, Cross-Encoder nhận ít tín hiệu giám sát hơn cho các trường hợp không biểu diễn trực tiếp trong câu truy vấn, trong khi bộ đánh giá vẫn chấm trên toàn bộ tham số nhãn chuẩn. Khoảng thiếu hụt này là một yếu tố có thể làm giảm độ bao phủ tham số của kiến trúc phân tách; nó không đủ để quy kết toàn bộ chênh lệch giữa hai phương pháp.
+
+Nhằm bóc tách chi tiết cơ chế hoạt động nội tại của từng thành phần trong Cross-Encoder, nghiên cứu tiến hành đánh giá độc lập năng lực dự đoán của từng nhánh đầu ra chuyên biệt trên tập dữ liệu kiểm định. Kết quả được tổng hợp tại Bảng 6.1.
+
+**Bảng 6.1: Đánh giá chất lượng độc lập của các đầu phân cấp chuyên biệt trong Cross-Encoder**
+
+| Đầu ra chuyên biệt | Kiểu tham số phụ trách | Tiêu chí đánh giá | Kết quả đạt được | Ngưỡng kiểm định | Đánh giá chất lượng |
+| :--- | :--- | :--- | :---: | :---: | :---: |
+| **`has_value` Head** | Nhị phân phân biệt sự hiện diện | $F_1$-score | **97.45%** | $\ge 90.0\%$ | Đạt chuẩn xuất sắc |
+| **`span_head`** | Chuỗi ký tự tự do / số lượng | Exact Match (EM) | **96.18%** | $\ge 80.0\%$ | Đạt chuẩn xuất sắc |
+| **`bool_head`** | Cờ giá trị Đúng / Sai | Accuracy | **98.90%** | $\ge 85.0\%$ | Đạt chuẩn xuất sắc |
+| **`enum_head`** | Tập hợp danh mục hữu hạn | Accuracy | **72.06%** | $\ge 90.0\%$ | *Chưa đạt ngưỡng* |
+| **Tổng hợp Argument EM** | Toàn bộ tham số trong lệnh gọi | Exact Match | **65.65%** | $\ge 70.0\%$ | *Chưa đạt ngưỡng* |
+
+Kết quả tại Bảng 6.1 cho thấy `has_value` (97.45%), `span_head` (96.18%) và `bool_head` (98.90%) hoạt động tốt hơn `enum_head` (72.06%). Chênh lệch này xác định enum là một nút thắt cần ưu tiên cải thiện trong Cross-Encoder, đặc biệt khi các giá trị danh mục có ngữ nghĩa gần nhau trong nghiệp vụ bản địa.
+
+Bên cạnh đó, để trả lời câu hỏi thực nghiệm then chốt: *"Sự suy giảm hiệu năng của Method 2 trên các công cụ mới (Zero-Shot Unseen) chủ yếu bắt nguồn từ khâu truy hồi Bi-Encoder hay khâu trích xuất Cross-Encoder?"*, nghiên cứu đã thiết lập kịch bản đối chứng Oracle (giả định khâu truy hồi Bi-Encoder hoàn hảo, cung cấp chính xác 100% các công cụ mục tiêu cho Cross-Encoder). Kết quả phân tích đối chiếu được trình bày tại Bảng 6.2.
+
+**Bảng 6.2: Đối chứng chẩn đoán Oracle giữa lỗi truy hồi (Retrieval) và lỗi trích xuất tham số (Extraction)**
+
+| Tập kiểm thử | Pipeline ArgA (Toàn bộ mẫu) | Oracle ArgA (Toàn bộ mẫu) | Chênh lệch điểm % | Pipeline ArgA (Mẫu có lệnh gọi) | Oracle ArgA (Mẫu có lệnh gọi) | Chênh lệch điểm % |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Core VI Test** | 30.26% | 36.81% | +6.55% | 25.92% | 32.52% | +6.60% |
+| **Core EN Test** | 35.52% | 42.23% | +6.71% | 31.52% | 38.30% | +6.78% |
+| **CustomTools-VI (Seen)** | 85.38% | 92.00% | +6.62% | 78.00% | 84.00% | +6.00% |
+| **CustomTools-VI (Unseen)**| 60.25% | 64.25% | +4.00% | **26.75%** | **28.50%** | **+1.75%** |
+
+Số liệu tại Bảng 6.2 cung cấp một chỉ dấu chẩn đoán. Trên tập `CustomTools-VI Seen`, khi được cấp đúng công cụ mục tiêu theo chế độ Oracle, ArgA tăng từ 85.38% lên 92.00% (+6.62 điểm phần trăm). Trên tập `CustomTools-VI Unseen`, ArgA-positive chỉ tăng từ 26.75% lên 28.50% (+1.75 điểm phần trăm). Kết quả nhất quán với giả thuyết rằng trích xuất tham số trên schema mới là một nút thắt quan trọng.
+
+Tuy nhiên, Oracle hiện hành gộp các lần gọi lặp cùng tên công cụ và không phải upper bound hoàn hảo cho toàn bộ cấu trúc multi-call. Vì vậy, không thể quy toàn bộ chênh lệch cho Bi-Encoder hoặc Cross-Encoder; kết luận này cần được kiểm chứng bằng protocol hỗ trợ repeated calls.
 
 ### 6.3. Giới hạn của đề tài và các thách thức mở
-- **Giới hạn về ngữ cảnh đa lượt**: Khóa luận tập trung giải quyết bài toán đơn lượt (single-turn). Trong thực tế, các cuộc hội thoại thường kéo dài nhiều lượt để người dùng bổ sung các tham số còn thiếu (slot filling).
-- **Hạ tầng tính toán**: Việc huấn luyện mô hình 4B mất hơn 2 giờ trên A100. Việc mở rộng lên các kích thước 8B hay 14B đòi hỏi cụm máy chủ nhiều GPU chuyên dụng.
+
+Mặc dù đã hoàn thành toàn diện các mục tiêu nghiên cứu và giải quyết thấu đáo các bài toán thực nghiệm cốt lõi, khóa luận thẳng thắn ghi nhận một số giới hạn học thuật và rào cản kỹ thuật cần được tiếp tục hoàn thiện trong các công trình tương lai.
+
+Trước hết là phạm vi tương tác hội thoại đơn lượt (Single-turn Scope). Nghiên cứu hiện tại tập trung tối ưu hóa quy trình gọi công cụ trong một phát ngôn khép kín. Tuy nhiên, trong môi trường vận hành thực tế, tương tác giữa người dùng và tác tử AI thường diễn ra qua nhiều lượt đối thoại liên tiếp (Multi-turn Interaction). Trong bối cảnh đó, hệ thống đòi hỏi năng lực theo dõi trạng thái đối thoại (Dialogue State Tracking), khả năng duy trì bộ nhớ ngữ cảnh động và cơ chế chủ động đặt câu hỏi phản hồi để thu thập các tham số còn khuyết thiếu (Slot Filling) trước khi phát sinh lệnh gọi hàm.
+
+Hạn chế thứ hai nằm ở bài toán biểu diễn cấu trúc đối với các truy vấn đa lệnh gọi lặp lại cùng một tên công cụ (Homonymous Multi-call Limitation). Do đặc thù của kiến trúc phân tách hai giai đoạn, hệ thống ánh xạ từng định danh công cụ được Bi-Encoder lựa chọn sang một không gian trích xuất tham số phẳng tương ứng của Cross-Encoder. Cơ chế này xử lý hoàn hảo các truy vấn đơn lệnh hoặc các truy vấn gọi nhiều công cụ khác nhau (Heterogeneous Multi-calls). Tuy nhiên, khi người dùng yêu cầu kích hoạt nhiều lần cùng một API với các tập tham số độc lập (ví dụ so sánh hai chuyến bay hoặc đặt vé khứ hồi qua cùng hàm `book_ticket`), pipeline phân tách hiện chưa trang bị cơ chế đánh chỉ số phiên bản (Instance Indexing), dẫn đến việc chỉ có thể trích xuất được một đối tượng lệnh gọi duy nhất.
+
+Bên cạnh đó, nghiên cứu giới hạn phạm vi khảo sát ở các công đoạn tiền thực thi (Pre-execution Boundary), từ khâu tiếp nhận truy vấn ngôn ngữ tự nhiên đến khi xuất hoàn chỉnh đối tượng JSON Schema hợp lệ. Trong các ứng dụng sản phẩm thực tế, việc tương tác với các hệ thống bên ngoài luôn tiềm ẩn rủi ro phát sinh lỗi thời gian thực từ phía máy chủ (như lỗi xác thực token, mã lỗi HTTP 4xx/5xx hoặc xung đột dữ liệu nghiệp vụ). Việc xây dựng môi trường thực thi cô lập an toàn (Sandboxed Tool Execution) tích hợp cơ chế tự phục hồi và sửa sai tham số (Self-healing Reflection) là một yêu cầu kỹ thuật tất yếu để hoàn thiện một tác tử tự chủ.
+
+Cuối cùng là rào cản về hạ tầng điện toán và quy mô tham số mô hình (Model Scale and Compute Resources). Do giới hạn về tài nguyên phần cứng sẵn có, các thực nghiệm mở rộng quy mô tham số của đề tài mới dừng lại ở mức 4.56 tỷ tham số (`Qwen3.5-4B`). Việc khảo sát hành vi mô hình trên các quy mô lớn hơn (như 7B, 14B hoặc các kiến trúc chuyên gia Mixture-of-Experts) cũng như việc tinh chỉnh toàn diện siêu tham số trong không gian tìm kiếm rộng lớn vẫn là một thách thức mở đòi hỏi hạ tầng điện toán phân tán chuyên dụng quy mô lớn hơn.
 
 ---
 
@@ -743,17 +986,24 @@ Phương pháp 2 bị sụt giảm từ 67.75% xuống 22.75% ArgA trên tập u
 ## KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
 
 ### Kết luận
-Khóa luận tốt nghiệp đã hoàn thành toàn diện tất cả các mục tiêu nghiên cứu đặt ra, đem lại các kết quả khoa học và giá trị thực tiễn nổi bật:
-1. **Bộ Benchmark Chuẩn Hóa**: Xây dựng thành công `Canonical Core Benchmark` (77,028 cặp bản ghi) và `CustomTools-VI` (8,000 mẫu) — bộ tiêu chuẩn đánh giá tool calling tiếng Việt đầu tiên có quy mô lớn và phân tách seen/unseen nghiêm ngặt.
-2. **Làm sáng tỏ năng lực chuyển giao ngôn ngữ**: Chứng minh mô hình SLM có khả năng chuyển giao tri thức gọi hàm từ tiếng Anh sang tiếng Việt vượt trội, nhưng bắt buộc phải có dữ liệu âm tính bản địa hóa để triệt tiêu hội chứng kích hoạt công cụ quá mức (Non-FC Recall đạt 100%).
-3. **Xác lập đỉnh cao hiệu năng SOTA mới**: Tinh chỉnh thành công mô hình `Qwen3.5-4B` đạt độ chính xác tham số 87.92% (seen) và 86.75% (unseen), vượt qua mô hình thương mại đóng `GPT-5.6 Luna`, đồng thời triệt tiêu lỗi cú pháp JSON xuống chỉ còn 0.32%.
-4. **Hiện thực hóa kiến trúc phân tách siêu tốc**: Xây dựng pipeline Bi-Encoder + Cross-Encoder đạt độ trễ kỷ lục 54.68 ms (nhanh gấp 15–18 lần SLM), tiêu thụ dưới 1.2 GB VRAM và 0% lỗi cú pháp.
-5. **Chỉ ra giới hạn vật lý của mô hình tạo sinh**: Chứng minh qua Stress Test ($N = 3 \to 1.000$) rằng mô hình SLM bị sụp đổ tràn bộ nhớ CUDA OOM tại ngưỡng $N \ge 500$ trên phần cứng phổ thông 16GB, trong khi kiến trúc phân tách vẫn hoạt động ổn định với độ trễ dưới 92 ms.
+
+Khóa luận tốt nghiệp đã hoàn thành mục tiêu nghiên cứu bài toán gọi công cụ (Tool Calling) cho ngôn ngữ tiếng Việt một cách toàn diện và có hệ thống, giải quyết xuyên suốt từ khâu chuẩn hóa dữ liệu benchmark đến đề xuất, tối ưu hóa và thực nghiệm đối đầu giữa hai trường phái kỹ thuật chính. Thông qua chuỗi thực nghiệm trên cả tập dữ liệu lõi quy mô lớn lẫn tập thử nghiệm nghiệp vụ chuyên sâu, nghiên cứu đã rút ra những phát hiện khoa học và đóng góp thực tiễn mang tính then chốt.
+
+Về mặt tài nguyên và cơ sở đánh giá, khóa luận đã xây dựng và công bố bộ đôi benchmark chuẩn mực gồm `Canonical Core Benchmark` với 77,028 cặp bản ghi song ngữ trên 4,421 công cụ và `CustomTools-VI` gồm 8,000 mẫu nghiệp vụ đời sống với tỷ lệ cân bằng 50% mẫu âm tính, phân định rõ giữa miền đã học (`seen`) và miền mở rộng (`unseen`). Dựa trên cơ sở dữ liệu này, nghiên cứu đã làm sáng tỏ hiện tượng kích hoạt công cụ quá mức (over-triggering) vốn là điểm nghẽn nghiêm trọng khi tinh chỉnh mô hình ngôn ngữ trên dữ liệu dịch thuật đơn thuần; từ đó khẳng định vai trò quyết định của dữ liệu âm tính bản địa hóa trong việc khôi phục hoàn toàn năng lực từ chối gọi hàm với Non-FC Recall đạt 100.0%.
+
+Về mặt giải pháp kỹ thuật và hiệu năng mô hình, nghiên cứu đã xác lập đường biên đánh đổi rõ rệt giữa hai phương pháp tiếp cận. Đối với hướng tiếp cận mô hình ngôn ngữ nhỏ (SLM), việc tinh chỉnh chuyên biệt với dữ liệu bản địa hóa đã giúp `Qwen3.5-4B` đạt độ chính xác tham số (ArgA) 87.92% trên tập seen và 86.75% trên tập unseen, vượt qua mô hình thương mại đóng `GPT-5.6 Luna` trong cùng điều kiện thử nghiệm. Ở hướng tiếp cận ngược lại, kiến trúc phân tách phi tự hồi quy Bi-Encoder kết hợp Hierarchical Cross-Encoder thể hiện ưu thế vượt trội về tính ổn định và khả năng chịu tải trong bài kiểm thử áp lực từ 3 đến 1,000 công cụ: trong khi SLM gặp hiện tượng tràn bộ nhớ (CUDA Out of Memory) khi danh mục vượt quá 500 công cụ, kiến trúc phân tách duy trì hoạt động thông suốt tới quy mô 1,000 công cụ với độ trễ trung vị P50 khoảng 107.68 ms và lượng VRAM phân bổ ổn định quanh mức 3.21 GiB.
+
+Tổng hòa các kết quả thực nghiệm cùng toàn bộ mã nguồn và dữ liệu được công bố mở, khóa luận không chỉ chứng minh tính khả thi của việc xây dựng các hệ thống gọi công cụ cục bộ cho tiếng Việt với chi phí tối ưu, mà còn cung cấp cơ sở khoa học thực chứng để các nhà phát triển lựa chọn kiến trúc phù hợp giữa yêu cầu về độ chính xác ngữ nghĩa sâu và đòi hỏi về thông lượng, độ trễ thời gian thực.
 
 ### Hướng phát triển trong tương lai
-1. Mở rộng hệ thống để hỗ trợ hội thoại đa lượt (Multi-turn Tool Calling) và tự động hỏi lại khi thiếu tham số bắt buộc.
-2. Tích hợp cơ chế sandbox thực thi mã lệnh thời gian thực và tự động sửa lỗi (Self-healing tool execution).
-3. Thử nghiệm kiến trúc lai (Hybrid Architecture): Dùng Bi-Encoder để lọc Top-3 công cụ, sau đó chuyển cho SLM trích xuất tham số, kết hợp ưu thế tốc độ của Method 2 và độ chính xác zero-shot của Method 1.
+
+Dựa trên những kết quả thực nghiệm đạt được cùng các điểm nghẽn kỹ thuật đã được phân tích thấu đáo, nghiên cứu mở ra một số định hướng phát triển then chốt nhằm hoàn thiện hệ sinh thái tác tử AI tiếng Việt trong giai đoạn tiếp theo.
+
+Trọng tâm nghiên cứu hàng đầu là mở rộng bài toán sang không gian tương tác hội thoại đa lượt (Multi-turn Tool Calling). Việc tích hợp module theo dõi trạng thái đối thoại (Dialogue State Tracking) cùng cơ chế bộ nhớ động sẽ cho phép hệ thống duy trì ngữ cảnh xuyên suốt, chủ động nhận diện các tham số còn khuyết thiếu và tiến hành hội thoại làm rõ (Clarification Dialogue) với người dùng trước khi phát sinh lệnh gọi hàm, thay vì chỉ xử lý thụ động các phát ngôn đơn lẻ.
+
+Song song với đó, việc nghiên cứu kiến trúc lai (Hybrid Tool Calling Architecture) kết hợp giữa mô hình phân tách và mô hình tạo sinh là một hướng đi giàu tiềm năng nhằm dung hòa ranh giới đánh đổi giữa độ trễ và độ chính xác. Bằng cách sử dụng Bi-Encoder để sàng lọc nhanh tập ứng viên Top-$K$ từ không gian hàng nghìn API và chuyển giao ngữ cảnh tinh gọn này cho mô hình ngôn ngữ nhỏ (SLM) đảm nhiệm khâu trích xuất tham số, hệ thống hứa hẹn sẽ vừa duy trì được tốc độ phản hồi thời gian thực, vừa tận dụng trọn vẹn năng lực khái quát hóa linh hoạt của mô hình tạo sinh trên các miền nghiệp vụ mới lạ.
+
+Cuối cùng, hướng phát triển mang tính ứng dụng cao là tích hợp môi trường thực thi công cụ an toàn và cơ chế tự sửa sai (Self-healing Sandboxed Execution). Việc xây dựng môi trường sandbox bảo mật để thực thi trực tiếp các lệnh gọi API trả về, tiếp nhận phản hồi lỗi thời gian thực từ máy chủ và huấn luyện mô hình cơ chế suy luận phản tư (reflection loop) sẽ giúp tác tử tự động chẩn đoán và hiệu chỉnh tham số khi xảy ra sự cố, qua đó nâng cao tính tin cậy và mức độ tự chủ của hệ thống trong các môi trường vận hành thực tế.
 
 ---
 
@@ -761,18 +1011,15 @@ Khóa luận tốt nghiệp đã hoàn thành toàn diện tất cả các mục
 
 ## TÀI LIỆU THAM KHẢO
 
-### Tài liệu Tiếng Việt
-[1] Đào Phước Thịnh và Hà Quang Đạt, "Báo cáo thực nghiệm chuyên sâu Kiến trúc phân tách Bi-Encoder kết hợp Hierarchical Cross-Encoder cho bài toán Gọi công cụ Tiếng Việt," Báo cáo kỹ thuật nội bộ, Trường Đại học Công nghệ Thông tin, ĐHQG-HCM, 2026.  
-[2] Nguyễn Văn A và Trần Thị B, "Nghiên cứu xử lý ngôn ngữ tự nhiên tiếng Việt cho các hệ thống trợ lý ảo thông minh," *Tạp chí Phát triển Khoa học và Công nghệ – ĐHQG-HCM*, tập 25, số 3, tr. 112–125, 2024.
-
-### Tài liệu Tiếng Anh
-[3] O. Ersoy, M. A. Ayna, and E. Yilmaz, "Tool Calling for Arabic LLMs: A Comprehensive Empirical Study," *arXiv preprint arXiv:2502.12345*, 2025.  
-[4] T. Schick, J. Dwivedi-Yu, R. Dessì, R. Raileanu, M. Lomeli, L. Zettlemoyer, N. Cancedda, and T. Scialom, "Toolformer: Language Models Can Teach Themselves to Use Tools," in *Proceedings of the 37th Conference on Neural Information Processing Systems (NeurIPS)*, 2023.  
-[5] S. Patil, T. Zhang, X. Wang, and J. E. Gonzalez, "Gorilla: Large Language Model Connected with Massive APIs," *arXiv preprint arXiv:2305.15334*, 2023.  
-[6] F. Yan, H. Mao, C. Ji, J. Chen, and J. E. Gonzalez, "Berkeley Function Calling Leaderboard (BFCL): A Comprehensive Evaluation of LLM Tool Calling Capabilities," *UC Berkeley Sky Computing Lab Technical Report*, 2024.  
-[7] Y. Qin, S. Liang, Y. Ye, K. Zhu, L. Yan, Y. Lu, Y. Lin, et al., "ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs," in *Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (ACL)*, 2024.  
-[8] T. Dettmers, A. Pagnoni, A. Holtzman, and L. Zettlemoyer, "QLoRA: Efficient Finetuning of Quantized LLMs," in *Advances in Neural Information Processing Systems (NeurIPS)*, vol. 36, 2024.  
-[9] J. Song, W. Zhao, K. Chen, and Y. He, "AutoTool: Automating Tool Selection and Parameter Generation for Large Language Models," in *Proceedings of EMNLP*, 2023.  
-[10] J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova, "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding," in *Proceedings of NAACL-HLT*, 2019, pp. 4171–4186.  
-[11] A. Conneau, K. Khandelwal, N. Goyal, V. Chaudhary, G. Wenzek, F. Guzmán, E. Grave, M. Ott, L. Zettlemoyer, and V. Stoyanov, "Unsupervised Cross-lingual Representation Learning at Scale," in *Proceedings of ACL*, 2020, pp. 8440–8451.  
-[12] J. Chen, S. Xiao, P. Hou, D. Liu, and K. Lu, "BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Versatile Pre-Training," *arXiv preprint arXiv:2402.03216*, 2024.
+[1] O. Ersoy, E. Altinisik, H. T. Sencar, and K. Darwish, "Tool Calling for Arabic LLMs: Data Strategies and Instruction Tuning," in *Proceedings of the Third Arabic Natural Language Processing Conference (ArabicNLP 2025)*, pp. 347–358, 2025.
+[2] T. Schick, J. Dwivedi-Yu, R. Dessì, R. Raileanu, M. Lomeli, L. Zettlemoyer, N. Cancedda, and T. Scialom, "Toolformer: Language Models Can Teach Themselves to Use Tools," in *Proceedings of the 37th Conference on Neural Information Processing Systems (NeurIPS)*, 2023.
+[3] S. Patil, T. Zhang, X. Wang, and J. E. Gonzalez, "Gorilla: Large Language Model Connected with Massive APIs," *arXiv preprint arXiv:2305.15334*, 2023.
+[4] F. Yan, H. Mao, C. Ji, J. Chen, and J. E. Gonzalez, "Berkeley Function Calling Leaderboard (BFCL): A Comprehensive Evaluation of LLM Tool Calling Capabilities," *UC Berkeley Sky Computing Lab Technical Report*, 2024.
+[5] Y. Qin, S. Liang, Y. Ye, K. Zhu, L. Yan, Y. Lu, Y. Lin, et al., "ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs," in *Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (ACL)*, 2024.
+[6] T. Dettmers, A. Pagnoni, A. Holtzman, and L. Zettlemoyer, "QLoRA: Efficient Finetuning of Quantized LLMs," in *Advances in Neural Information Processing Systems (NeurIPS)*, vol. 36, 2024.
+[7] J. Song, W. Zhao, K. Chen, and Y. He, "AutoTool: Automating Tool Selection and Parameter Generation for Large Language Models," in *Proceedings of EMNLP*, 2023.
+[8] J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova, "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding," in *Proceedings of NAACL-HLT*, 2019, pp. 4171–4186.
+[9] A. Conneau, K. Khandelwal, N. Goyal, V. Chaudhary, G. Wenzek, E. Grave, M. Ott, L. Zettlemoyer, and V. Stoyanov, "Unsupervised Cross-lingual Representation Learning at Scale," in *Proceedings of ACL*, 2020, pp. 8440–8451.
+[10] J. Chen, S. Xiao, P. Hou, D. Liu, and K. Lu, "BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Versatile Pre-Training," *arXiv preprint arXiv:2402.03216*, 2024.
+[11] Z. Liu, T.-Y. Hoang, J. Zhang, M. Zhu, et al., "APIGen: Automated Pipeline for Generating Verifiable and Diverse Function-Calling Datasets," in *Advances in Neural Information Processing Systems (NeurIPS)*, 2024.
+[12] W. Liu, X. Huang, X. Zeng, X. Hao, et al., "ToolACE: Winning the Points of LLM Function Calling," *arXiv preprint arXiv:2409.00920*, 2024.

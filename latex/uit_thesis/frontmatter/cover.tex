@@ -1,0 +1,51 @@
+% Trang bìa chính thức Khóa luận tốt nghiệp UIT
+\begin{titlepage}
+    % Khung viền đôi trang trọng theo chuẩn UIT và docs/main.tex
+    \begin{tikzpicture}[remember picture, overlay]
+        \draw[line width = 2pt] 
+            ($(current page.north west) + (2.5cm,-1.5cm)$) 
+            rectangle 
+            ($(current page.south east) + (-1.5cm,1.5cm)$);
+        \draw[line width = 0.8pt] 
+            ($(current page.north west) + (2.6cm,-1.6cm)$) 
+            rectangle 
+            ($(current page.south east) + (-1.4cm,1.4cm)$);
+    \end{tikzpicture}
+    
+    \centering
+    {\fontsize{13pt}{16pt}\selectfont \textbf{ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}}\\[0.2cm]
+    {\fontsize{14pt}{17pt}\selectfont \textbf{TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN}}\\[0.2cm]
+    {\fontsize{13pt}{16pt}\selectfont \textbf{KHOA CÔNG NGHỆ THÔNG TIN}}\\[0.8cm]
+
+    % Logo trường Đại học Công nghệ Thông tin
+    \includegraphics[width=3.2cm]{figures/logo_uit.jpeg}\\[0.8cm]
+
+    {\fontsize{16pt}{20pt}\selectfont \textbf{KHÓA LUẬN TỐT NGHIỆP}}\\[0.3cm]
+    {\fontsize{12pt}{15pt}\selectfont \textbf{NGÀNH: CÔNG NGHỆ THÔNG TIN / TRÍ TUỆ NHÂN TẠO}}\\[0.8cm]
+
+    % Tên đề tài khóa luận (Tiếng Việt & Tiếng Anh)
+    \begin{minipage}{0.88\textwidth}
+        \centering
+        {\fontsize{14pt}{18pt}\selectfont \textbf{NGHIÊN CỨU PHƯƠNG PHÁP TOOL CALLING DỰA TRÊN TRUY HỒI NGỮ NGHĨA VÀ TRÍCH XUẤT THAM SỐ THEO TOOL SCHEMA}}\\[0.4cm]
+        {\fontsize{11pt}{14pt}\selectfont \textit{RESEARCH ON TOOL CALLING USING SEMANTIC RETRIEVAL AND SCHEMA-AWARE PARAMETER EXTRACTION}}
+    \end{minipage}\\[1.5cm]
+
+    % Thông tin sinh viên & GVHD
+    \raggedright
+    \hspace{2.2cm}
+    \begin{minipage}{0.75\textwidth}
+        {\fontsize{12pt}{15pt}\selectfont
+        \begin{tabular}{ll}
+            \textbf{Sinh viên thực hiện:} & \textbf{ĐÀO PHƯỚC THỊNH} \hspace{0.2cm} -- MSSV: 25210038 \\
+                                          & \textbf{HÀ QUANG ĐẠT} \hspace{0.45cm} -- MSSV: 25210008 \\[0.3cm]
+            \textbf{Giảng viên hướng dẫn:} & \textbf{TS. ĐẶNG VĂN THÌN} \\[0.3cm]
+            \textbf{Cán bộ phản biện:}     & ....................................................
+        \end{tabular}
+        }
+    \end{minipage}
+
+    \vfill
+
+    \centering
+    {\fontsize{12pt}{15pt}\selectfont \textbf{TP. HỒ CHÍ MINH, NĂM 2026}}
+\end{titlepage}

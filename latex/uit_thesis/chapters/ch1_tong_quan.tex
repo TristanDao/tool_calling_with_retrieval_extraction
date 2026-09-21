@@ -1,0 +1,69 @@
+\chapter{TỔNG QUAN VỀ ĐỀ TÀI}
+
+\section{Mô tả đề tài và tính cấp thiết của nghiên cứu}
+Trong những năm gần đây, sự phát triển mạnh mẽ của các mô hình ngôn ngữ lớn (Large Language Models – LLMs) đã thúc đẩy sự ra đời của các hệ thống AI Agent có khả năng tương tác với môi trường bên ngoài thông qua cơ chế gọi công cụ (Tool Calling / Function Calling). Thay vì chỉ sinh văn bản đơn thuần, các mô hình này có thể lựa chọn và sử dụng các công cụ bên ngoài để thực hiện nhiều tác vụ đa dạng như truy vấn thông tin, tìm kiếm trên Internet, truy xuất cơ sở dữ liệu, tạo hình ảnh hoặc thực hiện các nghiệp vụ chuyên biệt.
+
+Hiện nay, nhiều nền tảng và framework hỗ trợ Tool Calling đã được phát triển như OpenAI Function Calling, Google Gemini Function Calling, LangGraph, AutoGen và Model Context Protocol (MCP). Bên cạnh đó, nhiều công trình nghiên cứu học thuật tiêu biểu như Toolformer, Gorilla, ToolBench, ToolLLM, ToolACE, xLAM và AutoTool đã đề xuất các phương pháp nâng cao khả năng sử dụng công cụ của mô hình ngôn ngữ lớn. Phần lớn các phương pháp này đều dựa trên mô hình ngôn ngữ sinh để đồng thời thực hiện hai nhiệm vụ: lựa chọn công cụ phù hợp và sinh tham số đầu vào dưới dạng JSON.
+
+Mặc dù đạt được nhiều bước tiến ấn tượng, các phương pháp tiếp cận dựa hoàn toàn trên mô hình ngôn ngữ sinh vẫn bộc lộ những rào cản kỹ thuật cố hữu:
+
+Trước hết là thách thức về độ trễ suy luận và chi phí vận hành. Cơ chế sinh mã tự hồi quy (autoregressive decoding) tuần tự từng token trên các chuỗi ngữ cảnh dài chứa hàng loạt JSON Schema thường kéo dài thời gian đáp ứng từ 800 ms đến hơn 2,000 ms. Mức độ trễ này khiến hệ thống hoàn toàn không thể đáp ứng tiêu chuẩn thời gian thực khắt khe (dưới 200 ms) trong các ứng dụng tổng đài thoại thông minh (Voicebot) hay các thiết bị điều khiển biên.
+
+Thứ hai là hiện tượng ảo giác cấu trúc cú pháp (Syntax Hallucination). Bản chất xác suất của mô hình tạo sinh khiến việc sinh chuỗi JSON luôn tiềm ẩn rủi ro thiếu ngoặc nhọn, sai lệch kiểu dữ liệu hoặc tự ý bịa đặt các trường thuộc tính không hề tồn tại trong định nghĩa API, gây đứt gãy luồng xử lý tự động của hệ thống phần mềm.
+
+Thứ ba là hiện tượng bùng nổ bộ nhớ ngữ cảnh khi số lượng công cụ tăng cao. Khi danh mục công cụ mở rộng từ vài chục lên hàng trăm hay hàng nghìn API, việc nạp toàn bộ schema vào prompt làm bùng nổ chiều dài ngữ cảnh, dẫn đến hiện tượng suy giảm khả năng tập trung chú ý ("kim trong bọc" - needle in a haystack) và gây ra lỗi tràn bộ nhớ đồ họa (CUDA Out of Memory) trên các phần cứng phổ thông.
+
+Cuối cùng là sự thiếu hụt nghiêm trọng các bộ dữ liệu và chuẩn đánh giá bản địa cho tiếng Việt. Hầu hết các benchmark uy tín trên thế giới như BFCL hay ToolBench đều được thiết kế cho tiếng Anh. Tiếng Việt với đặc thù hình thái học đơn lập, dấu thanh điệu phức tạp cùng các biến thể diễn đạt đời sống phong phú ("nửa triệu", "ngày rằm") hiện vẫn chưa có các bộ dữ liệu quy chuẩn phục vụ nghiên cứu và đánh giá bài toán gọi công cụ trong điều kiện thống nhất.
+
+Xuất phát từ thực trạng đó, đề tài tập trung nghiên cứu bài toán Tool Calling cho tiếng Việt theo hướng kết hợp giữa truy hồi ngữ nghĩa (Semantic Tool Retrieval) và trích xuất tham số dựa trên Tool Schema (Schema-aware Parameter Extraction). Đồng thời, đề tài xây dựng một bộ benchmark tiếng Việt nhằm phục vụ quá trình huấn luyện, đánh giá và so sánh các phương pháp Tool Calling trong điều kiện thống nhất.
+
+\section{Mục tiêu của đề tài}
+Mục tiêu tổng quát của khóa luận là nghiên cứu, hiện thực hóa và đánh giá có hệ thống giải pháp gọi công cụ (Tool Calling) tối ưu cho ngôn ngữ tiếng Việt. Thay vì phụ thuộc hoàn toàn vào các mô hình ngôn ngữ lớn tạo sinh (Generative LLMs) vốn đối mặt với rào cản chi phí tính toán đắt đỏ và độ trễ cao, nghiên cứu hướng tới việc xây dựng và đối chứng hai trường phái kỹ thuật mang tư duy thiết kế đối lập: phương pháp tinh chỉnh mô hình ngôn ngữ nhỏ tạo sinh end-to-end (SLM) và phương pháp phân tách phi tự hồi quy kết hợp giữa truy hồi ngữ nghĩa và trích xuất tham số theo lược đồ (Bi-Encoder + Cross-Encoder). Qua đó, đề tài xác lập một hệ quy chuẩn đối sánh toàn diện, làm sáng tỏ mối tương quan đánh đổi giữa độ chính xác, tốc độ đáp ứng thời gian thực và chi phí tài nguyên phần cứng.
+
+Để hiện thực hóa mục tiêu bao quát trên, nghiên cứu giải quyết tuần tự năm mục tiêu khoa học cụ thể:
+Một là, khảo cứu và phân tích có hệ thống các công trình nghiên cứu cùng các bộ chuẩn đánh giá Tool Calling hiện đại trên thế giới, từ đó định vị rõ ràng các khoảng trống lý thuyết và thực tiễn đối với ngữ liệu tiếng Việt.
+Hai là, xây dựng và chuẩn hóa bộ đôi ngữ liệu benchmark bản địa hóa có quy mô lớn và thiết kế nghiêm ngặt, phục vụ hiệu quả cho công tác huấn luyện và đối chuẩn công bằng giữa các phương pháp.
+Ba là, nghiên cứu và hiện thực hóa đường ống phân biệt hai giai đoạn gồm bộ truy hồi ngữ nghĩa Bi-Encoder và bộ trích xuất tham số phân cấp Cross-Encoder tích hợp module chuẩn hóa giá trị thực thể tiếng Việt.
+Bốn là, tối ưu hóa các mô hình ngôn ngữ nhỏ (Qwen3.5 2B và 4B) theo các chiến lược thích ứng ngôn ngữ và miền nghiệp vụ bản địa.
+Năm là, tiến hành ma trận thực nghiệm đối đầu toàn diện giữa hai phương pháp đề xuất với các mô hình thương mại đóng hàng đầu, giải đáp thấu đáo các câu hỏi nghiên cứu cốt lõi và định lượng giới hạn chịu tải thực tế thông qua bài kiểm thử áp lực.
+
+\section{Đối tượng và phạm vi nghiên cứu}
+Đối tượng nghiên cứu trọng tâm của khóa luận là cơ chế gọi công cụ trong các hệ thống tác tử trí tuệ nhân tạo (AI Agents), cụ thể hóa qua hai nhiệm vụ thành phần cốt lõi: bài toán lựa chọn công cụ mục tiêu từ không gian mô tả ngữ nghĩa (Tool Retrieval) và bài toán trích xuất, chuẩn hóa các giá trị tham số tương ứng dựa trên lược đồ thuộc tính (Schema-aware Parameter Extraction). Về mặt dữ liệu, đối tượng khảo sát bao gồm các kho ngữ liệu gọi hàm quy mô quốc tế kết hợp cùng hệ thống dữ liệu nghiệp vụ đời sống đặc thù tại Việt Nam được chuẩn hóa theo định dạng Master Canonical Schema. Về mặt kỹ thuật, nghiên cứu tập trung khảo sát các kiến trúc học sâu phân biệt hai tháp (Dense Bi-Encoder), mạng biến đổi tương tác chéo đa nhiệm (Hierarchical Cross-Encoder) và các mô hình ngôn ngữ nhỏ tạo sinh thế hệ mới.
+
+Về phạm vi nghiên cứu, đề tài giới hạn tập trung vào các công đoạn tiền thực thi của quá trình gọi hàm — tức toàn bộ chu trình xử lý từ thời điểm tiếp nhận câu truy vấn ngôn ngữ tự nhiên của người dùng đến khi đóng gói hoàn chỉnh đối tượng JSON Schema hợp lệ, sẵn sàng để giao tiếp với các giao diện lập trình ứng dụng (APIs). Khóa luận khảo sát không gian tương tác đơn lượt (single-turn interaction) song hỗ trợ đầy đủ cả hai kịch bản: kích hoạt đơn lệnh (single-call) và đồng thời kích hoạt nhiều lệnh gọi công cụ trong một phát ngôn (multi-call). Các khía cạnh kỹ thuật nằm ngoài phạm vi khảo sát bao gồm: cơ chế thực thi mã lệnh trong môi trường sandbox, lập kế hoạch tác tử phức hợp (Tool Planning), điều phối đa tác tử (Multi-agent Orchestration) cũng như việc cập nhật danh mục công cụ động theo thời gian thực. Toàn bộ các kết luận khoa học và đánh giá hiệu năng đều được neo trên các chỉ số định lượng đo đạc trực tiếp từ hệ sinh thái thực nghiệm của đề tài.
+
+\section{Phương pháp thực hiện}
+Khóa luận được triển khai theo phương pháp luận nghiên cứu thực nghiệm (Empirical Research) kết hợp với kỹ nghệ phát triển hệ thống (System Engineering), được tổ chức thành bốn giai đoạn nối tiếp chặt chẽ:
+
+Giai đoạn đầu tiên tập trung khảo cứu tài liệu chuyên khảo và các công trình khoa học tiêu biểu trong và ngoài nước, nhằm phân loại có hệ thống các trường phái kiến trúc gọi công cụ, phân tích các rào cản đặc thù của tiếng Việt và xác định các khoảng trống học thuật cần giải quyết.
+
+Giai đoạn thứ hai tiến hành kỹ thuật dữ liệu và xây dựng chuẩn đối sánh: thiết kế Master Canonical Schema thống nhất, xây dựng quy trình dịch thuật và kiểm định chất lượng nghiêm ngặt để tạo lập bộ dữ liệu song ngữ \texttt{Canonical Core Benchmark} (77,028 bản ghi trên 4,421 APIs), đồng thời kiến tạo tập dữ liệu nghiệp vụ bản địa \texttt{CustomTools-VI} (8,000 mẫu thuộc 40 công cụ) với thiết kế phân tách tuyệt đối giữa tập công cụ đã học và chưa từng gặp, tích hợp tỷ lệ 50\% mẫu âm tính đàm thoại.
+
+Giai đoạn thứ ba tập trung hiện thực hóa và tối ưu hóa các mô hình: phát triển module Semantic Tool Retrieval dựa trên Bi-Encoder \texttt{BAAI/bge-m3} với hàm mất mát \texttt{CachedMNRL} qua quy trình huấn luyện hai vòng kết hợp khai thác mẫu âm khó; xây dựng module Hierarchical Parameter Extractor dựa trên \texttt{xlm-roberta-base} với cơ chế định tuyến hướng schema và module Value Normalizer xử lý thực thể tiếng Việt; đồng thời song song tiến hành tinh chỉnh các mô hình SLM \texttt{Qwen3.5} (2B và 4B) theo phương pháp QLoRA trên các tập dữ liệu huấn luyện đối xứng.
+
+Giai đoạn cuối cùng thực hiện tích hợp hệ thống thành pipeline hoàn chỉnh và triển khai ma trận thực nghiệm so sánh đối đầu đa chiều giữa hai trường phái đề xuất với các mô hình thương mại đóng hàng đầu (GPT-5.6 Luna, Gemini 3.8 Flash), đo đạc chi tiết về độ chính xác trích xuất, độ trễ phân vị P50/P95, thông lượng, mức chiếm dụng bộ nhớ VRAM và thực hiện kiểm thử áp lực Stress Test trên không gian tìm kiếm mở rộng tới 1,000 công cụ.
+
+\section{Kết quả mong đợi và đóng góp khoa học của đề tài}
+Công trình nghiên cứu mang lại những đóng góp khoa học rõ nét cả về mặt lý luận, phương pháp luận lẫn thực nghiệm ứng dụng:
+
+Về mặt dữ liệu và tiêu chuẩn đánh giá, đề tài xây dựng và đóng góp cho cộng đồng nghiên cứu bộ đôi benchmark tiếng Việt chuẩn mực đầu tiên có quy mô lớn và thiết kế nghiêm ngặt: \texttt{Canonical Core Benchmark} và \texttt{CustomTools-VI}. Thiết kế cân bằng 50\% mẫu âm tính cùng sự phân tách rạch ròi giữa miền đã học và miền zero-shot unseen cung cấp một công cụ đo lường khách quan, tin cậy cho các nghiên cứu tiếp theo về AI Agent tiếng Việt.
+
+Về mặt giải pháp kiến trúc, khóa luận ghi nhận tính khả thi của phương pháp phân tách phi tự hồi quy Bi-Encoder + Hierarchical Cross-Encoder trong bài toán gọi hàm. Trong stress test, P50 của Method 2 nằm trong khoảng 55.13–107.68 ms, PyTorch allocated VRAM khoảng 3.21 GiB và lỗi cú pháp bằng 0\% theo định nghĩa structured-output. Do protocol đo SLM và Method 2 khác nhau, các số liệu này được trình bày như đối chiếu kỹ thuật mô tả, không suy ra hệ số tăng tốc hay khả năng triển khai trên thiết bị cụ thể.
+
+Về mặt phát hiện khoa học, nghiên cứu đã phát hiện và lý giải bản chất hiện tượng "kích hoạt công cụ quá mức" (over-triggering pathology) khi tinh chỉnh mô hình ngôn ngữ trên dữ liệu dịch thuật đơn thuần, đồng thời chứng minh bằng thực nghiệm rằng việc đưa vào các mẫu âm tính bản địa hóa là điều kiện bắt buộc để khôi phục hoàn toàn khả năng từ chối gọi hàm (đưa Non-FC Recall từ 2\% lên 100\%). Hơn thế nữa, thông qua bài kiểm thử áp lực cực hạn, đề tài đã định lượng chính xác ranh giới sụp đổ vật lý (CUDA Out of Memory) do độ phức tạp không gian chú ý $O(L^2)$ của các mô hình tạo sinh tại ngưỡng $N \ge 500$ công cụ, khẳng định tính kiên cường vượt trội của kiến trúc phân tách khi mở rộng không gian tìm kiếm.
+
+Về mặt hiệu năng mô hình, nghiên cứu ghi nhận kết quả cao nhất trong phạm vi các mô hình ngôn ngữ nhỏ được khảo sát: \texttt{Qwen3.5-4B} tinh chỉnh đạt ArgA 87.92\% trên tập seen và 86.75\% trên tập unseen, cao hơn \texttt{GPT-5.6 Luna} theo giao thức CustomTools-VI. Tỷ lệ lỗi cú pháp 0.32\% thuộc cấu hình Qwen3.5-4B E3 trên Core VI, trong khi E4 4B đạt ArgA cao hơn trên CustomTools-VI nhưng có tỷ lệ lỗi cú pháp Core VI 9.75\%.
+
+Nhằm đảm bảo tính minh bạch và khả năng tái lập thực nghiệm (Reproducibility), toàn bộ mã nguồn xây dựng pipeline, các kịch bản huấn luyện, bộ chuẩn hóa giá trị thực thể cùng hai bộ dữ liệu benchmark đều được nhóm tác giả đóng gói và phát hành công khai tại kho lưu trữ mã nguồn mở: \href{https://github.com/TristanDao/tool\_calling\_with\_retrieval\_extraction}{https://github.com/TristanDao/tool\_calling\_with\_retrieval\_extraction}.
+
+\section{Bố cục của khóa luận}
+Nội dung của khóa luận được trình bày mạch lạc qua các chương tiếp theo:
+\begin{itemize}
+    \item \textbf{Chương 2. Cơ sở lý thuyết và các công trình liên quan}: Trình bày tổng quan cơ chế gọi công cụ trong mô hình ngôn ngữ, kiến trúc mạng Transformer, kỹ thuật tinh chỉnh PEFT/QLoRA, nguyên lý hệ thống phân tách truy hồi – trích xuất và những thách thức xử lý ngôn ngữ tự nhiên đặc thù của tiếng Việt.
+    \item \textbf{Chương 3. Xây dựng bộ chuẩn đánh giá cho tiếng Việt}: Trình bày chi tiết phương pháp thu thập dữ liệu, đặc tả Master Canonical Schema, quy trình chuyển ngữ kiểm định chất lượng nghiêm ngặt và kiến trúc hai bộ benchmark Canonical Core cùng CustomTools-VI.
+    \item \textbf{Chương 4. Phương pháp đề xuất và thiết kế kiến trúc hệ thống}: Mô tả chi tiết thiết kế kỹ thuật của hai trường phái: mô hình SLM End-to-End dựa trên Qwen3.5 và kiến trúc phân tách kết hợp Bi-Encoder BGE-M3 với Hierarchical Cross-Encoder XLM-R cùng module Value Normalizer.
+    \item \textbf{Chương 5. Thực nghiệm, đánh giá và bàn luận kết quả}: Trình bày môi trường thực nghiệm, hệ thống độ đo đánh giá khắt khe, phân tích chi tiết kết quả đối đầu thực nghiệm nhằm giải đáp 5 câu hỏi nghiên cứu cốt lõi, so sánh với các Frontier API thương mại và báo cáo kết quả kiểm thử áp lực Stress Test.
+    \item \textbf{Chương 6. Phân tích lỗi và thảo luận giới hạn}: Mổ xẻ định tính các dạng lỗi trích xuất tham số phổ biến, phân tích chuyên sâu nguyên nhân suy giảm zero-shot của Method 2 qua các kịch bản Oracle và sub-head ablation, đồng thời thảo luận thẳng thắn về các giới hạn của nghiên cứu.
+    \item \textbf{Kết luận và Hướng phát triển}: Tổng kết những đóng góp khoa học then chốt của khóa luận và đề xuất các hướng nghiên cứu mở rộng trong tương lai.
+\end{itemize}
+
