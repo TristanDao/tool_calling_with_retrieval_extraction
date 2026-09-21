@@ -1,12 +1,10 @@
 # Method 2 — Hướng dẫn vận hành
 
 Tài liệu vận hành **duy nhất** cho Method 2: code đã có, cách chạy ở local, và
-toàn bộ quy trình Kaggle. Hai tài liệu bổ trợ, không trùng nội dung:
+toàn bộ quy trình Kaggle. Hai tài liệu tham chiếu bổ trợ:
 
-- `docs/method2_plan.md` — nghiên cứu phương pháp, ngân sách VRAM/thời gian,
-  các quyết định thiết kế và điểm còn mở.
-- `docs/evaluation.md` — định nghĩa metric và prediction contract dùng chung cho
-  cả bốn method.
+- `docs/experimental_plan.md` — kế hoạch thực nghiệm tổng thể và ngân sách dữ liệu.
+- `docs/paper_vi_method2_shared.md` — báo cáo số liệu thực nghiệm Shared E4 chính thức.
 
 | Mục | Nội dung |
 |---|---|
