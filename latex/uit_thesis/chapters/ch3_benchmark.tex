@@ -97,29 +97,30 @@ graph TD
 
 \textit{Hình 3.1: Quy trình xử lý dữ liệu và xây dựng bộ Benchmark Tool Calling.}
 
-\textit{(Ghi chú: Core Benchmark là tập dữ liệu song ngữ đối xứng 1:1 (Paired EN–VI). CustomTools-VI duy trì tỷ lệ mẫu âm tính cân bằng 50\% ở mọi tập kiểm thử. Tỷ lệ phân chia Train / Val / Test tuân thủ nghiêm ngặt quy chuẩn 80/10/10).}
+Canonical Core Benchmark gồm các mẫu Glaive thiên về đơn lệnh và câu không gọi công cụ, cùng các mẫu xLAM có cấu trúc phức tạp và đa lệnh gọi; mỗi bản ghi tiếng Anh có một bản dịch tiếng Việt tương ứng. CustomTools-VI là dữ liệu tiếng Việt theo miền nghiệp vụ, gồm 20 công cụ đã thấy trong huấn luyện (\texttt{seen}) và 20 công cụ chưa thấy (\texttt{unseen}); cả hai tập kiểm thử đều có 50\% mẫu không gọi công cụ. Bảng 3.1 tập trung vào số lượng mẫu và công cụ; các đặc tính ngôn ngữ và kiểu lời gọi được mô tả ở đoạn này để bảng dễ đọc trên khổ A4.
+
 
 \begin{table}[htbp]
     \centering
     \caption{Thống kê định lượng các bộ dữ liệu trong Benchmark Tool Calling Tiếng Việt}
     \label{tab:bảng_3_1}
     \resizebox{\textwidth}{!}{%
-    \begin{tabular}{llcccccccc}
+    \begin{tabular}{lrrrrrr}
         \toprule
-        \textbf{Bộ dữ liệu} & \textbf{Mục đích \& Đặc tính} & \textbf{Ngôn ngữ} & \textbf{Lệnh gọi} & \textbf{Mẫu Dương (FC)} & \textbf{Mẫu Âm (Non-FC)} & \textbf{Tập Train} & \textbf{Tập Val} & \textbf{Tập Test} & \textbf{Số công cụ (Tools)} \\
+        \textbf{Bộ dữ liệu} & \textbf{FC} & \textbf{Non-FC} & \textbf{Train} & \textbf{Val} & \textbf{Test} & \textbf{Công cụ} \\
         \midrule
-        \textit{Nhóm 1: Canonical Core Benchmark (77,028 cặp bản ghi song ngữ đối sánh 1:1)} &  &  &  &  &  &  &  &  &  \\
-        \textbf{Canonical Glaive} & Khái quát hóa đơn lệnh + Âm tính & Song ngữ EN–VI (Paired) & Đơn lệnh (Single) & 13,393 & 4,817 & 14,561 & 1,819 & 1,830 & 864 \\
-        \textbf{Canonical xLAM} & Cấu trúc phức tạp + Đa lệnh gọi & Song ngữ EN–VI (Paired) & Đa lệnh (Multi) & 58,818 & 0 & 47,054 & 5,882 & 5,882 & 3,602 \\
-        \textbf{Tổng Core Benchmark} & \textbf{Khung chuẩn quy mô lớn} & \textbf{Song ngữ EN–VI} & \textbf{Đơn \& Đa lệnh} & \textbf{72,211 (×2)} & \textbf{4,817 (×2)} & \textbf{61,615 (×2)} & \textbf{7,701 (×2)} & \textbf{7,712 (×2)} & \textbf{4,421} \\
-        \textit{Nhóm 2: CustomTools-VI Benchmark (8,000 mẫu đặc thù đời sống Việt Nam)} &  &  &  &  &  &  &  &  &  \\
-        \textbf{CustomTools-VI (Seen)} & 20 công cụ đã học (10 nhóm miền) & Tiếng Việt (VI) & Đơn \& Đa lệnh & 4,200 & 2,600 & 5,600 & 400 & 800 & 20 (Seen) \\
-        \textbf{CustomTools-VI (Unseen)} & 20 công cụ Zero-Shot (10 nhóm miền) & Tiếng Việt (VI) & Đơn \& Đa lệnh & 600 & 600 & 0 \textit{(Zero-Shot)} & 400 & 800 & 20 (Unseen) \\
-        \textbf{Tổng CustomTools-VI} & \textbf{Khung chuẩn miền thực tế} & \textbf{Tiếng Việt (VI)} & \textbf{Đơn \& Đa lệnh} & \textbf{4,800} & \textbf{3,200} & \textbf{5,600} & \textbf{800} & \textbf{1,600} & \textbf{40} \\
+        Core: Glaive & 13,393 & 4,817 & 14,561 & 1,819 & 1,830 & 864 \\
+        Core: xLAM & 58,818 & 0 & 47,054 & 5,882 & 5,882 & 3,602 \\
+        \textbf{Core: Tổng} & \textbf{72,211 (×2)} & \textbf{4,817 (×2)} & \textbf{61,615 (×2)} & \textbf{7,701 (×2)} & \textbf{7,712 (×2)} & \textbf{4,421} \\
+        Custom: Seen & 4,200 & 2,600 & 5,600 & 400 & 800 & 20 \\
+        Custom: Unseen & 600 & 600 & 0 & 400 & 800 & 20 \\
+        \textbf{Custom: Tổng} & \textbf{4,800} & \textbf{3,200} & \textbf{5,600} & \textbf{800} & \textbf{1,600} & \textbf{40} \\
         \bottomrule
     \end{tabular}
     }%
 \end{table}
+
+\textit{Ghi chú: Số mẫu Core ở từng hàng được tính cho mỗi ngôn ngữ; ký hiệu (×2) ở hàng tổng biểu thị cặp EN–VI đối sánh 1:1. Các tập Train, Val và Test của Core lần lượt có 61,615, 7,701 và 7,712 bản ghi cho mỗi ngôn ngữ. CustomTools-VI có 5,600 mẫu Train, 800 mẫu Val và 1,600 mẫu Test; mỗi tập \texttt{test_seen} và \texttt{test_unseen} gồm 400 mẫu dương tính và 400 mẫu âm tính.}
 
 \textit{(Ghi chú chuyển đổi biểu diễn dữ liệu (Data Representation Mapping): Số liệu trong Bảng 3.1 thể hiện số lượng bản ghi hội thoại gốc (Master Conversational Records). Khi đưa vào huấn luyện đường ống phân biệt Method 2 Shared E4, các bản ghi này được trích xuất thành $70{,}988$ cặp dương tính (query, tool\_description) cho bộ truy hồi Bi-Encoder (loại trừ hoàn toàn định danh của 20 công cụ unseen để bảo toàn tính nghiêm ngặt zero-shot) và $135{,}617$ cặp (query, param\_schema) phân cấp cho bộ trích xuất Cross-Encoder. Trên Core Benchmark, Method 2 được kiểm định đồng bộ trên toàn bộ $7{,}712$ mẫu kiểm thử tiếng Việt (VI Test) và $7{,}712$ mẫu kiểm thử tiếng Anh (EN Test) chuẩn hóa).}
 

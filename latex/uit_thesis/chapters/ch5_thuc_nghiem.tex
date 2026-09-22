@@ -178,36 +178,53 @@ Nhằm cung cấp cơ sở khoa học phục vụ việc lựa chọn kiến tr�
     }%
 \end{table}
 
-\textit{Ghi chú: SLM dùng hai T4 để chia dữ liệu và suy luận độc lập; một truy vấn chạy trên một GPU. Method 2 dùng một T4, batch 1 và cache embedding. Các số trong hàng độ trễ là mean Core VI của cấu hình E4, không phải P50; P50 từng truy vấn của Method 2 trong stress test nằm ở Bảng 5.4. Hàng VRAM kết hợp số đo từ các run và cách ghi nhận khác nhau; riêng Method 2 là bộ nhớ PyTorch allocated/reserved tại $N=1000$. Protocol đo và phạm vi xử lý khác nhau nên các hàng này không chứng minh tỷ lệ tăng tốc hay mức tiết kiệm VRAM trực tiếp. API chỉ được kiểm thử trên CustomTools-VI.}
+\textit{Ghi chú: SLM dùng hai T4 để chia dữ liệu và suy luận độc lập; một truy vấn chạy trên một GPU. Method 2 dùng một T4, batch 1 và cache embedding. Các số trong hàng độ trễ là mean Core VI của cấu hình E4, không phải P50; P50 từng truy vấn của Method 2 trong stress test nằm ở Bảng 5.4b. Hàng VRAM kết hợp số đo từ các run và cách ghi nhận khác nhau; riêng Method 2 là bộ nhớ PyTorch allocated/reserved tại $N=1000$. Protocol đo và phạm vi xử lý khác nhau nên các hàng này không chứng minh tỷ lệ tăng tốc hay mức tiết kiệm VRAM trực tiếp. API chỉ được kiểm thử trên CustomTools-VI.}
 
 Các kết quả gợi ý hai lựa chọn kiến trúc theo yêu cầu triển khai. Trên CustomTools-VI unseen, SLM E4 đạt ArgA cao hơn Method 2, phù hợp với bài toán thường xuyên tiếp nhận schema mới. Trong protocol stress test với danh mục xác định trước, Method 2 ghi nhận P50 dưới 100 ms ở $N \le 500$, tiếp tục xử lý được $N=1000$ và không có lỗi cú pháp theo định nghĩa đầu ra kiến tạo từ schema. Khả năng áp dụng cho thiết bị biên và mục tiêu độ trễ sản xuất vẫn cần đo trên phần cứng, tải và quy trình phục vụ tương ứng.
 
 \section{5. RQ5: Kiểm thử áp lực quy mô lớn và giới hạn vật lý của mô hình tạo sinh}
 
-Để kiểm chứng tính bền bỉ của hai trường phái kiến trúc khi quy mô danh mục công cụ mở rộng từ dải nhỏ ($N = 3$) đến quy mô thực tế của các nền tảng doanh nghiệp ($N = 1000$ công cụ), nghiên cứu tiến hành bài kiểm thử áp lực (\textbf{Stress Test}) đối đầu trực diện giữa đại diện tiêu biểu của Method 1 (\texttt{Qwen3.5-2B} E4) và Method 2 trên cùng 200 truy vấn Custom Seen (1,200 mẫu thử nghiệm lồng nhau). Kết quả được chi tiết hóa tại Bảng 5.4 và trực quan hóa tại Hình 5.2.
+Để kiểm chứng tính bền bỉ của hai trường phái kiến trúc khi quy mô danh mục công cụ mở rộng từ dải nhỏ ($N = 3$) đến quy mô thực tế của các nền tảng doanh nghiệp ($N = 1000$ công cụ), nghiên cứu tiến hành bài kiểm thử áp lực (\textbf{Stress Test}) đối đầu trực diện giữa đại diện tiêu biểu của Method 1 (\texttt{Qwen3.5-2B} E4) và Method 2 trên cùng 200 truy vấn Custom Seen (1,200 mẫu thử nghiệm lồng nhau). Độ chính xác được báo cáo ở Bảng 5.4a, độ trễ và bộ nhớ ở Bảng 5.4b; Hình 5.2 trực quan hóa xu hướng theo $N$.
 
 
 \begin{table}[htbp]
     \centering
-    \caption{Kết quả Stress Test đối đầu trực diện ($N = 3 \to 1000$ công cụ)}
+    \caption{a: Độ chính xác trong Stress Test theo quy mô danh mục công cụ ($N = 3 \to 1000$)}
     \label{tab:bảng_5_4}
-    \resizebox{\textwidth}{!}{%
-    \begin{tabular}{cccccccccc}
+    \begin{tabular}{crrrr}
         \toprule
-        \textbf{Số lượng công cụ ($N$)} & \textbf{SLM Tool Acc (\%)} & \textbf{M2 Tool Acc (\%)} & \textbf{SLM ArgA (\%)} & \textbf{M2 ArgA (\%)} & \textbf{Độ trễ SLM báo cáo (ms)*} & \textbf{M2 P50 (ms)} & \textbf{M2 P95 (ms)} & \textbf{M2 VRAM Alloc.} & \textbf{Đối chiếu protocol} \\
+        \textbf{Số công cụ ($N$)} & \textbf{SLM Tool Acc (\%)} & \textbf{M2 Tool Acc (\%)} & \textbf{SLM ArgA (\%)} & \textbf{M2 ArgA (\%)} \\
         \midrule
-        \textbf{$N = 3$} & \textbf{94.0\%} & 89.0\% & 85.5\% & \textbf{87.5\%} & 1,258.94 ms & \textbf{55.13 ms} & 84.92 ms & 3,277 MiB & Không quy đổi \\
-        \textbf{$N = 10$} & \textbf{93.0\%} & 89.0\% & 84.5\% & \textbf{87.5\%} & 1,604.68 ms & \textbf{55.05 ms} & 84.74 ms & 3,282 MiB & Không quy đổi \\
-        \textbf{$N = 50$} & \textbf{93.0\%} & 89.0\% & 85.5\% & \textbf{87.5\%} & 4,703.39 ms & \textbf{56.07 ms} & 86.46 ms & 3,278 MiB & Không quy đổi \\
-        \textbf{$N = 100$} & \textbf{92.0\%} & 89.0\% & 83.0\% & \textbf{87.0\%} & 9,318.21 ms & \textbf{61.01 ms} & 85.09 ms & 3,283 MiB & Không quy đổi \\
-        \textbf{$N = 500$} & \textit{OOM} & \textbf{87.0\%} & \textit{OOM} & \textbf{85.0\%} & \textit{OOM} & \textbf{92.27 ms} & 128.82 ms & 3,283 MiB & Không quy đổi \\
-        \textbf{$N = 1000$} & \textit{OOM} & \textbf{87.0\%} & \textit{OOM} & \textbf{84.0\%} & \textit{OOM} & \textbf{107.68 ms} & 148.21 ms & 3,283 MiB & Không quy đổi \\
+        \textbf{3} & \textbf{94.0\%} & 89.0\% & 85.5\% & \textbf{87.5\%} \\
+        \textbf{10} & \textbf{93.0\%} & 89.0\% & 84.5\% & \textbf{87.5\%} \\
+        \textbf{50} & \textbf{93.0\%} & 89.0\% & 85.5\% & \textbf{87.5\%} \\
+        \textbf{100} & \textbf{92.0\%} & 89.0\% & 83.0\% & \textbf{87.0\%} \\
+        \textbf{500} & \textit{OOM} & \textbf{87.0\%} & \textit{OOM} & \textbf{85.0\%} \\
+        \textbf{1000} & \textit{OOM} & \textbf{87.0\%} & \textit{OOM} & \textbf{84.0\%} \\
         \bottomrule
     \end{tabular}
-    }%
 \end{table}
 
-\textit{Độ trễ SLM lấy từ thời gian sinh của batch chia cho số mẫu trong batch, với batch size thay đổi theo $N$; đây không phải P50 wall-clock từng truy vấn. Method 2 đo từng truy vấn ở batch 1, có đồng bộ CUDA và cache embedding. Vì vậy không suy ra hệ số tăng tốc từ hai cột.}
+
+\begin{table}[htbp]
+    \centering
+    \caption{b: Độ trễ và bộ nhớ trong Stress Test theo quy mô danh mục công cụ}
+    \label{tab:bảng_5_4}
+    \begin{tabular}{crrr}
+        \toprule
+        \textbf{Số công cụ ($N$)} & \textbf{Độ trễ SLM (ms)*} & \textbf{M2 P50 (ms)} & \textbf{M2 P95 (ms)} \\
+        \midrule
+        \textbf{3} & 1,258.94 & \textbf{55.13} & 84.92 \\
+        \textbf{10} & 1,604.68 & \textbf{55.05} & 84.74 \\
+        \textbf{50} & 4,703.39 & \textbf{56.07} & 86.46 \\
+        \textbf{100} & 9,318.21 & \textbf{61.01} & 85.09 \\
+        \textbf{500} & \textit{OOM} & \textbf{92.27} & 128.82 \\
+        \textbf{1000} & \textit{OOM} & \textbf{107.68} & 148.21 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textit{Ghi chú Bảng 5.4b: Độ trễ SLM là thời gian sinh của batch chia cho số mẫu trong batch, với batch size thay đổi theo $N$; đây không phải P50 wall-clock từng truy vấn. Method 2 đo từng truy vấn ở batch 1, có đồng bộ CUDA và cache embedding. Hai phép đo khác giao thức, nên không quy đổi thành hệ số tăng tốc. PyTorch allocated VRAM của Method 2 tại $N=3, 10, 50, 100, 500, 1000$ lần lượt là 3,277; 3,282; 3,278; 3,283; 3,283; 3,283 MiB.}
 
 \begin{figure}[htbp]
     \centering

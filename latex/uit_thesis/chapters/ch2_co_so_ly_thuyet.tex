@@ -6,8 +6,8 @@ Các công trình về mô hình ngôn ngữ sử dụng công cụ phát triể
 
 Gọi $X = (x_1, x_2, \dots, x_{|X|})$ là truy vấn và $\mathcal{T} = \{t_1, t_2, \dots, t_N\}$ là danh mục $N$ công cụ. Mỗi công cụ $t_i = (n_i, d_i, \mathcal{S}_i)$ có tên $n_i$, mô tả $d_i$ và lược đồ tham số $\mathcal{S}_i$ theo JSON Schema. Hệ thống ánh xạ $(X, \mathcal{T})$ thành chuỗi lời gọi $\mathcal{Y} = [(t^*_1, \mathcal{A}_1), \dots, (t^*_K, \mathcal{A}_K)]$, với $K=0$ khi không cần gọi công cụ. Ở mỗi lời gọi, $t^*_k \in \mathcal{T}$ và $\mathcal{A}_k = \{(p_{k,j}, v_{k,j})\}_{j=1}^{M_k}$ là các cặp tên–giá trị tham số phù hợp với $\mathcal{S}_{t^*_k}$.
 
-Trong cách tiếp cận tạo sinh, mô tả các công cụ khả dụng được đưa vào ngữ cảnh đầu vào để mô hình sinh lời gọi theo phân phối có điều kiện:
-$$P(\mathcal{Y} \mid X, \mathcal{T}) = \prod_{t=1}^{|\mathcal{Y}|} P(y_t \mid y_{<t}, X, \mathcal{T})$$
+Trong cách tiếp cận tạo sinh, mô tả các công cụ khả dụng được đưa vào ngữ cảnh đầu vào. Gọi $y_1,\dots,y_L$ là dãy token thu được khi tuần tự hóa danh sách lời gọi $\mathcal{Y}$; mô hình sinh lời gọi theo phân phối có điều kiện:
+$$P(\mathcal{Y} \mid X, \mathcal{T}) = \prod_{\ell=1}^{L} P(y_{\ell} \mid y_{<\ell}, X, \mathcal{T})$$
 Khi số công cụ tăng, việc đưa toàn bộ schema vào prompt làm dài chuỗi đầu vào, tăng nhu cầu bộ nhớ và có thể gây khó khăn cho việc phân biệt các công cụ tương đồng. Chi phí chú ý toàn phần tăng theo $\mathcal{O}(L^2)$ với độ dài chuỗi $L$, nhưng không đại diện cho toàn bộ các lớp của kiến trúc Qwen3.5 [17]. Tác động thực tế lên độ chính xác và bộ nhớ được kiểm tra bằng stress test ở Chương 5.
 
 \section{Các công trình và bộ chuẩn đánh giá Tool Calling trong và ngoài nước}
@@ -97,8 +97,8 @@ Mức độ phù hợp giữa truy vấn và công cụ được xác định qu
 $$s(q, t) = \frac{u^\top v}{\|u\|_2 \|v\|_2}$$
 
 Để học biểu diễn ngữ nghĩa của công cụ tiếng Việt, mô hình sử dụng Multiple Negatives Ranking Loss (MNRL) kết hợp kỹ thuật đệm gradient cho lô lớn [22]. Hàm mất mát cho một lô gồm $B$ cặp dương $(q_i, t_i^+)$ được định nghĩa như sau:
-$$\mathcal{L}_{\text{MNRL}} = -\frac{1}{B} \sum_{i=1}^B \log \frac{\exp\left(s(q_i, t_i^+) / \tau\right)}{\exp\left(s(q_i, t_i^+) / \tau\right) + \sum_{j \neq i} \exp\left(s(q_i, t_j^+) / \tau\right) + \sum_{k=1}^{M} \exp\left(s(q_i, n_{i,k}^-) / \tau\right)}$$
-trong đó $\tau$ là siêu tham số nhiệt độ (temperature scaling), $t_j^+$ là các mẫu âm ngẫu nhiên nội lô (in-batch negatives), và $n_{i,k}^-$ là các mẫu âm tính khó (hard negatives) được khai phá độc lập thông qua mô hình giáo viên ở vòng huấn luyện đầu tiên. Chiến lược này buộc mô hình phải phân biệt ranh giới ngữ nghĩa cực kỳ tinh tế giữa các công cụ có chức năng tương đồng trong cùng một lĩnh vực nghiệp vụ.
+$$\mathcal{L}_{\text{MNRL}} = -\frac{1}{B} \sum_{i=1}^B \log \frac{\exp\left(s(q_i, t_i^+) / T\right)}{\exp\left(s(q_i, t_i^+) / T\right) + \sum_{j \neq i} \exp\left(s(q_i, t_j^+) / T\right) + \sum_{k=1}^{M} \exp\left(s(q_i, n_{i,k}^-) / T\right)}$$
+trong đó $T>0$ là siêu tham số nhiệt độ (temperature scaling), phân biệt với ngưỡng kích hoạt $\tau$ ở Chương 4; $t_j^+$ là các mẫu âm nội lô (in-batch negatives) đối với truy vấn $q_i$, và $n_{i,k}^-$ là các mẫu âm tính khó (hard negatives) được khai phá thông qua mô hình giáo viên ở vòng huấn luyện đầu tiên. Chiến lược này giúp mô hình phân biệt các công cụ có chức năng tương đồng trong cùng một lĩnh vực nghiệp vụ.
 
 \section{2. Giai đoạn 2: Trích xuất tham số theo lược đồ (Cross-Encoder Extraction)}
 
@@ -113,8 +113,8 @@ Khi tham số được xác nhận tồn tại, biểu diễn ẩn được đ�
 $$P_{\text{start}}(i) = \frac{\exp(\mathbf{w}_s^\top \mathbf{h}_i)}{\sum_k \exp(\mathbf{w}_s^\top \mathbf{h}_k)}, \quad P_{\text{end}}(j) = \frac{\exp(\mathbf{w}_e^\top \mathbf{h}_j)}{\sum_k \exp(\mathbf{w}_e^\top \mathbf{h}_k)}$$
 Hàm mất mát span là tổng entropy chéo phân loại: $\mathcal{L}_{\text{span}} = \text{CE}(P_{\text{start}}, y_s) + \text{CE}(P_{\text{end}}, y_e)$. Với các tham số có miền giá trị hữu hạn, \texttt{enum_head} và \texttt{bool_head} dự đoán nhãn trong danh mục schema. Cơ chế này giới hạn định dạng và miền giá trị có thể xuất ra, nhưng vẫn có thể chọn sai nhãn.
 
-Tổng hàm mất mát liên hợp của mô hình Cross-Encoder là sự kết hợp có trọng số của các mục tiêu:
-$$\mathcal{L}_{\text{total}} = \lambda_1 \mathcal{L}_{\text{exist}} + \mathbb{I}(y_{\text{exist}}=1) \cdot \left[ \lambda_2 \mathcal{L}_{\text{span}} + \lambda_3 \mathcal{L}_{\text{enum}} + \lambda_4 \mathcal{L}_{\text{bool}} \right]$$
+Gọi $g(p_j)\in\{\text{span},\text{enum},\text{bool}\}$ là nhánh được chọn theo kiểu dữ liệu của tham số $p_j$. Tổng hàm mất mát liên hợp của mô hình Cross-Encoder cho một tham số được viết gọn như sau:
+$$\mathcal{L}_{\text{total}} = \lambda_{\text{exist}}\mathcal{L}_{\text{exist}} + \mathbb{I}(y_{\text{exist}}=1)\lambda_{g(p_j)}\mathcal{L}_{g(p_j)}$$
 Kiến trúc này cho phép suy luận độc lập cho từng tham số; bước hậu xử lý theo schema giúp đầu ra tuân thủ ràng buộc cú pháp trong protocol structured-output được sử dụng.
 
 \section{Những thách thức đặc thù của ngôn ngữ tiếng Việt trong bài toán Tool Calling}
