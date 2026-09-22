@@ -859,16 +859,16 @@ Các kết quả gợi ý hai lựa chọn kiến trúc theo yêu cầu triển 
 
 **Bảng 5.4b: Độ trễ và bộ nhớ trong Stress Test theo quy mô danh mục công cụ**
 
-| Số công cụ ($N$) | Độ trễ SLM (ms)* | M2 P50 (ms) | M2 P95 (ms) | M2 VRAM cấp phát (MiB) |
-| :---: | ---: | ---: | ---: | ---: |
-| **3** | 1,258.94 | **55.13** | 84.92 | 3,277 |
-| **10** | 1,604.68 | **55.05** | 84.74 | 3,282 |
-| **50** | 4,703.39 | **56.07** | 86.46 | 3,278 |
-| **100** | 9,318.21 | **61.01** | 85.09 | 3,283 |
-| **500** | *OOM* | **92.27** | 128.82 | 3,283 |
-| **1000** | *OOM* | **107.68** | 148.21 | 3,283 |
+| Số công cụ ($N$) | Độ trễ SLM (ms)* | M2 P50 (ms) | M2 P95 (ms) |
+| :---: | ---: | ---: | ---: |
+| **3** | 1,258.94 | **55.13** | 84.92 |
+| **10** | 1,604.68 | **55.05** | 84.74 |
+| **50** | 4,703.39 | **56.07** | 86.46 |
+| **100** | 9,318.21 | **61.01** | 85.09 |
+| **500** | *OOM* | **92.27** | 128.82 |
+| **1000** | *OOM* | **107.68** | 148.21 |
 
-*Ghi chú Bảng 5.4b: Độ trễ SLM là thời gian sinh của batch chia cho số mẫu trong batch, với batch size thay đổi theo $N$; đây không phải P50 wall-clock từng truy vấn. Method 2 đo từng truy vấn ở batch 1, có đồng bộ CUDA và cache embedding. Hai phép đo khác giao thức, nên không quy đổi thành hệ số tăng tốc. VRAM của Method 2 là bộ nhớ PyTorch allocated.*
+*Ghi chú Bảng 5.4b: Độ trễ SLM là thời gian sinh của batch chia cho số mẫu trong batch, với batch size thay đổi theo $N$; đây không phải P50 wall-clock từng truy vấn. Method 2 đo từng truy vấn ở batch 1, có đồng bộ CUDA và cache embedding. Hai phép đo khác giao thức, nên không quy đổi thành hệ số tăng tốc. PyTorch allocated VRAM của Method 2 tại $N=3, 10, 50, 100, 500, 1000$ lần lượt là 3,277; 3,282; 3,278; 3,283; 3,283; 3,283 MiB.*
 
 ![Hình 5.2: Kết quả Stress Test đối đầu trực diện khi mở rộng quy mô công cụ ($N = 3 \to 1000$)](../paper/figures/fig3_stress_test_curves.png)
 
