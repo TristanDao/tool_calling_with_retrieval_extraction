@@ -2,23 +2,23 @@
 
 \section{Phân loại các dạng lỗi phổ biến trong trích xuất tham số tiếng Việt}
 
-Phân tích định tính trên 200 trường hợp dự đoán sai lệch điển hình thu thập từ cả hai phương pháp tiếp cận đã làm sáng tỏ những thách thức mang tính bản chất của ngôn ngữ tự nhiên tiếng Việt cũng như sự khác biệt sâu sắc trong cơ chế biểu diễn giữa các kiến trúc mô hình. Các sai sót thực nghiệm này được quy nạp thành ba nhóm hiện tượng chính:
+Nghiên cứu khảo sát định tính 200 dự đoán sai từ hai phương pháp. Ba nhóm lỗi tham số được báo cáo với tỷ lệ 42\%, 34\% và 24\% trong tập trường hợp khảo sát. Sai lệch thứ tự đa lệnh gọi được phân tích riêng như một lỗi cấu trúc đầu ra; tỷ lệ của nhóm này không nằm trong phép phân chia trên.
 
-Thứ nhất, hiện tượng nhập nhằng ranh giới thực thể (Entity Boundary Ambiguity), chiếm tỷ trọng lớn nhất với 42\% tổng số trường hợp lỗi được khảo sát. Nhóm lỗi này phát sinh chủ yếu tại các thực thể định danh hành chính có cấu trúc phức tạp hoặc chứa nhiều đơn vị phân cấp liên tiếp, chẳng hạn như cụm từ "phường 12 quận Tân Bình", "xã Phước Kiển huyện Nhà Bè", hay "số 45 đường 3 tháng 2". Do đặc thù của thuật toán tách từ phụ (subword tokenization như BPE hay SentencePiece) trên ngữ liệu tiếng Việt thường phân rã các con số và danh từ riêng thành các mảnh token rời rạc, mô hình trích xuất ranh giới trực tiếp (như đầu phân loại span của Cross-Encoder) có xu hướng chỉ nắm bắt được một phần thực thể (chẳng hạn chỉ trích xuất "12 quận Tân Bình" thay vì toàn bộ chuỗi địa chỉ). Ngược lại, mô hình tạo sinh SLM ít gặp lỗi cắt cụt ranh giới hơn nhờ cơ chế tự chú ý toàn cục, song lại có xác suất tự động chèn thêm từ nối hoặc thay đổi trật tự từ ngữ so với văn bản gốc.
+Lỗi ranh giới thực thể (Entity Boundary Ambiguity) chiếm 42\% các trường hợp lỗi tham số được khảo sát. Địa chỉ nhiều cấp như “phường 12 quận Tân Bình” hoặc “xã Phước Kiển huyện Nhà Bè” dễ bị cắt mất tiền tố hay hậu tố. Việc tách từ phụ có thể chia số và tên riêng thành nhiều token, khiến đầu dự đoán span của Cross-Encoder lấy thiếu một phần thực thể. SLM cũng có thể sai khi tự thêm từ nối hoặc thay đổi cách viết so với truy vấn gốc.
 
-Thứ hai, nhóm lỗi chuyển đổi kiểu dữ liệu và phương thức biểu đạt phi quy chuẩn (Slang and Implicit Formatting), chiếm 34\% các trường hợp sai lệch. Trong giao tiếp đời thường của người Việt, các thông tin định lượng thường được diễn đạt thông qua tiếng lóng bản địa (như "ba củ rưỡi", "năm trăm cành", "hai xị") hoặc các quy ước viết tắt (như biển số xe viết liền không dấu gạch nối "59X112345", định dạng ngày âm lịch "ngày rằm tháng bảy"). Mặc dù module Value Normalizer đã xử lý thành công phần lớn các biến thể quy chuẩn phổ biến, những mẫu câu có mật độ từ lóng cao hoặc cấu trúc ngữ pháp đảo ngữ phức tạp vẫn tạo ra thách thức lớn đối với bộ phân loại span, dẫn đến hiện tượng không thể nhận diện (trả về giá trị rỗng) hoặc chuyển đổi sai định dạng kiểu dữ liệu mục tiêu.
+Lỗi chuẩn hóa cách diễn đạt phi quy chuẩn chiếm 34\%. Các cụm như “ba củ rưỡi”, “hai xị”, biển số viết liền hoặc ngày âm lịch cần được chuyển sang định dạng mà schema yêu cầu. Value Normalizer xử lý một số dạng phổ biến, nhưng vẫn có trường hợp không nhận diện được giá trị hoặc chuyển đổi sai kiểu dữ liệu.
 
-Thứ ba, hiện tượng ảo giác tham số ngầm định (Implicit Default Hallucination), chiếm 24\% số ca lỗi còn lại. Đây là hiện tượng đặc trưng bộc lộ rõ rệt ở mô hình tạo sinh tự hồi quy SLM. Khi người dùng không cung cấp thông tin cho các tham số tùy chọn (optional parameters) trong Tool Schema, thay vì bỏ qua theo đúng nhãn chuẩn, mô hình SLM có xu hướng tự động điền các giá trị phỏng đoán dựa trên phân phối xác suất tiên nghiệm (prior probability) học được trong tập dữ liệu huấn luyện (chẳng hạn như tự động gán tham số phương thức thanh toán là "tiền mặt" hoặc thời gian giao hàng là "sáng mai" dù truy vấn không hề đề cập). Trái lại, kiến trúc phân tách Method 2 với đầu phân loại nhị phân \texttt{has_value} chuyên biệt đã giải quyết rất triệt để hiện tượng này, gần như loại bỏ hoàn toàn việc gán giá trị cho các trường dữ liệu vắng mặt.
+Hiện tượng tự gán tham số ngầm định chiếm 24\% số trường hợp lỗi được khảo sát. Khi truy vấn không cung cấp giá trị cho tham số tùy chọn, SLM đôi khi điền một giá trị phỏng đoán, chẳng hạn phương thức thanh toán “tiền mặt” hoặc thời gian giao hàng “sáng mai”. Method 2 dùng đầu \texttt{has_value} để kiểm tra sự hiện diện trước khi trích xuất; thiết kế này có thể hạn chế lỗi trên, nhưng số liệu hiện tại chưa định lượng riêng mức giảm.
 
-Thứ tư, sai lệch thứ tự sắp xếp trong các truy vấn đa lệnh gọi (Call Order Misalignment). Trong bài toán gọi đa công cụ, quy chuẩn đánh giá Tool Accuracy mặc định yêu cầu danh sách các công cụ dự đoán phải khớp chính xác tuyệt đối cả về tên gọi lẫn thứ tự xuất hiện so với nhãn chuẩn (Ordered Match). Tuy nhiên, phân tích thực nghiệm chỉ ra rằng khi nới lỏng ràng buộc thứ tự và chuyển sang đánh giá theo tập hợp đa phần tử (Multiset Match - chỉ yêu cầu đúng tên công cụ và số lần xuất hiện), độ chính xác chọn công cụ của Method 2 tăng vọt: trên tập Core VI tăng từ 59.20\% lên \textbf{65.79\%} (+6.59 điểm phần trăm), Core EN tăng từ 62.60\% lên \textbf{69.98\%} (+7.38 điểm phần trăm), và đặc biệt trên CustomTools-VI Seen chạm mốc kỷ lục \textbf{98.00\%} (so với 92.25\%). Phát hiện này chứng minh rằng Bi-Encoder đã nhận diện đúng hầu hết các công cụ cần thiết trong truy vấn phức tạp, nhưng sự chênh lệch nhỏ về điểm số tương đồng cosine giữa các công cụ mục tiêu đôi khi làm đảo vị trí xếp hạng của chúng.
+Sai lệch thứ tự đa lệnh gọi (Call Order Misalignment) ảnh hưởng đến Tool Acc vì thước đo mặc định yêu cầu đúng cả tên và thứ tự công cụ (Ordered Match). Khi đánh giá theo tập hợp đa phần tử (Multiset Match), Tool Acc của Method 2 tăng từ 59.20\% lên \textbf{65.79\%} trên Core VI, từ 62.60\% lên \textbf{69.98\%} trên Core EN và từ 92.25\% lên \textbf{98.00\%} trên CustomTools-VI Seen. Chênh lệch cho thấy một phần lỗi đến từ thứ tự dự đoán, ngay cả khi tập công cụ được chọn đúng.
 
-Để làm sáng tỏ cơ chế sai lệch của từng nhóm lỗi, Bảng 6.3 tổng hợp các trường hợp nghiên cứu điển hình (Case Studies) thu thập từ các lần chạy thực nghiệm, đối chiếu trực tiếp giữa câu truy vấn gốc của người dùng, nhãn chuẩn (Gold Function Call) và kết quả dự đoán thực tế của các mô hình.
+Các ví dụ ở Bảng 6.1 đối chiếu truy vấn, nhãn chuẩn và dự đoán của mô hình cho từng dạng sai lệch.
 
 
 \begin{table}[htbp]
     \centering
-    \caption{Các ví dụ thực tế (Case Studies) minh họa 4 dạng lỗi trích xuất tham số điển hình}
-    \label{tab:bảng_6_3}
+    \caption{Các ví dụ thực tế minh họa 4 dạng sai lệch trích xuất tham số điển hình}
+    \label{tab:bảng_6_1}
     \begin{tabular}{lllll}
         \toprule
         \textbf{Dạng lỗi} & \textbf{Câu truy vấn thực tế} & \textbf{Nhãn chuẩn (Gold Call)} & \textbf{Kết quả dự đoán (Predicted Call)} & \textbf{Phân tích nguyên nhân học thuật} \\
@@ -33,25 +33,21 @@ Thứ tư, sai lệch thứ tự sắp xếp trong các truy vấn đa lệnh g�
 
 \section{Phân tích nguyên nhân suy giảm zero-shot của Method 2}
 
-Sự phân hóa rõ nét về hiệu năng giữa tập công cụ đã học (\texttt{test_seen}, ArgA đạt 85.38\%) và tập công cụ chưa từng gặp (\texttt{test_unseen}, ArgA giảm xuống 60.25\%, và chỉ đạt 26.75\% trên các truy vấn dương tính) của kiến trúc phân tách Method 2 là một hiện tượng học thuật quan trọng cần được luận giải thấu đáo dưới góc độ biểu diễn không gian vector và ranh giới quyết định.
+ArgA của Method 2 giảm từ 85.38\% trên \texttt{test_seen} xuống 60.25\% trên \texttt{test_unseen}; riêng các truy vấn dương tính của tập unseen đạt 26.75\%. Khoảng cách này cần được phân tích ở cả khâu truy hồi, trích xuất và cấu trúc nhãn.
 
-Bản chất của Cross-Encoder dựa trên backbone \texttt{xlm-roberta-base} là một mạng phân biệt (discriminative model) được huấn luyện để phân loại token trực tiếp dựa trên sự tương tác chéo giữa chuỗi câu hỏi và chuỗi schema tham số. Khi hoạt động trên tập \texttt{seen}, mô hình đã thích nghi sâu sắc với các đặc trưng từ vựng và cấu trúc ngữ nghĩa quen thuộc, từ đó xác định chính xác các điểm ranh giới bắt đầu và kết thúc của span giá trị. Tuy nhiên, khi đối mặt với một Tool Schema hoàn toàn mới lạ trên tập \texttt{unseen}, việc xuất hiện các tên tham số và phần mô tả chưa từng có trong tập huấn luyện đã gây ra hiện tượng dịch chuyển phân phối biểu diễn (representation distribution shift) nghiêm trọng. Trong điều kiện này, các trọng số ẩn của đầu phân loại span không nhận được các tín hiệu kích hoạt đủ mạnh từ các biểu diễn token trong chuỗi ngữ cảnh, dẫn tới việc dự đoán sai lệch vị trí span hoặc kích hoạt nhầm đầu phân loại nhị phân \texttt{has_value}.
+Cross-Encoder dựa trên \texttt{xlm-roberta-base} dự đoán giá trị tham số từ tương tác giữa truy vấn và schema. Trên tập \texttt{seen}, mô hình đã học các tên tham số và cách diễn đạt quen thuộc. Với schema mới ở tập \texttt{unseen}, thay đổi về tên và mô tả tham số có thể làm suy giảm khả năng xác định span hoặc quyết định của đầu \texttt{has_value}. Đây là giả thuyết về dịch chuyển phân phối biểu diễn, chưa được tách khỏi các nguyên nhân khác bằng phép đo hiện tại.
 
 Ngược lại, mô hình tạo sinh SLM (như Qwen3.5 2B và 4B) hoạt động theo cơ chế mô hình hóa ngôn ngữ tự hồi quy, nơi tri thức tiền huấn luyện về ngôn ngữ và thế giới thực được tích lũy trên quy mô lớn. Khi tiếp nhận một schema công cụ mới, cơ chế tự chú ý cho phép mô hình sử dụng thông tin trong mô tả công cụ và câu truy vấn để sinh lời gọi theo schema. Đây là một giả thuyết phù hợp với chênh lệch ArgA nhỏ giữa seen và unseen của SLM trong CustomTools-VI, từ -0.62 đến -1.17 điểm phần trăm. Tuy nhiên, nguyên nhân suy giảm zero-shot của Cross-Encoder cần được diễn giải thận trọng vì còn chịu ảnh hưởng của supervision alignment, repeated calls và giới hạn $k_{\max}=3$.
 
-Bên cạnh sự dịch chuyển phân phối biểu diễn trên công cụ mới, một nguyên nhân có thể góp phần tạo ra khoảng cách giữa Method 2 và SLM E4 2B trên Core VI (ArgA 30.26\% so với 69.75\%) là \textbf{hiện tượng mất mát tín hiệu giám sát do rào cản căn chỉnh chuỗi (Supervision Alignment Gap)}:
-\begin{itemize}
-    \item Trong quá trình phân rã dữ liệu master Shared E4 thành các cặp huấn luyện cho Cross-Encoder, có tới \textbf{36,667 trên tổng số 156,966 tham số ứng viên (chiếm tỷ lệ 23.36\%) bị loại bỏ} khỏi quá trình huấn luyện do giá trị tham số không thể gióng hàng trực tiếp (exact string match) dưới dạng chuỗi span trong câu truy vấn của người dùng. Các trường hợp này thường rơi vào các giá trị mang tính suy diễn ngữ cảnh, giá trị mặc định ngầm định, hoặc các chuỗi số bị biến đổi định dạng.
-    \item Hệ quả là: Mặc dù cùng tiếp cận một nguồn dữ liệu master 65,600 mẫu, mô hình tạo sinh SLM tiếp nhận trọn vẹn 100\% gradient tối ưu hóa thông qua cơ chế dự đoán token kế tiếp (học được cả cách tái hiện các tham số suy diễn trừu tượng), trong khi Cross-Encoder bị suy giảm tới gần 1/4 tín hiệu học có giám sát. Khi thực hiện kiểm thử trên toàn bộ 7,712 mẫu Core Test, hệ thống đánh giá chấm điểm nghiêm ngặt trên tất cả các tham số nhãn chuẩn (gold labels), khiến kiến trúc phân tách chịu thiệt thòi cố hữu về độ bao phủ tham số.
-\end{itemize}
+Một yếu tố khác là khoảng thiếu hụt gióng hàng nhãn (Supervision Alignment Gap). Khi chuyển dữ liệu Shared E4 thành cặp huấn luyện cho Cross-Encoder, \textbf{36,667 trong 156,966 tham số ứng viên (23.36\%) bị loại} vì giá trị không khớp trực tiếp với một span trong truy vấn. Chúng thường là giá trị suy diễn, mặc định hoặc số đã đổi định dạng. Vì vậy, dù cùng sử dụng nguồn 65,600 mẫu, Cross-Encoder nhận ít tín hiệu huấn luyện hơn cho những trường hợp này, còn phép đánh giá vẫn chấm toàn bộ tham số nhãn chuẩn. Yếu tố đó có thể góp phần vào khoảng cách ArgA trên Core VI giữa Method 2 (30.26\%) và SLM E4 2B (69.75\%), nhưng không giải thích được toàn bộ chênh lệch.
 
-Nhằm bóc tách chi tiết cơ chế hoạt động nội tại của từng thành phần trong Cross-Encoder, nghiên cứu tiến hành đánh giá độc lập năng lực dự đoán của từng nhánh đầu ra chuyên biệt trên tập dữ liệu kiểm định. Kết quả được tổng hợp tại Bảng 6.1.
+Nhằm bóc tách chi tiết cơ chế hoạt động nội tại của từng thành phần trong Cross-Encoder, nghiên cứu tiến hành đánh giá độc lập năng lực dự đoán của từng nhánh đầu ra chuyên biệt trên tập dữ liệu kiểm định. Kết quả được tổng hợp tại Bảng 6.2.
 
 
 \begin{table}[htbp]
     \centering
-    \caption{Đánh giá chất lượng độc lập của các đầu phân cấp chuyên biệt trong Cross-Encoder}
-    \label{tab:bảng_6_1}
+    \caption{Đánh giá chất lượng độc lập của các đầu phân cấp trong Cross-Encoder}
+    \label{tab:bảng_6_2}
     \resizebox{\textwidth}{!}{%
     \begin{tabular}{lllccc}
         \toprule
@@ -67,15 +63,15 @@ Nhằm bóc tách chi tiết cơ chế hoạt động nội tại của từng t
     }%
 \end{table}
 
-Kết quả tại Bảng 6.1 mang lại một phát hiện chẩn đoán thực nghiệm có giá trị: trong khi đầu \texttt{has_value} (97.45\%), \texttt{span_head} (96.18\%) và \texttt{bool_head} (98.90\%) đều đạt độ chính xác gần như tuyệt đối, thì đầu danh mục \texttt{enum_head} chỉ đạt 72.06\%. Đây chính là điểm nghẽn kỹ thuật (bottleneck) cốt lõi kéo tụt chỉ số Argument Exact Match tổng hợp của Cross-Encoder, do không gian biểu diễn nhãn enum tĩnh (dung lượng cố định 20 nhãn) gặp khó khăn khi phân biệt các giá trị danh mục có ngữ nghĩa gần gũi trong các nghiệp vụ bản địa.
+Kết quả tại Bảng 6.2 cho thấy \texttt{has_value} (97.45\%), \texttt{span_head} (96.18\%) và \texttt{bool_head} (98.90\%) hoạt động tốt hơn \texttt{enum_head} (72.06\%). Chênh lệch này xác định enum là một nút thắt cần ưu tiên cải thiện trong Cross-Encoder, đặc biệt khi các giá trị danh mục có ngữ nghĩa gần nhau trong nghiệp vụ bản địa.
 
-Bên cạnh đó, để trả lời câu hỏi thực nghiệm then chốt: \textit{"Sự suy giảm hiệu năng của Method 2 trên các công cụ mới (Zero-Shot Unseen) chủ yếu bắt nguồn từ khâu truy hồi Bi-Encoder hay khâu trích xuất Cross-Encoder?"}, nghiên cứu đã thiết lập kịch bản đối chứng Oracle (giả định khâu truy hồi Bi-Encoder hoàn hảo, cung cấp chính xác 100\% các công cụ mục tiêu cho Cross-Encoder). Kết quả phân tích đối chiếu được trình bày tại Bảng 6.2.
+Bên cạnh đó, để trả lời câu hỏi thực nghiệm then chốt: \textit{"Sự suy giảm hiệu năng của Method 2 trên các công cụ mới (Zero-Shot Unseen) chủ yếu bắt nguồn từ khâu truy hồi Bi-Encoder hay khâu trích xuất Cross-Encoder?"}, nghiên cứu đã thiết lập kịch bản đối chứng Oracle (giả định khâu truy hồi Bi-Encoder hoàn hảo, cung cấp chính xác 100\% các công cụ mục tiêu cho Cross-Encoder). Kết quả phân tích đối chiếu được trình bày tại Bảng 6.3.
 
 
 \begin{table}[htbp]
     \centering
-    \caption{Đối chứng chẩn đoán Oracle giữa lỗi truy hồi (Retrieval) và lỗi trích xuất tham số (Extraction)}
-    \label{tab:bảng_6_2}
+    \caption{Đối chứng chẩn đoán Oracle giữa lỗi truy hồi và trích xuất tham số}
+    \label{tab:bảng_6_3}
     \resizebox{\textwidth}{!}{%
     \begin{tabular}{lcccccc}
         \toprule
@@ -90,19 +86,19 @@ Bên cạnh đó, để trả lời câu hỏi thực nghiệm then chốt: \tex
     }%
 \end{table}
 
-Số liệu tại Bảng 6.2 cung cấp một chỉ dấu chẩn đoán. Trên tập \texttt{CustomTools-VI Seen}, khi được cấp đúng công cụ mục tiêu theo chế độ Oracle, ArgA tăng từ 85.38\% lên 92.00\% (+6.62 điểm phần trăm). Trên tập \texttt{CustomTools-VI Unseen}, ArgA-positive chỉ tăng từ 26.75\% lên 28.50\% (+1.75 điểm phần trăm). Kết quả nhất quán với giả thuyết rằng trích xuất tham số trên schema mới là một nút thắt quan trọng.
+Số liệu tại Bảng 6.3 cung cấp một chỉ dấu chẩn đoán. Trên tập \texttt{CustomTools-VI Seen}, khi được cấp đúng công cụ mục tiêu theo chế độ Oracle, ArgA tăng từ 85.38\% lên 92.00\% (+6.62 điểm phần trăm). Trên tập \texttt{CustomTools-VI Unseen}, ArgA-positive chỉ tăng từ 26.75\% lên 28.50\% (+1.75 điểm phần trăm). Kết quả nhất quán với giả thuyết rằng trích xuất tham số trên schema mới là một nút thắt quan trọng.
 
 Tuy nhiên, Oracle hiện hành gộp các lần gọi lặp cùng tên công cụ và không phải upper bound hoàn hảo cho toàn bộ cấu trúc multi-call. Vì vậy, không thể quy toàn bộ chênh lệch cho Bi-Encoder hoặc Cross-Encoder; kết luận này cần được kiểm chứng bằng protocol hỗ trợ repeated calls.
 
 \section{Giới hạn của đề tài và các thách thức mở}
 
-Mặc dù đã hoàn thành toàn diện các mục tiêu nghiên cứu đề ra và thiết lập những mốc chuẩn mực mới cho bài toán gọi công cụ tiếng Việt, khóa luận vẫn ghi nhận một số giới hạn khoa học và kỹ thuật nhất định:
+Các kết quả trên cần được xem trong phạm vi các tập dữ liệu và protocol đã thực hiện. Khóa luận còn những giới hạn về phạm vi hội thoại, cấu trúc đa lệnh gọi, tài nguyên tính toán và khả năng tái lập phép đo.
 
-Thứ nhất, nghiên cứu hiện tại tập trung tối ưu hóa cho kịch bản tương tác đơn lượt (single-turn interaction). Trong các kịch bản triển khai tác tử AI thực tế, quá trình tương tác giữa người dùng và hệ thống thường diễn ra qua nhiều lượt đối thoại liên tiếp (multi-turn tool calling). Trong kịch bản này, hệ thống không chỉ cần trích xuất thông tin có sẵn mà còn phải có khả năng theo dõi trạng thái đối thoại (dialogue state tracking), ghi nhớ ngữ cảnh lịch sử và chủ động đặt câu hỏi phản hồi để thu thập các tham số còn thiếu (slot filling) khi người dùng cung cấp thông tin chưa đầy đủ. Việc mở rộng kiến trúc phân tách Bi-Encoder + Cross-Encoder để duy trì trạng thái bộ nhớ động qua nhiều lượt đàm thoại là một hướng nghiên cứu nâng cao cần tiếp tục giải quyết.
+Trước hết là phạm vi tương tác hội thoại đơn lượt (Single-turn Scope). Nghiên cứu hiện tại tập trung tối ưu hóa quy trình gọi công cụ trong một phát ngôn khép kín. Tuy nhiên, trong môi trường vận hành thực tế, tương tác giữa người dùng và tác tử AI thường diễn ra qua nhiều lượt đối thoại liên tiếp (Multi-turn Interaction). Trong bối cảnh đó, hệ thống đòi hỏi năng lực theo dõi trạng thái đối thoại (Dialogue State Tracking), khả năng duy trì bộ nhớ ngữ cảnh động và cơ chế chủ động đặt câu hỏi phản hồi để thu thập các tham số còn khuyết thiếu (Slot Filling) trước khi phát sinh lệnh gọi hàm.
 
-Thứ hai, hạn chế về mặt biểu diễn cấu trúc đối với các truy vấn đa lệnh gọi cùng một tên công cụ (Homonymous Multi-call Limitation). Kiến trúc phân biệt hai giai đoạn của Method 2 hoạt động bằng cách ánh xạ từng định danh công cụ được Bi-Encoder chọn sang một không gian trích xuất tham số phẳng tương ứng của Cross-Encoder. Thiết kế này hoạt động chính xác cho các truy vấn đơn lệnh hoặc đa lệnh gọi các công cụ khác nhau (heterogeneous multi-calls). Tuy nhiên, đối với các truy vấn phức tạp yêu cầu kích hoạt \textbf{nhiều lần cùng một tên công cụ với các tập tham số độc lập} (chẳng hạn câu hỏi so sánh hai chuyến bay hoặc đặt đồng thời vé khứ hồi qua cùng một API \texttt{book_ticket}), pipeline hiện tại chưa hỗ trợ cơ chế đánh chỉ số phiên bản (instance indexing), dẫn tới việc chỉ có thể trích xuất ra một lệnh gọi duy nhất.
+Hạn chế thứ hai liên quan đến nhiều lời gọi cùng một công cụ (Homonymous Multi-call Limitation). Pipeline phân tách gắn mỗi tên công cụ do Bi-Encoder chọn với một tập tham số do Cross-Encoder trích xuất. Vì chưa đánh chỉ số cho từng lần gọi (Instance Indexing), hệ thống không biểu diễn được hai đối tượng tham số độc lập khi người dùng yêu cầu gọi cùng API nhiều lần, chẳng hạn đặt vé khứ hồi qua \texttt{book_ticket}.
 
-Thứ ba, phạm vi nghiên cứu của khóa luận được giới hạn ở các công đoạn tiền thực thi (từ câu truy vấn của người dùng đến khi sinh hoàn chỉnh đối tượng JSON Schema hợp lệ) mà chưa tích hợp môi trường thực thi công cụ trong môi trường cô lập an toàn (sandboxed tool execution). Trong các ứng dụng thực tế, việc thực thi công cụ có thể trả về các lỗi API (như lỗi xác thực, lỗi mạng, hoặc tham số không hợp lệ từ phía máy chủ). Khả năng tiếp nhận phản hồi lỗi từ môi trường thực thi để tự động sửa sai và gọi lại công cụ (self-healing tool calling) là một mảnh ghép quan trọng để xây dựng một tác tử AI hoàn chỉnh.
+Bên cạnh đó, nghiên cứu giới hạn phạm vi khảo sát ở các công đoạn tiền thực thi (Pre-execution Boundary), từ khâu tiếp nhận truy vấn ngôn ngữ tự nhiên đến khi xuất hoàn chỉnh đối tượng JSON Schema hợp lệ. Trong các ứng dụng sản phẩm thực tế, việc tương tác với các hệ thống bên ngoài luôn tiềm ẩn rủi ro phát sinh lỗi thời gian thực từ phía máy chủ (như lỗi xác thực token, mã lỗi HTTP 4xx/5xx hoặc xung đột dữ liệu nghiệp vụ). Việc xây dựng môi trường thực thi cô lập an toàn (Sandboxed Tool Execution) tích hợp cơ chế tự phục hồi và sửa sai tham số (Self-healing Reflection) là một yêu cầu kỹ thuật tất yếu để hoàn thiện một tác tử tự chủ.
 
-Thứ tư, về mặt hạ tầng điện toán và quy mô mô hình, các thực nghiệm mở rộng quy mô tham số của đề tài mới dừng lại ở mức 4.56 tỷ tham số (\texttt{Qwen3.5-4B}) do những hạn chế về tài nguyên GPU sẵn có. Việc khảo sát các mô hình ở quy mô lớn hơn (như 7B, 14B hoặc các mô hình kiến trúc chuyên gia Mixture-of-Experts) cũng như việc tinh chỉnh toàn diện các siêu tham số trong không gian tìm kiếm rộng lớn vẫn là một thách thức mở đòi hỏi hạ tầng điện toán phân tán quy mô lớn hơn.
+Cuối cùng là giới hạn về hạ tầng và thiết kế thực nghiệm. Mô hình SLM lớn nhất được đánh giá có 4.56 tỷ tham số (Qwen3.5-4B); chưa khảo sát các quy mô lớn hơn hoặc tìm kiếm siêu tham số rộng. Các kết quả huấn luyện và đánh giá chủ yếu dựa trên một seed cố định (42), chưa có độ lệch chuẩn hay khoảng tin cậy qua nhiều seed. Phép đo latency của SLM, Method 2 và API dùng các protocol khác nhau; kết quả trên một cấu hình GPU không tự động phản ánh hiệu năng ở hạ tầng triển khai khác. Run API chưa lưu snapshot dịch vụ, region và các thiết lập mặc định của SDK.
 

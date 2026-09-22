@@ -163,16 +163,16 @@ Khi hỗ trợ viết hoặc chỉnh sửa tài liệu Khóa luận ([thesis/kho
 Khi thực hiện chuyển đổi hoặc biên tập tài liệu sang Word (`.docx`), cần tuân thủ quy chuẩn định dạng KLTN UIT:
 - **Font chữ**: Times New Roman (hoặc font Unicode chuẩn tương đương).
 - **Cỡ chữ**: 13 pt (thân văn bản).
-- **Dãn dòng (Line spacing)**: 1.3 – 1.5 lines; Spacing: Before 0 pt, After 3 – 6 pt.
+- **Dãn dòng (Line spacing)**: 1.5 lines; Spacing: Before 0 pt, After 4 pt.
 - **Căn lề (Margins)**:
-  - Lề trên (Top): 2.0 – 2.5 cm
-  - Lề dưới (Bottom): 2.0 – 2.5 cm
-  - Lề trái (Left / Gutter side): 3.0 – 3.5 cm (để đóng gáy)
+  - Lề trên (Top): 3.0 cm
+  - Lề dưới (Bottom): 3.5 cm
+  - Lề trái (Left / Gutter side): 3.5 cm (để đóng gáy)
   - Lề phải (Right): 2.0 cm
 - **Phân cấp Heading**:
-  - **Heading 1**: Tên Chương (Chương 1, Chương 2, ...), 16 pt, In hoa, Đậm, căn giữa hoặc căn trái.
-  - **Heading 2**: 14 pt, Đậm (ví dụ: 1.1, 1.2).
-  - **Heading 3**: 13 pt, Đậm hoặc Đậm nghiêng (ví dụ: 1.1.1, 1.1.2).
+  - **Chương (Heading 1)**: Tên Chương (Chương 1, Chương 2, ...), 14 pt, Đậm, căn giữa hoặc căn trái.
+  - **Mục (Heading 2)**: 13 pt, Đậm (ví dụ: 3.1.), thụt lề 1 tab (0.6 cm).
+  - **Tiểu mục (Heading 3)**: 13 pt, Đậm (ví dụ: 3.1.1.), thụt lề 2 tab (1.2 cm).
 - **Bảng biểu (Tables)**: Tiêu đề bảng đặt **phía trên** bảng, căn giữa hoặc căn trái. Các cột căn lề hợp lý (văn bản căn trái, số liệu căn giữa hoặc căn phải).
 - **Hình ảnh (Figures)**: Tiêu đề hình đặt **phía dưới** hình, căn giữa, hình ảnh rõ nét, không vỡ nét; chỉ sử dụng các sơ đồ diagram chuẩn (Mermaid / Kiến trúc hệ thống), không sử dụng các biểu đồ thô sinh từ thư viện đồ họa khi chưa chuẩn hóa ấn bản.
 

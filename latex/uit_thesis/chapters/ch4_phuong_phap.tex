@@ -1,21 +1,20 @@
 \chapter{PHƯƠNG PHÁP ĐỀ XUẤT VÀ THIẾT KẾ KIẾN TRÚC HỆ THỐNG}
 
 \section{Kiến trúc tổng quan của hai trường phái kỹ thuật}
-Nhằm giải quyết toàn diện bài toán gọi công cụ trong môi trường tiếng Việt, khóa luận nghiên cứu và đối chứng thực nghiệm hai trường phái kỹ thuật mang tư duy kiến trúc đối lập: phương pháp tiếp cận tạo sinh nguyên khối (End-to-End Generative SLM) và phương pháp tiếp cận phân biệt hai giai đoạn (Decoupled Discriminative Pipeline). Sơ đồ kiến trúc tổng quan và luồng luân chuyển dữ liệu của hai phương pháp được mô tả trực quan tại Hình 4.1.
+Khóa luận đối chiếu hai kiến trúc gọi công cụ tiếng Việt: SLM tạo sinh end-to-end và pipeline phân tách Bi-Encoder + Cross-Encoder. Hình 4.1 trình bày các thành phần và luồng dữ liệu của mỗi phương pháp.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.88\textwidth]{figures/fig1_system_architecture}
-    \caption{Sơ đồ kiến trúc tổng quan đối chiếu giữa Phương pháp 1 và Phương pháp 2}
+    \caption{Sơ đồ kiến trúc đối chiếu giữa Phương pháp 1 và Phương pháp 2}
     \label{fig:hình_4_1}
 \end{figure}
 
-\textit{Hình 4.1: Sơ đồ kiến trúc tổng quan đối chiếu giữa Phương pháp 1 (SLM End-to-End sinh mã tự hồi quy) và Phương pháp 2 (Kiến trúc phân tách không tự hồi quy kết hợp Bi-Encoder BGE-M3 và Cross-Encoder XLM-R).}
+\textit{Hình 4.1: Sơ đồ kiến trúc đối chiếu giữa Phương pháp 1 (SLM End-to-End) và Phương pháp 2 (Bi-Encoder + Cross-Encoder).}
 
 \section{Phương pháp 1: SLM End-to-End dựa trên Qwen3.5 (2B và 4B)}
-Phương pháp 1 tiếp cận bài toán theo hướng end-to-end: mô hình tiếp nhận toàn bộ định nghĩa các công cụ khả dụng và câu truy vấn của người dùng trong cùng một prompt, sau đó tự hồi quy sinh ra cấu trúc lệnh gọi công cụ theo định dạng XML chuẩn của Qwen3.5.
+Phương pháp 1 tiếp cận bài toán theo trường phái tạo sinh nguyên khối (End-to-End Generative Approach). Trong mô hình này, mạng nơ-ron tiếp nhận toàn bộ định nghĩa các công cụ khả dụng cùng câu truy vấn của người dùng trong cùng một cửa sổ ngữ cảnh duy nhất. Cơ chế tự chú ý (Self-Attention) cho phép mô hình liên kết trực tiếp các điều kiện ràng buộc trong mô tả API với các thực thể trong câu hỏi, từ đó tự hồi quy sinh ra cấu trúc lệnh gọi công cụ theo định dạng XML chuẩn của họ mô hình Qwen3.5:
 
-Ví dụ định dạng đầu ra của mô hình:
 \begin{verbatim}
 <tool_call>
 <function=tra_cuu_phat_nguoi>
@@ -24,7 +23,7 @@ Ví dụ định dạng đầu ra của mô hình:
 </function>
 </tool_call>
 \end{verbatim}
-Nếu câu truy vấn là câu trò chuyện thông thường hoặc không có công cụ nào thỏa mãn, mô hình sinh trực tiếp câu trả lời bằng ngôn ngữ tự nhiên và tuyệt đối không tạo thẻ \texttt{<tool_call>}.
+Khi câu truy vấn chỉ mang tính giao tiếp thông thường hoặc không có công cụ nào trong hệ thống đáp ứng được yêu cầu, mô hình sẽ trực tiếp sản sinh câu trả lời bằng ngôn ngữ tự nhiên và từ chối tạo lập thẻ \texttt{<tool_call>}. Cơ chế này giúp hợp nhất năng lực đàm thoại tự nhiên và khả năng gọi hàm vào một mô hình thống nhất.
 
 \textbf{Quy trình huấn luyện và thiết lập siêu tham số}:
 Mô hình được tinh chỉnh trên hạ tầng GPU NVIDIA A100-40GB thông qua thư viện Unsloth và chuẩn kỹ thuật QLoRA 4-bit với các siêu tham số được mô tả chi tiết tại Bảng 4.1.
@@ -32,7 +31,7 @@ Mô hình được tinh chỉnh trên hạ tầng GPU NVIDIA A100-40GB thông qu
 
 \begin{table}[htbp]
     \centering
-    \caption{Thiết lập siêu tham số huấn luyện mô hình SLM Qwen3.5 trên GPU NVIDIA A100}
+    \caption{Thiết lập siêu tham số huấn luyện mô hình SLM Qwen3.5 (2B và 4B)}
     \label{tab:bảng_4_1}
     \begin{tabular}{lcc}
         \toprule
@@ -47,9 +46,9 @@ Mô hình được tinh chỉnh trên hạ tầng GPU NVIDIA A100-40GB thông qu
         \textbf{Batch Size cấu hình} & $64 \times 1$ (Per-device: 64, Accum: 1) & $32 \times 2$ (Per-device: 32, Accum: 2) \\
         \textbf{Batch Size hiệu dụng (Effective BS)} & \textbf{64} (Đồng nhất 100\%) & \textbf{64} (Đồng nhất 100\%) \\
         \textbf{Thuật toán tối ưu (Optimizer)} & AdamW 8-bit (\texttt{adamw_8bit}) & AdamW 8-bit (\texttt{adamw_8bit}) \\
-        \textbf{Tỷ lệ khởi động ấm (Warmup Ratio)} & $0.05$ (5\%) & $0.05$ (5\%) \\
+        \textbf{Tỷ lệ khởi động ấm (Warmup Ratio)} & $0.05$ ($5\%$) & $0.05$ ($5\%$) \\
         \textbf{Hệ số tắt dần LoRA (Dropout)} & $0.0$ & $0.0$ \\
-        \textbf{Độ dài ngữ cảnh tối đa (Max Length)} & 2,048 tokens & 2,048 tokens \\
+        \textbf{Độ dài ngữ cảnh tối đa (Max Length)} & $2{,}048$ tokens & $2{,}048$ tokens \\
         \textbf{Định dạng dữ liệu tính toán} & bfloat16 (BF16) & bfloat16 (BF16) \\
         \textbf{Kỹ thuật Gradient Checkpointing} & Kích hoạt (Unsloth Fast Gradient) & Kích hoạt (Unsloth Fast Gradient) \\
         \textbf{Tính toán hàm mất mát (Loss Masking)} & Chỉ tính trên phản hồi của Assistant & Chỉ tính trên phản hồi của Assistant \\
@@ -61,7 +60,7 @@ Hệ thống siêu tham số trên được áp dụng đồng bộ và nhất q
 
 \section{Phương pháp 2: Kiến trúc Phân tách Bi-Encoder + Cross-Encoder}
 
-Khác biệt căn bản với cách tiếp cận tạo sinh tự hồi quy, Phương pháp 2 tách biệt bài toán Tool Calling thành hai công đoạn phân loại phân biệt độc lập và chuyên biệt hóa:
+Phương pháp 2 chia bài toán thành hai giai đoạn: Bi-Encoder truy hồi công cụ theo ngữ nghĩa và Cross-Encoder trích xuất tham số theo lược đồ. Thiết kế mô-đun cho phép đánh giá riêng từng thành phần. Đầu ra được kiến tạo từ schema nên không ghi nhận lỗi cú pháp trong protocol hiện tại; độ trễ P50 tăng từ 55.13 ms tại $N=3$ lên 107.68 ms tại $N=1000$ trong stress test.
 
 \section{1. Module Truy hồi Công cụ Ngữ nghĩa (Semantic Tool Retriever)}
 Module đầu tiên chịu trách nhiệm thu hẹp không gian tìm kiếm từ kho hàng nghìn công cụ xuống một tập ứng viên rút gọn. Nhóm nghiên cứu sử dụng kiến trúc mạng hai tháp (Bi-Encoder) dựa trên nền tảng mô hình nhúng đa ngôn ngữ \texttt{BAAI/bge-m3}. Quá trình tối ưu hóa mô hình được triển khai thông qua quy trình huấn luyện hai vòng (two-round training): vòng thứ nhất huấn luyện mô hình cơ sở (teacher model) với hàm mất mát xếp hạng đa mẫu âm tính có bộ đệm (\texttt{CachedMNRL}); vòng thứ hai thực hiện khai thác các mẫu âm tính khó (hard negative mining) từ chính các dự đoán sai lệch của vòng 1 để tái huấn luyện mô hình cuối cùng.
@@ -71,22 +70,21 @@ Nhằm kiểm soát khả năng từ chối gọi công cụ đối với các c
 \section{2. Module Trích xuất Tham số Phân cấp (Hierarchical Parameter Extractor)}
 Sau khi công cụ mục tiêu được xác định, module thứ hai tiếp nhận chuỗi truy vấn của người dùng cùng với lược đồ thuộc tính (Tool Schema) của công cụ đó để trích xuất các giá trị tham số tương ứng. Module được xây dựng trên nền tảng mô hình biến đổi đa ngôn ngữ \texttt{xlm-roberta-base} với kiến trúc đầu ra phân cấp theo định hướng schema (Schema-driven routing).
 
-Thay vì buộc mô hình phải học cách phân loại kiểu dữ liệu vốn đã được đặc tả tường minh trong schema của lập trình viên, hệ thống tận dụng trực tiếp siêu dữ liệu (metadata) của schema để định tuyến luồng suy luận. Đối với mỗi tham số cần trích xuất, mô hình trước tiên kích hoạt đầu phân loại nhị phân \texttt{has_value} để xác định sự hiện diện của tham số trong câu truy vấn. Khi và chỉ khi giá trị này được khẳng định tồn tại, hệ thống mới định tuyến biểu diễn ẩn sang một đầu ra chuyên biệt duy nhất phù hợp với kiểu dữ liệu: đầu trích xuất đoạn (\texttt{span_head}) đối với các tham số dạng chuỗi tự do hoặc số lượng, đầu phân loại danh mục (\texttt{enum_head}) đối với các tham số dạng tập hợp liệt kê hữu hạn, hoặc đầu phân loại nhị phân (\texttt{bool_head}) đối với các cờ giá trị boolean. Thiết kế này giúp triệt tiêu hoàn toàn rủi ro sai lệch kiểu dữ liệu và tối ưu hóa tài nguyên tính toán.
+Hệ thống sử dụng metadata của schema để định tuyến theo kiểu tham số. Đầu \texttt{has_value} dự đoán tham số có xuất hiện hay không; nếu có, \texttt{span_head}, \texttt{enum_head} hoặc \texttt{bool_head} xử lý theo kiểu dữ liệu tương ứng. Cơ chế giới hạn miền đầu ra cho enum và boolean, nhưng lỗi định tuyến hoặc dự đoán vẫn có thể khiến giá trị cuối cùng sai so với nhãn chuẩn.
 
 \textbf{Quy chuẩn dữ liệu huấn luyện và hiệu chuẩn Method 2 (Shared E4)}:
-Nhằm đảm bảo tính công bằng thực nghiệm tuyệt đối khi đối chiếu với Phương pháp 1 (SLM), Phương pháp 2 được đồng bộ hóa toàn diện trên cùng nguồn ngữ liệu huấn luyện Shared E4 gồm 65,600 bản ghi hội thoại gốc (30,000 mẫu EN + 30,000 mẫu VI + 5,600 mẫu CustomTools-VI Seen):
-\begin{itemize}
-    \item \textbf{Huấn luyện Bi-Encoder (\texttt{BAAI/bge-m3} + LoRA $r=16, \alpha=32$)}: Từ kho dữ liệu master, hệ thống trích xuất chính xác 70,988 cặp dương tính \texttt{(query, tool_description)} để tính gradient hàm mất mát \texttt{CachedMNRL}. Toàn bộ 20 công cụ \texttt{unseen} bị loại trừ nghiêm ngặt khỏi tập huấn luyện dương tính, âm tính ngẫu nhiên và quy trình khai thác mẫu âm khó (\textit{Strict Zero-Shot Isolation}). Các mẫu không gọi công cụ (no-call) không đưa vào gradient thứ hạng mà được bảo lưu để hiệu chuẩn bộ tham số ngưỡng quyết định ($\tau = 0.35, \delta = 0.21$) trên tập validation.
-    \item \textbf{Huấn luyện Cross-Encoder (\texttt{xlm-roberta-base} Hierarchical Heads)}: Dữ liệu được phân rã thành 135,617 cặp \texttt{(query, param_schema)} có thể gióng hàng trực tiếp để huấn luyện liên hợp đầu nhị phân \texttt{has_value} và ba nhánh phân cấp chuyên biệt (\texttt{span_head}, \texttt{enum_head}, \texttt{bool_head}).
-    \item \textbf{Phạm vi kiểm thử đối chuẩn}: Đánh giá đồng bộ trên toàn bộ 7,712 mẫu kiểm thử Core tiếng Việt (7,221 có lệnh gọi / 491 âm tính), 7,712 mẫu Core tiếng Anh và hai tập kiểm thử \texttt{CustomTools-VI} Seen/Unseen (mỗi tập 800 mẫu cân bằng 50\% âm tính).
-\end{itemize}
+Phương pháp 2 dùng cùng nguồn ngữ liệu hội thoại Shared E4 với SLM, gồm $65{,}600$ bản ghi gốc ($30{,}000$ EN, $30{,}000$ VI và $5{,}600$ CustomTools-VI Seen). Hai kiến trúc chuyển đổi bản ghi thành ví dụ huấn luyện khác nhau, nên việc dùng chung nguồn dữ liệu không bảo đảm mọi điều kiện huấn luyện và đo lường tương đương.
+
+Trong khâu huấn luyện Bi-Encoder (\texttt{BAAI/bge-m3} tích hợp LoRA $r=16, \alpha=32$), hệ thống trích xuất chính xác $70{,}988$ cặp dương tính \texttt{(query, tool_description)} để lan truyền gradient tối ưu hóa hàm mất mát \texttt{CachedMNRL}. Toàn bộ 20 công cụ thuộc tập \texttt{unseen} bị loại trừ nghiêm ngặt khỏi dữ liệu huấn luyện dương tính, âm tính ngẫu nhiên cũng như quy trình khai thác mẫu âm khó nhằm duy trì tính độc lập hoàn toàn của miền zero-shot (\textit{Strict Zero-Shot Isolation}). Các mẫu không kích hoạt công cụ (no-call) không tham gia tính toán gradient thứ hạng mà được bảo lưu độc lập phục vụ cho việc hiệu chuẩn bộ tham số ngưỡng quyết định ($\tau = 0.35, \delta = 0.21$) trên tập kiểm định.
+
+Đối với khâu huấn luyện Cross-Encoder (\texttt{xlm-roberta-base} với kiến trúc Hierarchical Heads), ngữ liệu được phân rã thành $135{,}617$ cặp \texttt{(query, param_schema)} gióng hàng trực tiếp, phục vụ huấn luyện liên hợp đầu nhị phân \texttt{has_value} và ba nhánh phân cấp chuyên biệt. Quy trình kiểm thử đối chuẩn sau đó được triển khai đồng bộ trên toàn bộ $7{,}712$ mẫu kiểm thử Core tiếng Việt (gồm $7{,}221$ mẫu có lệnh gọi và $491$ mẫu âm tính), $7{,}712$ mẫu Core tiếng Anh và hai tập kiểm thử \texttt{CustomTools-VI} Seen/Unseen với mỗi tập $800$ mẫu cân bằng 50\% âm tính.
 
 Chi tiết toàn bộ cấu hình siêu tham số và tài nguyên tính toán của Phương pháp 2 được tổng hợp tại Bảng 4.2.
 
 
 \begin{table}[htbp]
     \centering
-    \caption{Thiết lập siêu tham số và cấu hình huấn luyện của Phương pháp 2 (Bi-Encoder BGE-M3 và Cross-Encoder XLM-R)}
+    \caption{Thiết lập siêu tham số huấn luyện Phương pháp 2 (BGE-M3 và XLM-R)}
     \label{tab:bảng_4_2}
     \begin{tabular}{lll}
         \toprule
@@ -101,27 +99,27 @@ Chi tiết toàn bộ cấu hình siêu tham số và tài nguyên tính toán c
         \textbf{Chiến lược huấn luyện} & 2 Rounds (Round 1 Teacher $\to$ Hard Negative Mining) & Curriculum Learning (2 Epochs Core $\to$ 2 Epochs Custom) \\
         \textbf{Hàm mất mát (Loss function)} & \texttt{CachedMultipleNegativesRankingLoss} & Binary Cross-Entropy (\texttt{has_value}, \texttt{bool}) + Cross-Entropy (\texttt{span}, \texttt{enum}) \\
         \textbf{Quy chuẩn quyết định (Policy)} & Gap selection: $\tau = 0.35, \delta = 0.21, k_{\max} = 3$ & Schema-driven routing + Regex Value Normalizer \\
-        \textbf{Thời gian huấn luyện (Tesla T4)} & 6.15 giờ (Round 2 trên 70,988 cặp dương tính) & 0.72 giờ (4,240 bước tối ưu hóa trên 135,617 cặp) \\
-        \textbf{Đỉnh chiếm dụng VRAM huấn luyện} & 10,888 MB & 7,693 MB \\
+        \textbf{Thời gian huấn luyện (Tesla T4)} & 6.15 giờ (Round 2 trên $70{,}988$ cặp dương tính) & 0.72 giờ ($4{,}240$ bước tối ưu hóa trên $135{,}617$ cặp) \\
+        \textbf{Đỉnh chiếm dụng VRAM huấn luyện} & $10{,}888$ MB & $7{,}693$ MB \\
         \bottomrule
     \end{tabular}
 \end{table}
 
 \section{Cơ chế chuẩn hóa giá trị thực thể tiếng Việt (Vietnamese Value Normalizer)}
 
-Trong kiến trúc phân tách Method 2, đầu trích xuất đoạn văn bản (\texttt{span_head}) của Cross-Encoder chỉ có nhiệm vụ định vị và trích xuất chuỗi ký tự bề mặt (surface text string) xuất hiện trực tiếp trong câu truy vấn của người dùng. Tuy nhiên, các giao diện lập trình ứng dụng (API) đòi hỏi các giá trị tham số đầu vào phải tuân thủ nghiêm ngặt các kiểu dữ liệu nguyên thủy được định nghĩa trong JSON Schema (\texttt{integer}, \texttt{number}, \texttt{boolean}, hoặc định dạng chuỗi chuẩn hóa như \texttt{date-time}). Nếu đưa trực tiếp chuỗi ký tự thô vào lời gọi hàm (chẳng hạn gán chuỗi \texttt{"hai triệu rưỡi"} cho một tham số yêu cầu kiểu số thực \texttt{float}), hệ thống phía máy chủ sẽ từ chối thực thi do lỗi định dạng kiểu dữ liệu.
+Đầu \texttt{span_head} của Cross-Encoder trích chuỗi xuất hiện trong truy vấn, còn API yêu cầu giá trị đúng kiểu và định dạng theo JSON Schema. Chẳng hạn, chuỗi \texttt{"hai triệu rưỡi"} không thể dùng trực tiếp cho tham số kiểu số. Vì vậy, Method 2 cần bước chuyển đổi giá trị trước khi tạo lời gọi.
 
-Nhằm thu hẹp khoảng cách biểu diễn giữa ngôn ngữ tự nhiên đời thường và các đặc tả kỹ thuật nghiêm ngặt của API, nhóm nghiên cứu thiết kế một module Chuẩn hóa Giá trị tiếng Việt (Vietnamese Value Normalizer) hoạt động theo cơ chế tiền định (deterministic rule-based pipeline) bốn giai đoạn nối tiếp:
+Module Chuẩn hóa Giá trị tiếng Việt (Vietnamese Value Normalizer) sử dụng các quy tắc xác định qua bốn giai đoạn:
 
-Giai đoạn đầu tiên thực hiện phân đoạn từ vựng và ánh xạ từ lóng bản địa (Lexical Tokenization and Slang Mapping). Module tiến hành rà soát các từ vựng chỉ lượng mang tính khẩu ngữ đặc thù trong đời sống xã hội Việt Nam để chuyển đổi về các lượng từ chuẩn tắc. Cụ thể, các định danh tiền tệ khẩu ngữ như "củ", "chai" được chuẩn hóa thành đơn vị triệu đồng ($10^6$); "lít", "xị", "loét" được ánh xạ về đơn vị trăm nghìn đồng ($10^5$); "cành", "k" tương ứng với đơn vị nghìn đồng ($10^3$); và các cách diễn đạt tương đối như "rưỡi" được tính toán theo nửa đơn vị của hàng chữ số liền trước (chẳng hạn "hai củ rưỡi" được quy đổi tương đương với "2.500.000").
+Giai đoạn 1 tách các biểu thức định lượng và ánh xạ từ lóng tiền tệ: “củ”, “chai” tương ứng $10^6$ đồng; “lít”, “xị”, “loét” tương ứng $10^5$ đồng; “cành”, “k” tương ứng $10^3$ đồng. Từ “rưỡi” biểu thị nửa đơn vị đứng trước, nên “hai củ rưỡi” được chuẩn hóa thành $2{,}500{,}000$ đồng.
 
-Giai đoạn thứ hai là bộ giải mã và phân tích cú pháp số chữ tiếng Việt (Vietnamese Written Number Parser). Module triển khai một máy trạng thái hữu hạn (Deterministic Finite Automaton) có khả năng phân tích đệ quy các chuỗi số chữ phức hợp gồm nhiều lớp đơn vị (tỷ, triệu, nghìn, trăm, mươi, lăm, mốt). Thuật toán tích lũy giá trị dựa trên thứ bậc hàng số, xử lý trơn tru các biến thể phát âm ngữ âm địa phương (chẳng hạn "mười lăm" so với "hai mươi nhăm", "bốn mươi" so với "bốn chục") và ánh xạ chuỗi văn bản thành giá trị số học nguyên thủy trong hệ thập phân.
+Giai đoạn 2 phân tích số viết bằng chữ tiếng Việt theo thứ bậc tỷ, triệu, nghìn, trăm và hàng chục. Bộ phân tích cũng xử lý các biến thể như “lăm”, “nhăm”, “mươi” và “chục” để trả về giá trị số.
 
-Giai đoạn thứ ba phụ trách chuẩn hóa các thực thể định dạng có cấu trúc thông qua biểu thức chính quy (Regex Pattern Canonicalization). Đối với các tham số thời gian, module phân tích các cụm từ chỉ ngày tháng theo lịch dương và lịch âm phổ biến, tự động tính toán mốc thời gian tuyệt đối dựa trên thời điểm neo của hệ thống (system anchor time) và định dạng lại theo tiêu chuẩn quốc tế ISO-8601 (\texttt{YYYY-MM-DD}). Đối với các định danh phương tiện giao thông và mã giao dịch hành chính, hệ thống tự động loại bỏ khoảng trắng ngẫu nhiên, chuẩn hóa dấu gạch ngang phân tách và chuyển đổi toàn bộ ký tự sang dạng chữ hoa chuẩn mực (ví dụ: chuyển đổi \texttt{"59 x1 999.88"} thành \texttt{"59X1-999.88"}).
+Giai đoạn 3 chuẩn hóa ngày tháng và mã định danh có cấu trúc. Các biểu thức thời gian được quy về ngày tuyệt đối theo thời điểm neo của hệ thống và định dạng ISO-8601 (\texttt{YYYY-MM-DD}). Với biển số và mã giao dịch, các quy tắc biểu thức chính quy xử lý khoảng trắng, dấu gạch ngang và chữ hoa; ví dụ, \texttt{"59 x1 999.88"} thành \texttt{"59X1-999.88"}.
 
-Giai đoạn cuối cùng là khâu áp đặt kiểu dữ liệu theo lược đồ (Schema-driven Type Casting). Căn cứ vào định nghĩa kiểu thuộc tính trong \texttt{tools[].parameters.properties[key].type}, module tự động ép kiểu giá trị đã chuẩn hóa về kiểu dữ liệu đích tương ứng: chuyển đổi về kiểu số nguyên \texttt{int}, số thực \texttt{float}, giá trị logic \texttt{bool}, hoặc giữ nguyên chuỗi ký tự đã làm sạch \texttt{string}. Các giá trị thuộc những dạng biểu thức mà bộ chuẩn hóa hỗ trợ được ép về kiểu dữ liệu theo schema trước khi tạo lệnh gọi. Đầu ra sau đó vẫn cần được xác thực bằng JSON Schema Validator trước khi chuyển tiếp tới môi trường thực thi; tỷ lệ lỗi cú pháp bằng 0\% không đồng nghĩa mọi lệnh gọi đều đầy đủ hoặc đúng nhãn chuẩn.
+Giai đoạn 4 ép giá trị theo kiểu khai báo tại \texttt{tools[].parameters.properties[key].type}, gồm \texttt{int}, \texttt{float}, \texttt{bool} hoặc chuỗi đã làm sạch. Đầu ra vẫn cần được xác thực theo JSON Schema trước khi thực thi; tỷ lệ lỗi cú pháp 0\% không có nghĩa là mọi tham số đều đúng nhãn chuẩn.
 
-Sơ đồ tuần tự các bước xử lý của module được trực quan hóa tại Hình 4.2.
+Hình 4.2 tóm tắt bốn giai đoạn xử lý.
 
 \begin{verbatim}
 graph LR
@@ -129,7 +127,7 @@ graph LR
     classDef step fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c;
 
     Raw["Chuỗi văn bản thô trích xuất từ span_head"]:::io
-    S1["Bước 1: Phân đoạn từ vựng & Ánh xạ từ lóng<br/>('hai củ rưỡi' -> '2.5 triệu', 'năm xị' -> '500k')"]:::step
+    S1["Bước 1: Phân đoạn từ vựng & Ánh xạ từ lóng<br/>('hai củ rưỡi' -> 2,500,000, 'năm xị' -> 500,000)"]:::step
     S2["Bước 2: Phân tích cú pháp số chữ tiếng Việt<br/>(Giải mã đệ quy hàng đơn vị, chục, trăm, triệu)"]:::step
     S3["Bước 3: Chuẩn hóa Regex có cấu trúc<br/>(Định dạng biển số xe, ngày tháng ISO-8601)"]:::step
     S4["Bước 4: Áp đặt kiểu dữ liệu theo Schema<br/>(Ép kiểu nguyên thủy integer, float, bool, string)"]:::step

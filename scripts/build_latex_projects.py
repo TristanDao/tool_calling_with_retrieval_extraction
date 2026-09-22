@@ -477,9 +477,9 @@ def build_uit_thesis():
         md_text = f.read()
         
     # Frontmatter: Cover page with TikZ border
-    cover_tex = r"""% Trang bìa chính thức Khóa luận tốt nghiệp UIT
+    cover_tex = r"""% Trang bìa chính thức Khóa luận tốt nghiệp UIT (Bìa ngoài)
 \begin{titlepage}
-    % Khung viền đôi trang trọng theo chuẩn UIT và docs/main.tex
+    % Khung viền đôi chuẩn học thuật UIT
     \begin{tikzpicture}[remember picture, overlay]
         \draw[line width = 2pt] 
             ($(current page.north west) + (2.5cm,-1.5cm)$) 
@@ -492,87 +492,68 @@ def build_uit_thesis():
     \end{tikzpicture}
     
     \centering
-    {\fontsize{13pt}{16pt}\selectfont \textbf{ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}}\\[0.2cm]
-    {\fontsize{14pt}{17pt}\selectfont \textbf{TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN}}\\[0.2cm]
-    {\fontsize{13pt}{16pt}\selectfont \textbf{KHOA CÔNG NGHỆ THÔNG TIN}}\\[0.8cm]
+    {\fontsize{15pt}{18pt}\selectfont \textbf{ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}}\\[0.2cm]
+    {\fontsize{16pt}{20pt}\selectfont \textbf{TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN}}\\[0.2cm]
+    {\fontsize{16pt}{20pt}\selectfont \textbf{KHOA KHOA HỌC MÁY TÍNH}}\\[0.3cm]
+    {\fontsize{10pt}{12pt}\selectfont —————————— ❖ ——————————}\\[0.6cm]
 
     % Logo trường Đại học Công nghệ Thông tin
-    \includegraphics[width=3.2cm]{figures/logo_uit.jpeg}\\[0.8cm]
+    \includegraphics[width=3.2cm]{figures/logo_uit.jpeg}\\[1.0cm]
 
-    {\fontsize{16pt}{20pt}\selectfont \textbf{KHÓA LUẬN TỐT NGHIỆP}}\\[0.3cm]
-    {\fontsize{12pt}{15pt}\selectfont \textbf{NGÀNH: CÔNG NGHỆ THÔNG TIN / TRÍ TUỆ NHÂN TẠO}}\\[0.8cm]
+    {\fontsize{14pt}{18pt}\selectfont \textbf{ĐÀO PHƯỚC THỊNH}}\\[0.15cm]
+    {\fontsize{14pt}{18pt}\selectfont \textbf{HÀ QUANG ĐẠT}}\\[1.0cm]
+
+    {\fontsize{16pt}{20pt}\selectfont \textbf{KHÓA LUẬN TỐT NGHIỆP}}\\[0.5cm]
 
     % Tên đề tài khóa luận (Tiếng Việt & Tiếng Anh)
-    \begin{minipage}{0.88\textwidth}
+    \begin{minipage}{0.92\textwidth}
         \centering
-        {\fontsize{14pt}{18pt}\selectfont \textbf{NGHIÊN CỨU PHƯƠNG PHÁP TOOL CALLING DỰA TRÊN TRUY HỒI NGỮ NGHĨA VÀ TRÍCH XUẤT THAM SỐ THEO TOOL SCHEMA}}\\[0.4cm]
-        {\fontsize{11pt}{14pt}\selectfont \textit{RESEARCH ON TOOL CALLING USING SEMANTIC RETRIEVAL AND SCHEMA-AWARE PARAMETER EXTRACTION}}
-    \end{minipage}\\[1.5cm]
+        {\fontsize{18pt}{22pt}\selectfont \textbf{NGHIÊN CỨU PHƯƠNG PHÁP TOOL CALLING DỰA TRÊN TRUY HỒI NGỮ NGHĨA VÀ TRÍCH XUẤT THAM SỐ THEO TOOL SCHEMA}}\\[0.5cm]
+        {\fontsize{16pt}{20pt}\selectfont \textbf{\textcolor[RGB]{237,28,36}{RESEARCH ON TOOL CALLING USING SEMANTIC RETRIEVAL AND SCHEMA-AWARE PARAMETER EXTRACTION}}}
+    \end{minipage}\\[1.0cm]
 
-    % Thông tin sinh viên & GVHD
-    \raggedright
-    \hspace{2.2cm}
-    \begin{minipage}{0.75\textwidth}
-        {\fontsize{12pt}{15pt}\selectfont
-        \begin{tabular}{ll}
-            \textbf{Sinh viên thực hiện:} & \textbf{ĐÀO PHƯỚC THỊNH} \hspace{0.2cm} -- MSSV: 25210038 \\
-                                          & \textbf{HÀ QUANG ĐẠT} \hspace{0.45cm} -- MSSV: 25210008 \\[0.3cm]
-            \textbf{Giảng viên hướng dẫn:} & \textbf{TS. ĐẶNG VĂN THÌN} \\[0.3cm]
-            \textbf{Cán bộ phản biện:}     & ....................................................
-        \end{tabular}
-        }
-    \end{minipage}
+    {\fontsize{14pt}{18pt}\selectfont \textbf{CỬ NHÂN NGÀNH TRÍ TUỆ NHÂN TẠO}}\\[1.2cm]
 
     \vfill
 
-    \centering
-    {\fontsize{12pt}{15pt}\selectfont \textbf{TP. HỒ CHÍ MINH, NĂM 2026}}
+    {\fontsize{13pt}{16pt}\selectfont \textbf{TP. HỒ CHÍ MINH, NĂM 2026}}
 \end{titlepage}
 """
     with open(target_dir / "frontmatter" / "cover.tex", "w", encoding="utf-8") as f:
         f.write(cover_tex)
         
-    # Frontmatter: Subcover (Trang phụ bìa)
-    subcover_tex = r"""% Trang phụ bìa khóa luận
+    # Frontmatter: Subcover (Trang phụ bìa - Bìa trong, không viền)
+    subcover_tex = r"""% Trang phụ bìa khóa luận UIT (Bìa trong)
 \begin{titlepage}
-    \begin{tikzpicture}[remember picture, overlay]
-        \draw[line width = 1.2pt] 
-            ($(current page.north west) + (2.5cm,-1.5cm)$) 
-            rectangle 
-            ($(current page.south east) + (-1.5cm,1.5cm)$);
-    \end{tikzpicture}
-    
     \centering
-    {\fontsize{13pt}{16pt}\selectfont \textbf{ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}}\\[0.2cm]
-    {\fontsize{14pt}{17pt}\selectfont \textbf{TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN}}\\[0.2cm]
-    {\fontsize{13pt}{16pt}\selectfont \textbf{KHOA CÔNG NGHỆ THÔNG TIN}}\\[1.2cm]
+    {\fontsize{15pt}{18pt}\selectfont \textbf{ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}}\\[0.2cm]
+    {\fontsize{16pt}{20pt}\selectfont \textbf{TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN}}\\[0.2cm]
+    {\fontsize{16pt}{20pt}\selectfont \textbf{KHOA KHOA HỌC MÁY TÍNH}}\\[0.3cm]
+    {\fontsize{10pt}{12pt}\selectfont —————————— ❖ ——————————}\\[0.6cm]
 
-    {\fontsize{16pt}{20pt}\selectfont \textbf{KHÓA LUẬN TỐT NGHIỆP}}\\[0.8cm]
+    % Logo trường Đại học Công nghệ Thông tin
+    \includegraphics[width=3.2cm]{figures/logo_uit.jpeg}\\[0.8cm]
 
-    \begin{minipage}{0.88\textwidth}
+    {\fontsize{14pt}{18pt}\selectfont \textbf{ĐÀO PHƯỚC THỊNH - 25210038}}\\[0.15cm]
+    {\fontsize{14pt}{18pt}\selectfont \textbf{HÀ QUANG ĐẠT - 25210008}}\\[0.8cm]
+
+    {\fontsize{16pt}{20pt}\selectfont \textbf{KHÓA LUẬN TỐT NGHIỆP}}\\[0.4cm]
+
+    % Tên đề tài khóa luận (Tiếng Việt & Tiếng Anh)
+    \begin{minipage}{0.92\textwidth}
         \centering
-        {\fontsize{14pt}{18pt}\selectfont \textbf{NGHIÊN CỨU PHƯƠNG PHÁP TOOL CALLING DỰA TRÊN TRUY HỒI NGỮ NGHĨA VÀ TRÍCH XUẤT THAM SỐ THEO TOOL SCHEMA}}\\[0.4cm]
-        {\fontsize{11pt}{14pt}\selectfont \textit{RESEARCH ON TOOL CALLING USING SEMANTIC RETRIEVAL AND SCHEMA-AWARE PARAMETER EXTRACTION}}
-    \end{minipage}\\[1.5cm]
+        {\fontsize{18pt}{22pt}\selectfont \textbf{NGHIÊN CỨU PHƯƠNG PHÁP TOOL CALLING DỰA TRÊN TRUY HỒI NGỮ NGHĨA VÀ TRÍCH XUẤT THAM SỐ THEO TOOL SCHEMA}}\\[0.4cm]
+        {\fontsize{16pt}{20pt}\selectfont \textbf{\textcolor[RGB]{237,28,36}{RESEARCH ON TOOL CALLING USING SEMANTIC RETRIEVAL AND SCHEMA-AWARE PARAMETER EXTRACTION}}}
+    \end{minipage}\\[0.8cm]
 
-    {\fontsize{12pt}{15pt}\selectfont \textbf{CỬ NHÂN NGÀNH CÔNG NGHỆ THÔNG TIN / TRÍ TUỆ NHÂN TẠO}}\\[1.5cm]
+    {\fontsize{14pt}{18pt}\selectfont \textbf{CỬ NHÂN NGÀNH TRÍ TUỆ NHÂN TẠO}}\\[0.8cm]
 
-    \raggedright
-    \hspace{2.2cm}
-    \begin{minipage}{0.75\textwidth}
-        {\fontsize{12pt}{15pt}\selectfont
-        \begin{tabular}{ll}
-            \textbf{Sinh viên thực hiện:} & Đào Phước Thịnh -- MSSV: 25210038 \\
-                                          & Hà Quang Đạt -- MSSV: 25210008 \\[0.3cm]
-            \textbf{Giảng viên hướng dẫn:} & TS. Đặng Văn Thìn
-        \end{tabular}
-        }
-    \end{minipage}
+    {\fontsize{14pt}{18pt}\selectfont \textbf{GIẢNG VIÊN HƯỚNG DẪN:}}\\[0.15cm]
+    {\fontsize{14pt}{18pt}\selectfont \textbf{TS. ĐẶNG VĂN THÌN}}\\[0.8cm]
 
     \vfill
 
-    \centering
-    {\fontsize{12pt}{15pt}\selectfont \textbf{TP. HỒ CHÍ MINH, NĂM 2026}}
+    {\fontsize{13pt}{16pt}\selectfont \textbf{TP. HỒ CHÍ MINH, NĂM 2026}}
 \end{titlepage}
 """
     with open(target_dir / "frontmatter" / "subcover.tex", "w", encoding="utf-8") as f:
@@ -582,7 +563,7 @@ def build_uit_thesis():
     council_tex = r"""\chapter*{THÔNG TIN HỘI ĐỒNG CHẤM KHÓA LUẬN}
 \addcontentsline{toc}{chapter}{Thông tin Hội đồng chấm khóa luận}
 
-Khóa luận tốt nghiệp được thực hiện tại: \textbf{Khoa Công nghệ Thông tin, Trường Đại học Công nghệ Thông tin, Đại học Quốc gia Thành phố Hồ Chí Minh}.
+Khóa luận tốt nghiệp được thực hiện tại: \textbf{Khoa Khoa học Máy tính, Trường Đại học Công nghệ Thông tin, Đại học Quốc gia TP. Hồ Chí Minh}.
 
 \vspace{0.5cm}
 
@@ -605,7 +586,7 @@ Khóa luận tốt nghiệp được thực hiện tại: \textbf{Khoa Công ngh
 
 \vspace{1cm}
 
-Xác nhận của Khoa Công nghệ Thông tin, Trường Đại học Công nghệ Thông tin:
+Xác nhận của Khoa Khoa học Máy tính, Trường Đại học Công nghệ Thông tin:
 
 \vspace{0.5cm}
 \begin{flushright}
@@ -797,7 +778,8 @@ Xác nhận của Khoa Công nghệ Thông tin, Trường Đại học Công ngh
 \include{frontmatter/subcover}
 \include{frontmatter/council}
 \include{frontmatter/acknowledgments}
-\include{frontmatter/declaration}
+% Không có mục Lời cam đoan (Quy chế KLTN Đại học UIT chỉ áp dụng cho Thạc sĩ / Tiến sĩ)
+% \include{frontmatter/declaration}
 
 \tableofcontents
 \newpage

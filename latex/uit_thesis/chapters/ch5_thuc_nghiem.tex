@@ -2,78 +2,117 @@
 
 \section{Thiết lập thực nghiệm và hạ tầng phần cứng}
 
-Nhằm đảm bảo tính khách quan, khả năng tái lập hoàn toàn (reproducibility) và phản ánh chính xác hiệu năng của các mô hình trong điều kiện triển khai thực tế, toàn bộ quá trình huấn luyện và kiểm thử được thực hiện trên một hệ thống hạ tầng và quy trình đánh giá chuẩn hóa nghiêm ngặt:
+Các mô hình SLM của Phương pháp 1 (\texttt{Qwen3.5-2B} và \texttt{Qwen3.5-4B}) được huấn luyện trên Google Colab Pro với một GPU NVIDIA A100-SXM4-40GB (bộ nhớ khả dụng 39.49 GB), RAM 83.5 GB, Ubuntu 22.04 LTS, CUDA 12.4 và PyTorch 2.5. Nhóm sử dụng Unsloth [16] và QLoRA 4-bit NF4 [6]. Hai thành phần Bi-Encoder (\texttt{BGE-M3}) và Cross-Encoder (\texttt{xlm-roberta-base}) của Phương pháp 2 được huấn luyện độc lập trên GPU NVIDIA Tesla T4 16GB thuộc Kaggle. Do phần cứng và quy trình khác nhau, các số đo vận hành của hai phương pháp cần được diễn giải theo từng protocol.
 
-Về hạ tầng huấn luyện, các mô hình SLM tạo sinh thuộc Phương pháp 1 (\texttt{Qwen3.5-2B} và \texttt{Qwen3.5-4B}) được huấn luyện trên hạ tầng điện toán đám mây Google Colab Pro với một GPU đơn lẻ NVIDIA A100-SXM4-40GB VRAM, hệ thống bộ nhớ RAM 83.5 GB và băng thông kết nối PCIe Gen4 tốc độ cao. Môi trường phần mềm vận hành trên hệ điều hành Ubuntu 22.04 LTS, nền tảng tính toán song song CUDA 12.4, thư viện PyTorch 2.5 và framework tối ưu hóa tham số Unsloth kết hợp kỹ thuật QLoRA 4-bit. Đối với Phương pháp 2, cả hai mô hình Bi-Encoder (\texttt{BGE-M3}) và Cross-Encoder (\texttt{xlm-roberta-base}) được huấn luyện trên GPU NVIDIA Tesla T4 16GB (Kaggle Cloud Platform) nhằm chứng minh tính khả thi của kiến trúc phân tách trên các phần cứng phổ thông giá rẻ.
+Khi đánh giá, Method 1 chia dữ liệu thành hai phần và suy luận độc lập trên 2× NVIDIA Tesla T4 của Kaggle. Cách chia này rút ngắn thời gian chạy toàn tập, nhưng không giảm độ trễ của một truy vấn. Method 2 được đo trên 1× T4, batch size 1, có cache embedding công cụ và đồng bộ CUDA quanh từng truy vấn; phép đo Core dùng ba lượt warm-up cho mỗi tập.
 
-Về quy chuẩn kiểm thử và đo lường độ trễ, toàn bộ các bài đánh giá thời gian thực (wall-clock latency) đều được thực thi trên môi trường đồng nhất sử dụng cụm GPU NVIDIA Tesla T4 16GB. Để mô phỏng sát thực tế tương tác thời gian thực của người dùng với các tác tử AI cá nhân, kích thước lô suy luận (batch size) được cố định nghiêm ngặt ở mức $B = 1$. Trước khi ghi nhận thời gian xử lý chính thức, hệ thống luôn thực hiện 10 lượt suy luận khởi động ấm (warm-up runs) để tải toàn bộ trọng số mô hình vào bộ nhớ VRAM và kích hoạt các kernel tính toán CUDA, loại bỏ hoàn toàn các sai số do độ trễ khởi tạo phần cứng ban đầu. Độ trễ suy luận của từng mẫu được đo bằng đồng hồ bấm giờ độ chính xác cao của hệ điều hành, ghi nhận cả giá trị trung vị P50 và phân vị thứ 95 (P95) trên toàn bộ tập dữ liệu kiểm thử. Nhằm bảo đảm tính nhất quán giữa các lần chạy, hạt giống ngẫu nhiên (random seed) được cố định ở giá trị 42 cho toàn bộ các thư viện Python, PyTorch và CUDA.
+Bảng 5.2 báo cáo độ trễ mean trên Core VI. Trong stress test, số đo của SLM là thời gian batch chia theo số mẫu, còn Method 2 báo cáo P50/P95 theo từng truy vấn. Các bước có ngẫu nhiên dùng seed 42; nghiên cứu chưa lặp nhiều seed để ước lượng độ lệch chuẩn hoặc khoảng tin cậy.
+
+Đường dẫn tới mã nguồn, dữ liệu và các checkpoint được tập hợp tại Phụ lục A để đối chiếu từng cấu hình thực nghiệm.
 
 \section{Hệ thống độ đo đánh giá (Evaluation Metrics)}
 
-Nhằm phản ánh toàn diện năng lực của các mô hình trên cả hai khía cạnh chất lượng suy luận và chi phí vận hành kỹ thuật, nhóm nghiên cứu thiết lập hệ thống 5 chỉ số đánh giá chuẩn mực:
+Tham khảo BFCL [4] và nghiên cứu của Ersoy và cộng sự [1], khóa luận sử dụng năm độ đo định lượng cho độ chính xác nội dung, khả năng từ chối, tính hợp lệ định dạng và độ trễ. Định nghĩa cụ thể dưới đây áp dụng cho protocol của khóa luận, không đồng nhất với toàn bộ thước đo ở các công trình nguồn.
 
-Độ chính xác lựa chọn công cụ (Tool Selection Accuracy - $\text{Tool Acc}$, \%): Xác định tỷ lệ các truy vấn dương tính được mô hình gán chính xác công cụ mục tiêu trong không gian danh mục API. Đối với các kịch bản gọi đa hàm đồng thời (multi-call), chỉ số này yêu cầu tập hợp các công cụ dự đoán phải trùng khớp hoàn toàn với tập hợp nhãn đích.
+Độ chính xác lựa chọn công cụ (Tool Selection Accuracy - $\text{Tool Acc}$, \%) phản ánh khả năng định tuyến đúng công cụ mục tiêu từ yêu cầu của người dùng. Chỉ số này được tính toán trên tập các câu truy vấn dương tính, đòi hỏi danh sách công cụ dự đoán phải trùng khớp chính xác với nhãn tham chiếu cả về định danh lẫn thứ tự xuất hiện đối với các trường hợp đa lệnh gọi (multi-call):
+$$\text{Tool Acc} = \frac{N_{\text{tool-exact, positive}}}{N_{\text{positive}}}$$
 
-Độ chính xác tham số tuyệt đối (Argument Accuracy - $\text{ArgA}$, \%): Chỉ số đánh giá chất lượng khắt khe nhất trong bài toán gọi hàm (tương đương chuẩn đánh giá của Ersoy et al., 2025 và BFCL). Một mẫu dự đoán chỉ được công nhận là chính xác (Exact Match) khi và chỉ khi mô hình chọn đúng công cụ đồng thời trích xuất đúng 100\% tất cả các cặp tham số (cả tên tham số lẫn giá trị tương ứng sau khi đã chuẩn hóa) so với nhãn chuẩn.
+Độ chính xác khớp toàn bộ đầu ra (Argument Population Accuracy - $\text{ArgA}$, \%) là tiêu chuẩn đánh giá khắt khe nhất trong bài toán gọi công cụ, đại diện cho tỷ lệ các trường hợp mô hình thực hiện thành công trọn vẹn tác vụ. Một dự đoán chỉ được công nhận là chính xác khi mô hình chọn đúng công cụ đồng thời trích xuất hoàn hảo toàn bộ các cặp khóa–giá trị tham số mà không có bất kỳ sai lệch nào sau bước chuẩn hóa. Chỉ số báo cáo mặc định trên toàn bộ tập kiểm thử ($\text{ArgA}_{\text{all}}$) bao gồm cả các trường hợp nhận diện chính xác câu truy vấn không gọi hàm:
+$$\text{ArgA}_{\text{all}} = \frac{N_{\text{exact, all}}}{N_{\text{all}}}$$
+Bên cạnh đó, khi cần phân tích chuyên biệt trên nhóm câu hỏi đòi hỏi kích hoạt công cụ, độ chính xác tham số trên tập dương tính ($\text{ArgA}_{\text{positive}}$) được xác định bởi:
+$$\text{ArgA}_{\text{positive}} = \frac{N_{\text{exact, positive}}}{N_{\text{positive}}}$$
+Trong toàn bộ khóa luận, ký hiệu $\text{ArgA}$ được quy ước đại diện cho $\text{ArgA}_{\text{all}}$ trừ khi có diễn giải riêng.
 
-Độ thu hồi từ chối gọi hàm (Non-Function-Calling Recall - $\text{Non-FC Recall}$, \%): Đo lường tỷ lệ các câu truy vấn đàm thoại thông thường (truy vấn âm tính, không chứa ý định sử dụng công cụ) được hệ thống nhận diện chính xác và từ chối gọi hàm, nhằm phát hiện và định lượng hiện tượng kích hoạt công cụ quá mức (over-triggering).
+Độ thu hồi từ chối gọi hàm (Non-Function-Calling Recall - $\text{Non-FC Recall}$, \%) đo lường năng lực nhận diện các câu thoại giao tiếp thông thường không chứa ý định kích hoạt API. Đây là thước đo mang tính quyết định nhằm phát hiện và kiểm soát hiện tượng thiên kiến kích hoạt quá mức (over-triggering pathology) trong các hệ thống tác tử thực tế:
+$$\text{Non-FC Recall} = \frac{N_{\text{true negative}}}{N_{\text{negative}}}$$
 
-Tỷ lệ lỗi cú pháp (Syntax Error Rate, \%): Đo lường tần suất mô hình sinh ra các chuỗi định dạng JSON hoặc XML dị tật, thiếu dấu ngoặc nhọn, sai kiểu dữ liệu hoặc vi phạm cú pháp khiến các bộ phân tích chuẩn (JSON parsers) không thể biên dịch thành công.
+Tỷ lệ lỗi cú pháp (Syntax Error Rate, \%) xác định tỷ lệ đầu ra không thể được bộ phân tích cú pháp xử lý theo định dạng đánh giá. Với Method 2, đầu ra được kiến tạo từ schema nên protocol hiện tại không ghi nhận lỗi cú pháp; kết quả 0\% chỉ phản ánh tính hợp lệ về định dạng, không chứng tỏ chọn đúng công cụ hay điền đúng tham số và không thay thế chỉ số ArgA.
 
-Độ trễ suy luận thời gian thực (Wall-clock Latency P50/P95, ms): Thời gian tính toán nội tại (tính bằng mili-giây) từ thời điểm hệ thống nhận câu truy vấn của người dùng đến khi xuất ra đối tượng gọi hàm hoàn chỉnh, được đo lường qua giá trị trung vị P50 và phân vị thứ 95 (P95) trên toàn bộ tập kiểm thử.
+Cuối cùng, độ trễ suy luận (Wall-clock Latency, ms) lượng hóa thời gian từ khi tiếp nhận truy vấn đến khi tạo xong đầu ra. Khóa luận ghi rõ mean hoặc phân vị P50/P95, tập mẫu, phần cứng và phạm vi tính thời gian cho từng phép đo; những số liệu từ các protocol khác nhau chỉ dùng để mô tả, không tạo thành phép đo tốc độ đối chứng đồng nhất.
 
 \section{Kết quả tổng thể và giải đáp 5 câu hỏi nghiên cứu}
-Bảng 5.1 và Bảng 5.2 tổng hợp toàn bộ kết quả thực nghiệm trên hai bộ benchmark.
+
+Kết quả trên \texttt{CustomTools-VI} gồm 1,600 mẫu seen/unseen được trình bày ở Bảng 5.1a và 5.1b. Bảng 5.2 báo cáo kết quả trên 7,712 mẫu kiểm thử của mỗi ngôn ngữ trong \texttt{Canonical Core Benchmark}. Các bảng này là cơ sở phân tích năm câu hỏi nghiên cứu RQ1–RQ5.
 
 
 \begin{table}[htbp]
     \centering
-    \caption{Kết quả thực nghiệm đối đầu trên benchmark CustomTools-VI (Seen vs. Unseen)}
+    \caption{a: Kết quả thực nghiệm trên tập kiểm thử CustomTools-VI Seen}
     \label{tab:bảng_5_1}
     \resizebox{\textwidth}{!}{%
-    \begin{tabular}{llccccccc}
+    \begin{tabular}{llcccc}
         \toprule
-        \textbf{Mô hình} & \textbf{Cấu hình huấn luyện} & \textbf{Seen: Tool Acc (\%)} & \textbf{Seen: ArgA (\%)} & \textbf{Seen: Non-FC (\%)} & \textbf{Unseen: Tool Acc (\%)} & \textbf{Unseen: ArgA (\%)} & \textbf{Unseen: Non-FC (\%)} & \textbf{Cú pháp lỗi (\%)} \\
+        \textbf{Mô hình} & \textbf{Cấu hình huấn luyện} & \textbf{Tool Acc (\%)} & \textbf{ArgA (\%)} & \textbf{Non-FC Recall (\%)} & \textbf{Syntax Error (\%)} \\
         \midrule
-        \textit{Nhóm SLM Cục bộ (Local Models)} &  &  &  &  &  &  &  &  \\
-        \textbf{Qwen3.5-2B} & E0 (Zero-shot) & 39.25\% & 56.75\% & 97.75\% & 40.75\% & 62.50\% & 97.25\% & 11.00\% \\
-        \textbf{Qwen3.5-2B} & E1 (Đơn ngữ EN 60k) & 91.50\% & 63.12\% & 75.25\% & 96.50\% & 70.50\% & 74.50\% & 4.50\% \\
-        \textbf{Qwen3.5-2B} & E2 (Đơn ngữ VI 60k) & 91.00\% & 51.50\% & 67.50\% & 96.25\% & 59.62\% & 67.75\% & 7.18\% \\
-        \textbf{Qwen3.5-2B} & E3 (Song ngữ 60k) & 92.25\% & 19.38\% & 3.00\% & 96.00\% & 27.88\% & 2.00\% & 4.31\% \\
-        \textbf{Qwen3.5-2B} & E4 (Song ngữ + Miền VI) & 93.25\% & 87.00\% & \textbf{100.00\%} & 97.00\% & 86.38\% & \textbf{100.00\%} & 2.44\% \\
-        \textbf{Qwen3.5-4B} & E3 (Song ngữ 60k) & 92.00\% & 62.00\% & 71.25\% & 97.50\% & 69.75\% & 74.50\% & 12.00\% \\
-        \textbf{Qwen3.5-4B} & \textbf{E4 (Song ngữ + Miền VI)} & \textbf{94.66\%} & \textbf{87.92\%} & \textbf{100.00\%} & 96.75\% & \textbf{86.75\%} & \textbf{100.00\%} & 2.90\% \\
-        \textit{Nhóm Phân tách Không tự hồi quy} &  &  &  &  &  &  &  &  \\
-        \textbf{Method 2} & Bi-Encoder + Cross-Encoder & 92.25\% & 85.38\% & 92.75\% & 79.50\% & 60.25\% & 93.75\% & \textbf{0.00\%} \\
-        \textit{Nhóm Frontier APIs Đám mây (Closed-source)} &  &  &  &  &  &  &  &  \\
-        \textbf{GPT-5.6 Luna} & OpenAI API ($T=0$) & 93.25\% & 78.25\% & 100.00\% & 97.25\% & 79.50\% & 100.00\% & 0.00\% \\
-        \textbf{Gemini 3.8 Flash} & Google API ($T=0$) & \textbf{100.00\%} & \textbf{93.62\%} & 100.00\% & \textbf{100.00\%} & \textbf{92.12\%} & 99.75\% & 0.06\% \\
+        \textbf{Nhóm SLM cục bộ} &  &  &  &  &  \\
+        \textbf{Qwen3.5-2B} & E0 (Zero-shot) & 39.25\% & 56.75\% & 97.75\% & 11.00\% \\
+        \textbf{Qwen3.5-2B} & E1 (Đơn ngữ EN 60k) & 91.50\% & 63.12\% & 75.25\% & 4.50\% \\
+        \textbf{Qwen3.5-2B} & E2 (Đơn ngữ VI 60k) & 91.00\% & 51.50\% & 67.50\% & 7.18\% \\
+        \textbf{Qwen3.5-2B} & E3 (Song ngữ 60k) & 92.25\% & 19.38\% & 3.00\% & 4.31\% \\
+        \textbf{Qwen3.5-2B} & E4 (Song ngữ + Miền VI) & 93.25\% & 87.00\% & \textbf{100.00\%} & 2.44\% \\
+        \textbf{Qwen3.5-4B} & E3 (Song ngữ 60k) & 92.00\% & 62.00\% & 71.25\% & 12.00\% \\
+        \textbf{Qwen3.5-4B} & \textbf{E4 (Song ngữ + Miền VI)} & \textbf{94.66\%} & \textbf{87.92\%} & \textbf{100.00\%} & 2.90\% \\
+        \textbf{Nhóm Method 2 phân tách} &  &  &  &  &  \\
+        \textbf{Method 2} & Bi-Encoder + Cross-Encoder & 92.25\% & 85.38\% & 92.75\% & \textbf{0.00\%} \\
+        \textbf{Nhóm Frontier API đám mây} &  &  &  &  &  \\
+        \textbf{GPT-5.6 Luna} & OpenAI API (không truyền tham số nhiệt độ) & 93.25\% & 78.25\% & 100.00\% & 0.00\% \\
+        \textbf{Gemini 3.8 Flash} & Google API (không truyền tham số nhiệt độ) & \textbf{100.00\%} & \textbf{93.62\%} & 100.00\% & 0.06\% \\
         \bottomrule
     \end{tabular}
     }%
 \end{table}
 
+\textit{Ghi chú Bảng 5.1a: Các chỉ số được tính trên tập \texttt{test_seen} gồm 800 mẫu, với 400 mẫu dương tính và 400 mẫu âm tính. Tool Acc tính trên mẫu dương tính; ArgA tính trên toàn bộ mẫu; Non-FC Recall tính trên mẫu âm tính. Với Method 2, 0\% lỗi cú pháp là hệ quả của việc kiến tạo đầu ra theo schema, không đồng nghĩa với ArgA đạt 100\%. Mã benchmark API không truyền \texttt{temperature}; không thể quy kết kết quả cho cấu hình $T=0$.}
+
+
+\begin{table}[htbp]
+    \centering
+    \caption{b: Kết quả thực nghiệm trên tập kiểm thử CustomTools-VI Unseen}
+    \label{tab:bảng_5_1}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{llcccc}
+        \toprule
+        \textbf{Mô hình} & \textbf{Cấu hình huấn luyện} & \textbf{Tool Acc (\%)} & \textbf{ArgA (\%)} & \textbf{Non-FC Recall (\%)} & \textbf{Syntax Error (\%)} \\
+        \midrule
+        \textbf{Nhóm SLM cục bộ} &  &  &  &  &  \\
+        \textbf{Qwen3.5-2B} & E0 (Zero-shot) & 40.75\% & 62.50\% & 97.25\% & 11.00\% \\
+        \textbf{Qwen3.5-2B} & E1 (Đơn ngữ EN 60k) & 96.50\% & 70.50\% & 74.50\% & 4.50\% \\
+        \textbf{Qwen3.5-2B} & E2 (Đơn ngữ VI 60k) & 96.25\% & 59.62\% & 67.75\% & 7.18\% \\
+        \textbf{Qwen3.5-2B} & E3 (Song ngữ 60k) & 96.00\% & 27.88\% & 2.00\% & 4.31\% \\
+        \textbf{Qwen3.5-2B} & E4 (Song ngữ + Miền VI) & 97.00\% & 86.38\% & \textbf{100.00\%} & 2.44\% \\
+        \textbf{Qwen3.5-4B} & E3 (Song ngữ 60k) & 97.50\% & 69.75\% & 74.50\% & 12.00\% \\
+        \textbf{Qwen3.5-4B} & \textbf{E4 (Song ngữ + Miền VI)} & 96.75\% & \textbf{86.75\%} & \textbf{100.00\%} & 2.90\% \\
+        \textbf{Nhóm Method 2 phân tách} &  &  &  &  &  \\
+        \textbf{Method 2} & Bi-Encoder + Cross-Encoder & 79.50\% & 60.25\% & 93.75\% & \textbf{0.00\%} \\
+        \textbf{Nhóm Frontier API đám mây} &  &  &  &  &  \\
+        \textbf{GPT-5.6 Luna} & OpenAI API (không truyền tham số nhiệt độ) & 97.25\% & 79.50\% & 100.00\% & 0.00\% \\
+        \textbf{Gemini 3.8 Flash} & Google API (không truyền tham số nhiệt độ) & \textbf{100.00\%} & \textbf{92.12\%} & 99.75\% & 0.06\% \\
+        \bottomrule
+    \end{tabular}
+    }%
+\end{table}
+
+\textit{Ghi chú Bảng 5.1b: Các chỉ số được tính trên tập \texttt{test_unseen} gồm 800 mẫu, với 400 mẫu dương tính và 400 mẫu âm tính. Tool Acc tính trên mẫu dương tính; ArgA tính trên toàn bộ mẫu; Non-FC Recall tính trên mẫu âm tính. Với Method 2, 0\% lỗi cú pháp là hệ quả của việc kiến tạo đầu ra theo schema, không đồng nghĩa với ArgA đạt 100\%. Mã benchmark API không truyền \texttt{temperature}; không thể quy kết kết quả cho cấu hình $T=0$.}
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.88\textwidth]{figures/fig2_performance_comparison}
-    \caption{So sánh đối đầu hiệu năng trên CustomTools-VI}
+    \caption{So sánh hiệu năng các phương pháp trên benchmark CustomTools-VI}
     \label{fig:hình_5_1}
 \end{figure}
 
-\textit{Ghi chú: Benchmark CustomTools-VI bao gồm 1,600 mẫu (800 mẫu test\_seen và 800 mẫu test\_unseen), trong đó mỗi tập gồm 50\% truy vấn dương tính đòi hỏi gọi công cụ và 50\% truy vấn âm tính từ chối gọi hàm. Tool Accuracy (\%) được tính trên các truy vấn dương tính; ArgA (\%) là tỷ lệ khớp chính xác toàn bộ cuộc gọi và tham số trên tổng số mẫu; Non-FC Recall (\%) đo lường năng lực từ chối kích hoạt trên các truy vấn âm tính. Tỷ lệ lỗi cú pháp (\%) biểu thị mức trung bình giữa hai tập kiểm thử đối với các trường hợp đầu ra sai cấu trúc định dạng hoặc vượt ngưỡng độ dài token tối đa. Các mô hình thương mại đóng (GPT-5.6 Luna, Gemini 3.8 Flash) được đánh giá tại nhiệt độ $T = 0$.}
-
-\textit{Hình 5.1: So sánh đối đầu toàn diện hiệu năng trích xuất tham số (ArgA \%) và độ chính xác chọn công cụ (Tool Acc \%) trên benchmark CustomTools-VI (Seen vs. Unseen). Mô hình SLM thể hiện sự bền bỉ vượt bậc ở năng lực Zero-shot (Unseen ArgA 86.38\% ở 2B và 86.75\% ở 4B), trong khi Method 2 đạt kết quả cao trên Seen (85.38\%) nhưng suy giảm xuống 60.25\% khi gặp công cụ mới (Unseen).}
+\textit{Hình 5.1: So sánh hiệu năng các phương pháp trên benchmark CustomTools-VI (Seen vs. Unseen).}
 
 
 
 \begin{table}[htbp]
     \centering
-    \caption{Kết quả thực nghiệm trên Canonical Core Benchmark (7,712 mẫu / ngôn ngữ)}
+    \caption{Kết quả thực nghiệm trên Canonical Core Benchmark (7,712 mẫu)}
     \label{tab:bảng_5_2}
     \resizebox{\textwidth}{!}{%
     \begin{tabular}{llccccccc}
         \toprule
-        \textbf{Mô hình} & \textbf{Cấu hình huấn luyện} & \textbf{VI Test: Tool Acc (\%)} & \textbf{VI Test: ArgA (\%)} & \textbf{VI Test: Non-FC (\%)} & \textbf{EN Test: Tool Acc (\%)} & \textbf{EN Test: ArgA (\%)} & \textbf{EN Test: Non-FC (\%)} & \textbf{Độ trễ VI (ms)} \\
+        \textbf{Mô hình} & \textbf{Cấu hình huấn luyện} & \textbf{VI Test: Tool Acc (\%)} & \textbf{VI Test: ArgA (\%)} & \textbf{VI Test: Non-FC (\%)} & \textbf{EN Test: Tool Acc (\%)} & \textbf{EN Test: ArgA (\%)} & \textbf{EN Test: Non-FC (\%)} & \textbf{Độ trễ VI mean (ms)} \\
         \midrule
         \textbf{Qwen3.5-2B} & E0 (Zero-Shot) & 56.34\% & 40.48\% & 96.33\% & 85.18\% & 60.63\% & 94.50\% & 707 ms \\
         \textbf{Qwen3.5-2B} & E1 (Đơn ngữ EN 60k) & 93.67\% & 65.57\% & 94.30\% & 94.07\% & \textbf{73.66\%} & 94.30\% & 878 ms \\
@@ -82,59 +121,70 @@ Bảng 5.1 và Bảng 5.2 tổng hợp toàn bộ kết quả thực nghiệm tr
         \textbf{Qwen3.5-2B} & E4 (Song ngữ + Miền VI) & 93.92\% & 69.75\% & 94.30\% & 94.17\% & 73.15\% & 94.30\% & 970 ms \\
         \textbf{Qwen3.5-4B} & E3 (Song ngữ 60k) & \textbf{98.73\%} & \textbf{72.86\%} & 94.30\% & \textbf{96.63\%} & \textbf{74.71\%} & 94.30\% & 2,432 ms \\
         \textbf{Qwen3.5-4B} & E4 (Song ngữ + Miền VI) & 86.22\% & 64.94\% & 94.30\% & 85.03\% & 66.66\% & 94.30\% & 2,485 ms \\
-        \textbf{Method 2} & Shared E4 (Bi+Cross) & 59.20\% & 30.26\% & 94.09\% & 62.60\% & 35.52\% & 94.30\% & \textbf{59.55 ms} \\
+        \textbf{Method 2} & Shared E4 (Bi+Cross) & 59.20\% & 30.26\% & 94.09\% & 62.60\% & 35.52\% & 94.30\% & \textbf{61.50 ms} \\
         \bottomrule
     \end{tabular}
     }%
 \end{table}
 
-\textit{\}Ghi chú: Độ trễ của các mô hình SLM biểu thị thời gian xử lý trung bình mỗi câu truy vấn (Average Latency per Query) khi thực thi suy luận trên cụm 2× GPU NVIDIA Tesla T4. Đối với Method 2, các chỉ số được đánh giá trên toàn bộ 7,712 mẫu VI Test và 7,712 mẫu EN Test với cùng nguồn dữ liệu Shared E4; độ trễ pipeline đo lường P50 đạt 59.55 ms (mean 61.50 ms) khi sử dụng cache embedding công cụ.*
+\textit{Ghi chú: Cột độ trễ báo cáo mean trên Core VI. SLM chia dữ liệu trên 2× T4 và suy luận độc lập từng phần, không tăng tốc một truy vấn; Method 2 đo trên 1× T4, batch 1, có cache embedding công cụ và đồng bộ CUDA quanh từng truy vấn (P50 = 59.55 ms). Method 2 được đánh giá trên đủ 7,712 mẫu của mỗi ngôn ngữ. Do phạm vi xử lý và protocol đo khác nhau, không tính tỷ lệ tăng tốc trực tiếp từ cột này.}
 
 
 \section{1. RQ1: Năng lực chuyển giao tri thức ngôn ngữ chéo (Cross-Lingual Transfer)}
-Khi tiến hành đối chiếu sâu giữa cấu hình E1 (chỉ huấn luyện trên dữ liệu tiếng Anh) và E2 (chỉ huấn luyện trên dữ liệu tiếng Việt) trên Bảng 5.2, một hiện tượng ngôn ngữ học đáng chú ý đã được ghi nhận. Cụ thể, khi đánh giá trên tập Core Test tiếng Việt, E1 đạt \textbf{65.57\%} ArgA, thậm chí nhỉnh hơn cả cấu hình bản địa E2 (\textbf{64.90\%}). Khoảng cách này càng được nới rộng rõ nét trên tập Custom Unseen khi E1 đạt tới \textbf{70.50\%}, vượt xa mức \textbf{59.62\%} của E2.
 
-Hiện tượng thực nghiệm này chứng minh rằng mô hình nền tảng Qwen3.5 sở hữu không gian biểu diễn đa ngôn ngữ liên kết rất chặt chẽ. Cấu trúc tư duy suy luận và khả năng phân tích JSON Schema tiếp thu từ kho ngữ liệu tiếng Anh phong phú hoàn toàn có thể chuyển giao tự nhiên sang ngữ cảnh tiếng Việt mà không bắt buộc phải sở hữu tập dữ liệu tiếng Việt tương đương về quy mô. Tuy nhiên, sự chuyển giao này thể hiện tính chất bất đối xứng: khi đánh giá ngược lại trên tập dữ liệu tiếng Anh, mô hình thuần Việt E2 bị tụt hậu nhẹ so với E1 (71.36\% so với 73.66\%). Cấu hình song ngữ cân bằng (E3) đã giải quyết triệt để sự bất đối xứng này, nâng trần ArgA trên Core VI lên đỉnh cao \textbf{69.76\%} ở mô hình 2B và \textbf{72.86\%} ở mô hình 4B.
+Trên Core VI (Bảng 5.2), E1 chỉ huấn luyện bằng tiếng Anh đạt \textbf{65.57\%} ArgA, cao hơn E2 chỉ huấn luyện bằng tiếng Việt (\textbf{64.90\%}). Trên CustomTools-VI Unseen, hai cấu hình lần lượt đạt \textbf{70.50\%} và \textbf{59.62\%}. Những kết quả này cho thấy E1 vẫn xử lý được truy vấn tiếng Việt trong hai tập đánh giá.
+
+Hiện tượng thực nghiệm này phù hợp với giả thuyết rằng Qwen3.5 chuyển giao được một phần năng lực phân tích schema từ tiếng Anh sang tiếng Việt. Tuy nhiên, thiết kế hiện tại chưa tách riêng tác động của tiền huấn luyện đa ngôn ngữ và dữ liệu tinh chỉnh. Ở chiều đánh giá ngược trên Core EN, E2 đạt 71.36\% so với 73.66\% của E1; E3 đạt ArgA 69.76\% trên Core VI ở mô hình 2B và 72.86\% ở mô hình 4B. Các kết quả cho thấy sự khác biệt giữa cấu hình dữ liệu trong những lần chạy này, chưa chứng minh E3 giải quyết hoàn toàn mất cân bằng ngôn ngữ.
 
 \section{2. RQ2: Hiện tượng kích hoạt công cụ quá mức và vai trò của dữ liệu âm tính}
-Trên CustomTools-VI, cấu hình E3 chỉ được huấn luyện bằng 60,000 mẫu song ngữ phổ quát và không có mẫu âm tính đặc thù miền. Non-FC Recall của cấu hình này giảm xuống \textbf{2.00\%–3.00\%}, nghĩa là hơn 97\% truy vấn âm tính trong tập kiểm thử bị dự đoán là có gọi công cụ. Kết quả cho thấy hiện tượng thiên kiến kích hoạt quá mức (over-triggering) trong điều kiện đánh giá này.
 
-Thiên kiến kích hoạt quá mức làm ArgA-all của E3 giảm còn \textbf{19.38\%} trên tập seen và \textbf{27.88\%} trên tập unseen. Khi bổ sung dữ liệu âm tính bản địa hóa trong E4, Non-FC Recall đạt \textbf{100.00\%} trên hai tập CustomTools-VI; ArgA-all của phiên bản 2B đạt \textbf{87.00\%} trên seen và \textbf{86.38\%} trên unseen.
+Trên CustomTools-VI, E3 được huấn luyện bằng 60,000 mẫu song ngữ nhưng không có dữ liệu âm tính đặc thù miền. Non-FC Recall chỉ đạt \textbf{2.00\%–3.00\%}, nghĩa là mô hình gọi công cụ nhầm ở hơn 97\% truy vấn âm tính trong hai tập kiểm thử. Đây là biểu hiện của thiên kiến kích hoạt công cụ quá mức (over-triggering) trong điều kiện đánh giá này.
+
+Trên CustomTools-VI, ArgA-all của SLM 2B E3 đạt \textbf{19.38\%} ở seen và \textbf{27.88\%} ở unseen. Sau khi bổ sung 5,600 mẫu bản địa ở E4, trong đó có mẫu âm tính, Non-FC Recall đạt \textbf{100.00\%} trên cả hai tập kiểm thử; ArgA-all tăng lên \textbf{87.00\%} và \textbf{86.38\%}. Chênh lệch phù hợp với giả thuyết dữ liệu bản địa hỗ trợ nhận diện truy vấn không gọi hàm, nhưng E3 và E4 khác nhau ở nhiều khía cạnh dữ liệu nên chưa xác định riêng tác động của mẫu âm tính.
 
 \section{3. RQ3: Khả năng tổng quát hóa Zero-Shot trên công cụ chưa từng gặp}
-Khi so sánh đối đầu trực diện giữa mô hình tạo sinh SLM (E4) và kiến trúc phân tách Method 2 trên tập dữ liệu kiểm thử zero-shot \texttt{test_unseen}, hai trường phái kỹ thuật bộc lộ sự phân hóa sâu sắc về cơ chế thích ứng.
 
-Mô hình tạo sinh SLM thể hiện năng lực tổng quát hóa xuất sắc khi ArgA trên tập unseen đạt tới \textbf{86.38\%} ở phiên bản 2B và \textbf{86.75\%} ở phiên bản 4B. Mức độ suy giảm hiệu năng so với tập seen gần như không đáng kể (độ chênh lệch ArgA chỉ dao động từ $-0.62\%$ đến $+1.17\%$). Cơ chế tự chú ý toàn cục (global self-attention) cho phép SLM đọc hiểu trọn vẹn mô tả của một API hoàn toàn mới trong ngữ cảnh prompt và tự động suy luận ra các tham số tương ứng dựa trên tri thức tiền huấn luyện.
+Trên \texttt{test_unseen}, SLM E4 và Method 2 có mức suy giảm ArgA khác nhau so với \texttt{test_seen}.
 
-Trái lại, Phương pháp 2 đạt kết quả rất ấn tượng trên tập \texttt{test_seen} với ArgA bám sát SLM (\textbf{85.38\%}), song lại bộc lộ điểm yếu rõ rệt khi chuyển sang \texttt{test_unseen}. Độ chính xác chọn công cụ (Tool Acc) bị suy giảm từ 92.25\% xuống 79.50\%, kéo theo ArgA tổng hợp giảm xuống \textbf{60.25\%} (và chỉ đạt 26.75\% nếu tính riêng trên các truy vấn dương tính). Bản chất của Cross-Encoder là học các quy luật trích xuất span thực thể dựa trên các mẫu dữ liệu đã quan sát trong quá trình huấn luyện; do đó, mô hình gặp khó khăn lớn khi phải ngoại suy ranh giới của các tham số thuộc về một Tool Schema hoàn toàn xa lạ mà không có bước định hướng tạo sinh.
+SLM E4 đạt ArgA \textbf{86.38\%} ở bản 2B và \textbf{86.75\%} ở bản 4B trên tập unseen, chênh lần lượt $-0.62$ và $-1.17$ điểm phần trăm so với tập seen. Kết quả phù hợp với khả năng sử dụng mô tả công cụ và schema trong prompt để xử lý công cụ mới; phép đánh giá hiện tại chưa tách riêng tác động của từng thành phần này.
+
+Method 2 đạt ArgA \textbf{85.38\%} trên \texttt{test_seen} và \textbf{60.25\%} trên \texttt{test_unseen}; ArgA của riêng truy vấn dương tính unseen là 26.75\%. Tool Acc giảm từ 92.25\% xuống 79.50\%. Các số liệu cho thấy cả việc chọn công cụ lẫn hoàn thiện lời gọi đều khó hơn trên tập unseen. Đối chứng Oracle ở Chương 6 giúp phân tích thêm vai trò của từng giai đoạn, nhưng chưa xác định nguyên nhân duy nhất của mức suy giảm.
 
 \section{4. RQ4: Đánh đổi Pareto giữa độ chính xác, độ trễ và chi phí tính toán}
-Bảng 5.3 mô tả đường biên đánh đổi đa chiều giữa các phương pháp tiếp cận.
+
+Nhằm cung cấp cơ sở khoa học phục vụ việc lựa chọn kiến trúc trong các kịch bản triển khai thực tế, Bảng 5.3 tổng hợp đường biên đánh đổi đa chiều giữa các phương pháp đại diện trên toàn bộ các trục tiêu chí kỹ thuật cốt lõi.
 
 
 \begin{table}[htbp]
     \centering
-    \caption{Bảng so sánh đa chiều toàn diện giữa các phương pháp tiếp cận}
+    \caption{Đối chiếu chỉ số và điều kiện vận hành của bốn phương pháp}
     \label{tab:bảng_5_3}
-    \begin{tabular}{lcccc}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{lccccl}
         \toprule
-        \textbf{Tiêu chí đánh giá} & \textbf{Method 1: SLM Qwen-2B (E4)} & \textbf{Method 1: SLM Qwen-4B (E4)} & \textbf{Method 2: Bi+Cross Pipeline} & \textbf{Frontier Closed: GPT-5.6 Luna} \\
+        \textbf{Trục đánh giá kỹ thuật} & \textbf{Method 1: SLM Qwen3.5-2B (E4)} & \textbf{Method 1: SLM Qwen3.5-4B (E4)} & \textbf{Method 2: Bi+Cross (BGE-M3 + XLM-R)} & \textbf{Frontier Closed: GPT-5.6 Luna} & \textbf{Khuyến nghị lựa chọn kỹ thuật} \\
         \midrule
-        \textbf{Kiến trúc mô hình} & Tạo sinh tự hồi quy (Decoder) & Tạo sinh tự hồi quy (Decoder) & Phân tách phân biệt (Encoders) & Mô hình đóng thương mại (Cloud API) \\
-        \textbf{Tham số hoạt động} & 2.2 tỷ & 4.56 tỷ & 560 triệu + 278 triệu & Hàng trăm tỷ (MoE) \\
-        \textbf{Seen ArgA (\%)} & 87.00\% & \textbf{87.92\%} & 85.38\% & 78.25\% \\
-        \textbf{Tỷ lệ lỗi cú pháp (\%)} & 2.44\% (4.67\% Core) & 2.90\% (9.75\% Core) & \textbf{0.00\%} & 0.00\% \\
-        \textbf{Độ trễ báo cáo (ms; protocol riêng)} & 864–970 ms & 2,432–2,485 ms & \textbf{P50: 55.36–59.55 ms} & ~1,200–1,800 ms \\
-        \textbf{Tốc độ tương đối} & Không đối chiếu trực tiếp & Không đối chiếu trực tiếp & Không đối chiếu trực tiếp & Không đối chiếu trực tiếp \\
-        \textbf{Bộ nhớ đo được} & ~4.8–5.5 GB VRAM & ~9.5 GB VRAM & \textbf{Stress: ~3.21 GiB allocated} & Không áp dụng tại máy cục bộ \\
-        \textbf{Chi phí suy luận / 1k queries} & Chưa đo theo protocol thống nhất & Chưa đo theo protocol thống nhất & Chưa đo theo protocol thống nhất & Chưa đo theo protocol thống nhất \\
-        \textbf{Khả năng chạy biên (Edge)} & Chưa đo theo protocol riêng & Chưa đo theo protocol riêng & Chưa đo theo protocol riêng & Phụ thuộc Internet và dịch vụ nhà cung cấp \\
+        \textbf{Kiến trúc mô hình} & Tự hồi quy (Decoder-only) & Tự hồi quy (Decoder-only) & Phân tách phân biệt (Encoders) & Mô hình đám mây (Cloud API) & Tùy biến theo năng lực hạ tầng \\
+        \textbf{Quy mô tham số} & 2.22 tỷ (QLoRA 10.9M) & 4.56 tỷ (QLoRA 21.2M) & 567M (Bi) + 278M (Cross) & Không công bố trong log đánh giá & Phụ thuộc kiến trúc và triển khai \\
+        \textbf{Custom Seen ArgA} & 87.00\% & \textbf{87.92\%} & 85.38\% & 78.25\% & SLM E4 cao hơn Luna trên tập này \\
+        \textbf{Custom Unseen ArgA} & 86.38\% & \textbf{86.75\%} & 60.25\% & 79.50\% & SLM E4 cao hơn trên tập này \\
+        \textbf{Lỗi cú pháp CustomTools-VI} & 2.44\% & 2.90\% & \textbf{0.00\% (đầu ra kiến tạo từ schema)} & 0.00\% & Chỉ phản ánh định dạng; xem ArgA để đánh giá nội dung \\
+        \textbf{Độ trễ Core VI mean (ms)\}* & 970 ms & 2,485 ms & \textbf{61.50 ms} & Không đo trên Core VI & Chỉ đối chiếu mô tả do protocol khác nhau \\
+        \textbf{Mức tiêu thụ VRAM (đo đạc)\}* & ~4.8–5.5 GB VRAM & ~9.5 GB VRAM & \textbf{3,283 MiB allocated; 3,772 MiB reserved} & Không tiêu tốn VRAM cục bộ & Số liệu phụ thuộc protocol và công cụ đo \\
+        \textbf{Khả năng mở rộng danh mục} & Giới hạn bởi cửa sổ ngữ cảnh & Giới hạn bởi cửa sổ ngữ cảnh & Đã kiểm thử với $N \le 1000$ & Chưa kiểm thử stress test & Cần đánh giá theo quy mô danh mục thực tế \\
+        \textbf{Phạm vi quan sát} & Core VI và CustomTools-VI & Core VI và CustomTools-VI & Core VI, CustomTools-VI và stress test & CustomTools-VI & Chọn theo miền dữ liệu và điều kiện triển khai \\
         \bottomrule
     \end{tabular}
+    }%
 \end{table}
 
+\textit{Ghi chú: SLM dùng hai T4 để chia dữ liệu và suy luận độc lập; một truy vấn chạy trên một GPU. Method 2 dùng một T4, batch 1 và cache embedding. Các số trong hàng độ trễ là mean Core VI của cấu hình E4, không phải P50; P50 từng truy vấn của Method 2 trong stress test nằm ở Bảng 5.4. Hàng VRAM kết hợp số đo từ các run và cách ghi nhận khác nhau; riêng Method 2 là bộ nhớ PyTorch allocated/reserved tại $N=1000$. Protocol đo và phạm vi xử lý khác nhau nên các hàng này không chứng minh tỷ lệ tăng tốc hay mức tiết kiệm VRAM trực tiếp. API chỉ được kiểm thử trên CustomTools-VI.}
+
+Các kết quả gợi ý hai lựa chọn kiến trúc theo yêu cầu triển khai. Trên CustomTools-VI unseen, SLM E4 đạt ArgA cao hơn Method 2, phù hợp với bài toán thường xuyên tiếp nhận schema mới. Trong protocol stress test với danh mục xác định trước, Method 2 ghi nhận P50 dưới 100 ms ở $N \le 500$, tiếp tục xử lý được $N=1000$ và không có lỗi cú pháp theo định nghĩa đầu ra kiến tạo từ schema. Khả năng áp dụng cho thiết bị biên và mục tiêu độ trễ sản xuất vẫn cần đo trên phần cứng, tải và quy trình phục vụ tương ứng.
+
 \section{5. RQ5: Kiểm thử áp lực quy mô lớn và giới hạn vật lý của mô hình tạo sinh}
-Kết quả Stress Test đối đầu trực diện khi quy mô danh mục công cụ mở rộng từ $N = 3$ đến $N = 1000$ được trình bày tại Bảng 5.4 và trực quan hóa tại Hình 5.2.
+
+Để kiểm chứng tính bền bỉ của hai trường phái kiến trúc khi quy mô danh mục công cụ mở rộng từ dải nhỏ ($N = 3$) đến quy mô thực tế của các nền tảng doanh nghiệp ($N = 1000$ công cụ), nghiên cứu tiến hành bài kiểm thử áp lực (\textbf{Stress Test}) đối đầu trực diện giữa đại diện tiêu biểu của Method 1 (\texttt{Qwen3.5-2B} E4) và Method 2 trên cùng 200 truy vấn Custom Seen (1,200 mẫu thử nghiệm lồng nhau). Kết quả được chi tiết hóa tại Bảng 5.4 và trực quan hóa tại Hình 5.2.
 
 
 \begin{table}[htbp]
@@ -144,7 +194,7 @@ Kết quả Stress Test đối đầu trực diện khi quy mô danh mục công
     \resizebox{\textwidth}{!}{%
     \begin{tabular}{cccccccccc}
         \toprule
-        \textbf{Số lượng công cụ ($N$)} & \textbf{SLM Tool Acc (\%)} & \textbf{M2 Tool Acc (\%)} & \textbf{SLM ArgA (\%)} & \textbf{M2 ArgA (\%)} & \textbf{SLM P50 Latency (ms)} & \textbf{M2 P50 Latency (ms)} & \textbf{M2 P95 (ms)} & \textbf{M2 VRAM Alloc.} & \textbf{Đối chiếu protocol} \\
+        \textbf{Số lượng công cụ ($N$)} & \textbf{SLM Tool Acc (\%)} & \textbf{M2 Tool Acc (\%)} & \textbf{SLM ArgA (\%)} & \textbf{M2 ArgA (\%)} & \textbf{Độ trễ SLM báo cáo (ms)*} & \textbf{M2 P50 (ms)} & \textbf{M2 P95 (ms)} & \textbf{M2 VRAM Alloc.} & \textbf{Đối chiếu protocol} \\
         \midrule
         \textbf{$N = 3$} & \textbf{94.0\%} & 89.0\% & 85.5\% & \textbf{87.5\%} & 1,258.94 ms & \textbf{55.13 ms} & 84.92 ms & 3,277 MiB & Không quy đổi \\
         \textbf{$N = 10$} & \textbf{93.0\%} & 89.0\% & 84.5\% & \textbf{87.5\%} & 1,604.68 ms & \textbf{55.05 ms} & 84.74 ms & 3,282 MiB & Không quy đổi \\
@@ -157,37 +207,40 @@ Kết quả Stress Test đối đầu trực diện khi quy mô danh mục công
     }%
 \end{table}
 
+\textit{Độ trễ SLM lấy từ thời gian sinh của batch chia cho số mẫu trong batch, với batch size thay đổi theo $N$; đây không phải P50 wall-clock từng truy vấn. Method 2 đo từng truy vấn ở batch 1, có đồng bộ CUDA và cache embedding. Vì vậy không suy ra hệ số tăng tốc từ hai cột.}
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.88\textwidth]{figures/fig3_stress_test_curves}
-    \caption{Kết quả thực nghiệm Stress Test đối đầu trực diện}
+    \caption{Kết quả Stress Test đối đầu trực diện khi mở rộng quy mô công cụ ($N = 3 \to 1000$)}
     \label{fig:hình_5_2}
 \end{figure}
 
-\textit{Hình 5.2: Kết quả thực nghiệm Stress Test đối đầu trực diện: (a) Đường cong suy giảm độ chính xác và ranh giới sụp đổ tràn bộ nhớ (CUDA OOM) của SLM tại N ≥ 500; (b) Đường cong độ trễ suy luận P50 (ms) trên thang đo log. Hai phương pháp được đo theo protocol riêng nên hình chỉ minh họa xu hướng, không quy đổi thành hệ số tăng tốc.}
+\textit{Hình 5.2: Kết quả Stress Test đối đầu trực diện ($N = 3 \to 1000$): (a) Độ chính xác và ranh giới CUDA OOM của SLM tại $N \ge 500$; (b) Độ trễ suy luận trên thang log (P50 đơn truy vấn ở Method 2 và thời gian batch chia đều ở SLM).}
 
-Kết quả thực nghiệm bài kiểm thử áp lực trên dải quy mô công cụ từ $N = 3$ đến $N = 1000$ đã mang lại những phát hiện học thuật then chốt về sự khác biệt bản chất giữa hai trường phái thiết kế kiến trúc:
+Thực nghiệm kiểm thử áp lực đã làm sáng tỏ những khác biệt mang tính bản chất trong cơ chế vận hành của hai mô thức thiết kế:
 
-Trên quy trình kiểm thử chuẩn hóa với tiền tố ứng viên lồng nhau và bảo toàn công cụ mục tiêu trong không gian tìm kiếm, ArgA của Method 2 giảm từ 87.50\% tại $N = 3$ xuống 84.00\% tại $N = 1000$, tương ứng 3.50 điểm phần trăm. Method 2 có ArgA cao hơn SLM từ 2.0 đến 4.0 điểm phần trăm ở dải $N \le 100$. Non-FC Recall đạt 95.00\% tại $N = 1000$; kết quả này cho thấy cơ chế hiệu chuẩn vẫn duy trì khả năng từ chối trong Stress Test.
+Trong stress test giữ nguyên tập truy vấn mỏ neo, ArgA của Method 2 giảm từ 87.50\% ở $N=3$ xuống 84.00\% ở $N=1000$, tức 3.50 điểm phần trăm. Ở $N \le 100$, ArgA của Method 2 cao hơn SLM từ 2.0 đến 4.0 điểm phần trăm; tại $N=1000$, Non-FC Recall của Method 2 là 95.00\%. Quan sát cho thấy cơ chế lọc ngưỡng ($\tau=0.35$, $\delta=0.21$) vẫn hoạt động trong protocol này, nhưng chưa tách riêng đóng góp của nó khỏi các thành phần khác.
 
-Thứ hai, về động học độ trễ, Method 2 duy trì P50 quanh 55–61 ms trong khoảng $N \le 100$ và đạt 107.68 ms tại $N=1000$ trong stress test. Độ trễ SLM cũng được báo cáo trong cùng bảng để mô tả xu hướng tăng khi danh mục mở rộng, nhưng do hai phương pháp được đo theo protocol khác nhau, nghiên cứu không chuyển các số đo thành hệ số tăng tốc trực tiếp.
+Trong protocol stress test, P50 từng truy vấn của Method 2 nằm trong khoảng 55.05–61.01 ms ở $N \le 100$ và đạt 107.68 ms tại $N=1000$. Việc phải đối chiếu với nhiều vector công cụ hơn có thể góp phần làm tăng thời gian xử lý. Số đo SLM từ thời gian batch chia theo mẫu tăng từ 1,258.94 ms ($N=3$) lên 9,318.21 ms ($N=100$), phù hợp với việc prompt chứa thêm schema; hai chuỗi số liệu không cùng định nghĩa nên không dùng để tính hệ số tăng tốc.
 
-Cuối cùng, thực nghiệm đã định lượng chính xác ranh giới sụp đổ vật lý về mặt bộ nhớ của các mô hình tạo sinh. Tại ngưỡng $N \ge 500$, tổng độ dài ngữ cảnh chứa danh mục JSON Schema vượt quá 32,000 tokens. Cơ chế tự chú ý với độ phức tạp không gian $O(L^2)$ đòi hỏi dung lượng bộ nhớ vượt quá 32 GiB chỉ riêng cho ma trận attention trong giai đoạn prefill, dẫn tới hiện tượng sụp đổ dịch vụ hoàn toàn do tràn bộ nhớ (CUDA Out of Memory) trên phần cứng GPU 16GB phổ thông. Trái lại, Method 2 duy trì mức tiêu thụ bộ nhớ thực tế (PyTorch allocated VRAM) gần như bất biến quanh ngưỡng ~3.21 GiB (3,283 MiB) và bộ nhớ cấp phát dự phòng (reserved) quanh 3.77 GiB trên toàn bộ dải thực nghiệm $N = 3 \to 1000$. Điều này khẳng định kiến trúc phân biệt là giải pháp duy nhất có tính khả thi kỹ thuật khi triển khai các hệ sinh thái tác tử quy mô lớn hàng nghìn API trên phần cứng biên.
+Trong cấu hình stress test trên GPU 16GB, SLM gặp CUDA Out of Memory ở $N \ge 500$. Quan sát này phù hợp với giả thuyết rằng prompt dài làm tăng nhu cầu bộ nhớ ở các lớp attention toàn phần, song chưa đủ để tách riêng tác động của attention, KV cache, precision, batch và cách hiện thực kernel. Cấu hình Qwen3.5 được dùng còn xen kẽ các lớp linear attention và full attention [17], nên không thể dùng riêng độ phức tạp $\mathcal{O}(L^2)$ của full attention để giải thích toàn bộ hiện tượng. Method 2 tiếp tục chạy ở $N=1000$ và ghi nhận PyTorch allocated VRAM khoảng 3.21 GiB (3,283 MiB) trong protocol này.
 
 \section{Nghiên cứu mở rộng quy mô mô hình: Qwen3.5-2B vs. Qwen3.5-4B}
-Để kiểm chứng tác động của kích thước mô hình, nhóm nghiên cứu mở rộng huấn luyện lên \texttt{Qwen3.5-4B} (4.56 tỷ tham số). Kết quả so sánh được trình bày tại Bảng 5.5, Bảng 5.6 và trực quan hóa tại Hình 5.3.
+
+Để làm sáng tỏ ảnh hưởng của dung lượng tham số đối với năng lực tiếp nhận schema phức tạp và tính ổn định cú pháp, quá trình huấn luyện được mở rộng lên mô hình \texttt{Qwen3.5-4B} (4.56 tỷ tham số). Kết quả đối chuẩn chi tiết được trình bày tại Bảng 5.5, Bảng 5.6 và minh họa tại Hình 5.3.
 
 
 \begin{table}[htbp]
     \centering
-    \caption{So sánh quy mô tham số mô hình (Scaling Study: 2B vs. 4B)}
+    \caption{Nghiên cứu mở rộng quy mô tham số mô hình (Qwen3.5-2B vs. 4B)}
     \label{tab:bảng_5_5}
     \resizebox{\textwidth}{!}{%
     \begin{tabular}{llcccccc}
         \toprule
-        \textbf{Cấu hình} & \textbf{Backbone} & \textbf{Core VI ArgA (\%)} & \textbf{Custom Seen ArgA (\%)} & \textbf{Custom Unseen ArgA (\%)} & \textbf{ArgA Gap} & \textbf{Cú pháp lỗi Core VI (\%)} & \textbf{Độ trễ P50 (ms)} \\
+        \textbf{Cấu hình} & \textbf{Backbone} & \textbf{Core VI ArgA (\%)} & \textbf{Custom Seen ArgA (\%)} & \textbf{Custom Unseen ArgA (\%)} & \textbf{ArgA Gap} & \textbf{Cú pháp lỗi Core VI (\%)} & \textbf{Độ trễ Core VI mean (ms)} \\
         \midrule
-        \textbf{E3 (Song ngữ)} & Qwen3.5-2B & 69.76\% & 19.38\% & 27.88\% & +8.50\% & 4.31\% & 863 ms \\
+        \textbf{E3 (Song ngữ)} & Qwen3.5-2B & 69.76\% & 19.38\% & 27.88\% & +8.50\% & 4.31\% & 864 ms \\
         \textbf{E3 (Song ngữ)} & \textbf{Qwen3.5-4B} & \textbf{72.86\%} & \textbf{62.00\%} & \textbf{69.75\%} & +7.75\% & \textbf{0.32\%} & 2,432 ms \\
         \textbf{E4 (Đặc thù miền)} & Qwen3.5-2B & 69.75\% & 87.00\% & 86.38\% & -0.62\% & 4.67\% & 970 ms \\
         \textbf{E4 (Đặc thù miền)} & \textbf{Qwen3.5-4B} & 64.94\% & \textbf{87.92\%} & \textbf{86.75\%} & \textbf{-1.17\%} & 9.75\% & 2,485 ms \\
@@ -199,7 +252,7 @@ Cuối cùng, thực nghiệm đã định lượng chính xác ranh giới sụ
 
 \begin{table}[htbp]
     \centering
-    \caption{Hiệu năng đối đầu chi tiết của Qwen3.5-4B (E3 vs. E4) trên Canonical Core Benchmark}
+    \caption{Hiệu năng đối đầu của mô hình Qwen3.5-4B (E3 vs. E4) trên Core Benchmark}
     \label{tab:bảng_5_6}
     \resizebox{\textwidth}{!}{%
     \begin{tabular}{llcccccc}
@@ -218,38 +271,41 @@ Cuối cùng, thực nghiệm đã định lượng chính xác ranh giới sụ
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.88\textwidth]{figures/fig4_model_scaling}
-    \caption{Nghiên cứu mở rộng quy mô mô hình (2B vs. 4B)}
+    \caption{Nghiên cứu mở rộng quy mô tham số mô hình SLM (2B vs. 4B)}
     \label{fig:hình_5_3}
 \end{figure}
 
-\textit{Hình 5.3: Nghiên cứu mở rộng quy mô mô hình (2B vs. 4B): (a) Nâng cao độ chính xác trích xuất tham số và chọn công cụ trên Core Benchmark; (b) Triệt tiêu lỗi cú pháp JSON từ 4.31\% xuống chỉ còn 0.32\% (giảm hơn 13 lần).}
+\textit{Hình 5.3: So sánh mô hình 2B và 4B: (a) Độ chính xác chọn công cụ và trích xuất tham số trên Core Benchmark; (b) Tỷ lệ lỗi cú pháp JSON.}
 
-Việc mở rộng dung lượng tham số từ 2.2 tỷ lên 4.56 tỷ đã mang lại những bước chuyển biến sâu sắc về quy luật mở rộng (scaling laws) và cơ chế học biểu diễn trong bài toán gọi công cụ:
+Mục này so sánh kết quả của hai checkpoint Qwen3.5 có quy mô 2.22 tỷ và 4.56 tỷ tham số trong các cấu hình đã thử nghiệm.
 
-Ở cấu hình song ngữ E3, tỷ lệ vi phạm cấu trúc cú pháp JSON trên tập Core VI giảm từ 4.31\% ở mô hình 2B xuống 0.32\% ở mô hình 4B, tương ứng mức giảm hơn 13 lần. Kết quả cho thấy dung lượng tham số lớn hơn có liên hệ với khả năng tuân thủ định dạng đầu ra tốt hơn trong cấu hình và giao thức đánh giá này.
+Ở cấu hình song ngữ E3 trên Core VI, tỷ lệ vi phạm cú pháp giảm từ 4.31\% ở mô hình 2B xuống \textbf{0.32\%} ở mô hình 4B, tương đương mức giảm hơn 13 lần trong phép đo này. Chênh lệch phù hợp với giả thuyết mô hình lớn hơn tuân thủ định dạng tốt hơn, nhưng chưa chứng minh riêng quy mô tham số là nguyên nhân vì hai checkpoint có thể khác nhau ở nhiều yếu tố.
 
-Đồng thời, quy mô tham số lớn giúp nâng trần hiệu năng của mô hình trên tập tiêu chuẩn Core Benchmark. Độ chính xác lựa chọn công cụ (Tool Selection Acc) của Qwen3.5-4B trên tập Core VI Test chạm mốc kỷ lục 98.73\% (tăng +4.73\% so với phiên bản 2B), kéo theo độ chính xác trích xuất tham số ArgA đạt 72.86\% (tăng +3.10\%). Năng lực hiểu ngữ nghĩa câu truy vấn phức tạp và phân biệt các công cụ có chức năng tương đồng trong kho 4,421 APIs được củng cố rõ rệt nhờ không gian biểu diễn ẩn rộng lớn hơn.
+Trên Core VI, Qwen3.5-4B E3 đạt Tool Acc \textbf{98.73\%} và ArgA \textbf{72.86\%}, cao hơn bản 2B E3 lần lượt 4.73 và 3.10 điểm phần trăm. Phép so sánh này ghi nhận lợi thế của checkpoint 4B trong cấu hình E3, nhưng chưa tách riêng ảnh hưởng của quy mô tham số khỏi các khác biệt huấn luyện khác.
 
-Bên cạnh đó, dung lượng tham số gia tăng mang lại nội lực kháng cự lệch phân phối miền xuất sắc. Ở cấu hình E3 (vốn chỉ được huấn luyện trên dữ liệu dịch thuật chung mà chưa từng tiếp xúc với các mẫu âm tính bản địa hóa), mô hình 2B bị suy sụp nghiêm trọng khi kiểm thử trên \texttt{CustomTools-VI} (ArgA chỉ đạt 19.38\% trên tập seen). Trái lại, mô hình 4B vẫn duy trì năng lực trích xuất đáng kinh ngạc với ArgA đạt 62.00\% trên tập seen và 69.75\% trên tập unseen (vượt trội mô hình 2B tới +42 điểm phần trăm). Điều này khẳng định dung lượng mô hình lớn giúp bảo tồn năng lực suy luận ngữ cảnh trừu tượng, tránh việc bị phụ thuộc quá mức vào các định dạng mẫu câu bề mặt.
+Trên CustomTools-VI, ArgA của 2B E3 là 19.38\% ở seen và 27.88\% ở unseen; 4B E3 lần lượt đạt 62.00\% và 69.75\%. Khoảng cách này cho thấy hai checkpoint phản ứng khác nhau với dữ liệu miền mới, song chưa đủ để quy toàn bộ khác biệt cho kích thước mô hình.
 
-Khi được tiếp tục tối ưu hóa với tập dữ liệu miền chuyên biệt ở cấu hình E4, \texttt{Qwen3.5-4B} đạt ArgA 87.92\% trên tập seen và 86.75\% trên tập unseen, đồng thời duy trì tỷ lệ lỗi cú pháp thấp ở mức 2.90\% trên \texttt{CustomTools-VI} (trong đó các trường hợp lỗi ghi nhận chủ yếu do chuỗi sinh chạm trần giới hạn độ dài token ở các truy vấn đa lệnh gọi phức tạp). ArgA gap theo quy ước Unseen trừ Seen là -1.17 điểm phần trăm, cho thấy hiệu năng trên hai tập CustomTools-VI gần nhau trong giao thức đánh giá này.
-
-Đặc biệt, kết quả thực nghiệm chỉ ra một sự đánh đổi bản chất giữa năng lực khái quát hóa đa miền tổng quát (General Domain Generalization) và năng lực chuyên biệt hóa bản địa sâu sắc (Localized Domain Specialization). Việc bổ sung 5,600 mẫu dữ liệu đặc thù đời sống Việt Nam vào cấu hình E4 giúp mô hình thích nghi sâu sắc với cấu trúc nghiệp vụ bản địa, song cũng tạo ra hiện tượng dịch chuyển chú ý nhẹ khi đánh giá ngược lại trên kho 4,421 APIs tổng quát khổng lồ của Core Benchmark (ArgA đạt 64.94\% và tỷ lệ lỗi cú pháp tăng lên 9.75\%). Ngược lại, cấu hình E3 duy trì trạng thái cân bằng lý tưởng cho các tác vụ gọi hàm đa miền tổng quát với Core ArgA đạt đỉnh 72.86\% và lỗi cú pháp tối thiểu 0.32\%. Quy luật này cung cấp một chỉ dẫn kiến trúc quan trọng cho kỹ nghệ triển khai: cấu hình E3 là lựa chọn tối ưu cho các hệ thống tác tử tổng quát đa mục đích, trong khi cấu hình E4 là giải pháp chuyên biệt hóa cao cấp nhất cho các ứng dụng nghiệp vụ bản địa chuyên sâu.
+Sau khi bổ sung 5,600 mẫu nghiệp vụ Việt Nam ở E4, Qwen3.5-4B đạt ArgA \textbf{87.92\%} trên seen và \textbf{86.75\%} trên unseen của CustomTools-VI. Trên Core VI, ArgA của E4 còn 64.94\% và tỷ lệ lỗi cú pháp là 9.75\%. Vì vậy, lựa chọn giữa E3 và E4 cần dựa trên miền dữ liệu mục tiêu; kết quả hiện có không bảo đảm checkpoint nào tốt hơn trong mọi điều kiện triển khai.
 
 \section{So sánh đối đầu với các Frontier API thương mại đóng (GPT-5.6 Luna, Gemini 3.8 Flash)}
 
-Để định vị vị thế công nghệ của các mô hình đề xuất, nhóm nghiên cứu tiến hành đánh giá đối đầu giữa các giải pháp nội bộ và hai dịch vụ thương mại: \texttt{GPT-5.6 Luna} và \texttt{Gemini 3.8 Flash}. Hai mô hình thương mại được cấp cùng prompt hệ thống, cùng danh mục công cụ JSON Schema và được gọi qua API với $\text{temperature} = 0.0$ nhằm giảm biến thiên ngẫu nhiên trong phép đo.
+Nghiên cứu đánh giá các mô hình đề xuất cùng hai mô hình API là GPT-5.6 Luna và Gemini 3.8 Flash trên 1,600 mẫu CustomTools-VI. Benchmark dùng cùng câu lệnh hệ thống, truy vấn và danh mục JSON Schema cho hai API qua Kaggle Benchmark SDK. Mã đánh giá không truyền tham số \texttt{temperature}, vì vậy không xác nhận được nhiệt độ thực tế hoặc loại trừ biến thiên ngẫu nhiên của dịch vụ [18], [19].
 
-Kết quả thực nghiệm trên bộ dữ liệu bản địa \texttt{CustomTools-VI} tại Bảng 5.1 mang lại những phát hiện học thuật đầy bất ngờ và giàu ý nghĩa thực tiễn:
+Trên CustomTools-VI (Bảng 5.1a và Bảng 5.1b), Qwen3.5-4B E4 đạt ArgA \textbf{87.92\%} trên seen và \textbf{86.75\%} trên unseen, cao hơn GPT-5.6 Luna (78.25\% và 79.50\%) lần lượt \textbf{9.67} và \textbf{7.25} điểm phần trăm. Qwen3.5-2B E4 cũng cao hơn lần lượt 8.75 và 6.88 điểm phần trăm. Kết quả gợi ý lợi ích của tinh chỉnh theo miền trên bộ dữ liệu này; một benchmark và một lần chạy không đủ để quy toàn bộ chênh lệch cho fine-tuning hoặc khái quát sang các miền khác.
 
-Trước hết, trên khía cạnh độ chính xác trích xuất tuyệt đối (ArgA), các mô hình SLM nội bộ ghi nhận kết quả cao hơn đại diện thương mại đóng \texttt{GPT-5.6 Luna} trong protocol CustomTools-VI. Cụ thể, mô hình \texttt{Qwen3.5-4B (E4)} đạt ArgA \textbf{87.92\%} trên tập seen và \textbf{86.75\%} trên tập unseen, cao hơn \texttt{GPT-5.6 Luna} (78.25\% seen và 79.50\% unseen) lần lượt \textbf{9.67} và \textbf{7.25} điểm phần trăm. Phiên bản \texttt{Qwen3.5-2B (E4)} cũng cao hơn \texttt{GPT-5.6 Luna} 8.75 điểm phần trăm trên seen và 6.88 điểm phần trăm trên unseen.
+Gemini 3.8 Flash đạt ArgA khoảng 92\%–93\% trên hai tập kiểm thử CustomTools-VI trong lần chạy này. Ngoài độ chính xác, việc lựa chọn giữa mô hình cục bộ và dịch vụ API cần xét thêm quản trị dữ liệu, chi phí và năng lực vận hành:
 
-Phân tích sâu về mặt biểu diễn ngôn ngữ chỉ ra rằng: mặc dù các Frontier API như GPT-5.6 sở hữu năng lực suy luận tổng quát đa lĩnh vực vượt trội nhờ kích thước mô hình khổng lồ (hàng trăm tỷ tham số), chúng lại thiếu vắng sự thích nghi sâu sắc với các đặc trưng ngữ dụng và phương thức diễn đạt đời thường của người Việt. Khi người dùng sử dụng các cách nói tắt, từ lóng định lượng tiền tệ bản địa ("hai củ rưỡi", "năm xị") hoặc các cấu trúc địa danh phức tạp, GPT-5.6 thường có xu hướng hiểu theo nghĩa đen hoặc sinh ra các giá trị phỏng đoán không khớp với ngữ cảnh thực tế của Việt Nam. Trái lại, các mô hình SLM nội bộ nhờ được tinh chỉnh trực tiếp trên nguồn dữ liệu bản địa hóa có kiểm soát đã thẩm thấu trọn vẹn các quy ước ngôn ngữ này, từ đó đạt độ chuẩn xác tham số vượt trội.
+Triển khai cục bộ có thể giảm phụ thuộc vào việc truyền dữ liệu nghiệp vụ đến nhà cung cấp bên ngoài và tạo điều kiện kiểm soát luồng dữ liệu. Tuy nhiên, việc tuân thủ pháp luật bảo vệ dữ liệu cá nhân và an ninh mạng vẫn phụ thuộc vào mục đích xử lý, phân quyền, lưu log và vận hành hạ tầng; mô hình cục bộ không loại bỏ nguy cơ rò rỉ. Tại thời điểm khóa luận, các văn bản cần xem xét bao gồm Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15 và Luật An ninh mạng số 116/2025/QH15 [20], [21].
 
-Mặc dù \texttt{Gemini 3.8 Flash} vẫn duy trì vị thế dẫn đầu tuyệt đối về độ chính xác tham số (~92\%–93\%) nhờ khả năng xử lý ngữ cảnh đa ngôn ngữ xuất sắc, việc triển khai các mô hình SLM nội bộ hoặc kiến trúc phân biệt Method 2 lại mang lại những ưu thế chiến lược quyết định đối với các tổ chức và doanh nghiệp trong nước:
-\begin{itemize}
-    \item \textbf{Bảo mật và toàn vẹn dữ liệu nội bộ (Data Privacy \& Compliance)}: Việc triển khai cục bộ (on-premise) đảm bảo 100\% dữ liệu truy vấn của người dùng và bí mật kinh doanh không bị gửi qua Internet sang các máy chủ đặt tại nước ngoài, đáp ứng đầy đủ các quy định nghiêm ngặt của Luật An ninh mạng Việt Nam và các tiêu chuẩn bảo vệ dữ liệu cá nhân (Nghị định 13/2023/NĐ-CP).
-    \item \textbf{Chi phí vận hành (Operational Cost)}: Dịch vụ thương mại phát sinh chi phí API theo chính sách và mức sử dụng của từng nhà cung cấp, trong khi mô hình cục bộ cần chi phí hạ tầng và điện năng. Khóa luận không suy ra chi phí trên 1.000 lượt truy vấn vì chưa đo hai nhóm hệ thống theo cùng một protocol kế toán.
-    \item \textbf{Tính khả dụng và kiểm soát độ trễ (Deterministic Latency \& Availability)}: Các dịch vụ đám mây công cộng luôn tiềm ẩn rủi ro về độ trễ mạng quốc tế (network jitter), giới hạn hạn ngạch gọi hàm (rate limits) và nguy cơ gián đoạn dịch vụ ngoài tầm kiểm soát. Các giải pháp nội bộ giảm phụ thuộc vào kết nối bên ngoài, nhưng độ trễ và tính sẵn sàng khi triển khai thực tế vẫn cần được đo riêng theo hạ tầng mục tiêu.
-\end{itemize}
+Chi phí triển khai cục bộ gồm đầu tư phần cứng và chi phí vận hành, bảo trì, điện năng; chi phí API thường phụ thuộc vào mức sử dụng. Khóa luận chưa đo tổng chi phí sở hữu theo lưu lượng nên không kết luận phương án nào rẻ hơn trong dài hạn.
+
+Triển khai cục bộ cũng cho phép chủ động quản lý đường ống suy luận. Mức độ sẵn sàng thực tế vẫn phụ thuộc vào năng lực vận hành, phần cứng và cơ chế dự phòng của từng tổ chức.
+
+\section{1. Thông tin tái lập phép đánh giá Frontier API}
+
+Hai run đầy đủ trên CustomTools-VI bắt đầu ngày 16/09/2026 (UTC), sử dụng task Kaggle Benchmark \texttt{tool-calling-vi-full} phiên bản 1 và agent \texttt{kaggle-benchmarks} 0.6.1. Model slug trong log lần lượt là \texttt{openai/gpt-5.6-luna} và \texttt{google/gemini-3.8-flash}; model ID tương ứng được nhà cung cấp công bố là \texttt{gpt-5.6-luna} [18] và \texttt{gemini-3.8-flash} [19]. Mã task gọi giao diện \texttt{llm.client.chat.completions.create}, truyền \texttt{model=llm.model}, \texttt{tool_choice="auto"} và danh sách công cụ lấy từ \texttt{tools} của từng mẫu. Riêng GPT-5.6 Luna được truyền \texttt{reasoning_effort="none"}. Tám worker xử lý các mẫu song song, nên độ trễ API nếu được báo cáo là thời gian wall-clock từng lời gọi trong điều kiện có đồng thời nhiều request, bao gồm cả mạng và dịch vụ.
+
+Prompt hệ thống dùng cho cả hai API là: “Bạn là trợ lý AI hữu ích. Nếu người dùng yêu cầu hành động cần công cụ, hãy gọi đúng các hàm và truyền tham số chính xác. Nếu yêu cầu không liên quan đến công cụ nào được cung cấp, TUYỆT ĐỐI KHÔNG gọi công cụ nào.” Prompt người dùng lấy từ \texttt{query}; định nghĩa function gồm \texttt{name}, \texttt{description} và \texttt{parameters} được chuyển từ trường \texttt{tools}.
+
+Mã task không truyền \texttt{temperature}, giới hạn output token hoặc tham số retry tường minh. Log có model slug và thời điểm chạy, nhưng không có snapshot dịch vụ, endpoint thực tế, region hoặc chính sách retry của SDK. Vì vậy, các điều kiện này có thể khác khi chạy lại.
 

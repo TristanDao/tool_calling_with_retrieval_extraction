@@ -1,7 +1,7 @@
 \chapter{XÂY DỰNG BỘ TIÊU CHUẨN ĐÁNH GIÁ (BENCHMARK) CHO TIẾNG VIỆT}
 
 \section{Thiết kế Schema Chuẩn hóa Dữ liệu (Master Canonical Schema)}
-Để phục vụ huấn luyện và đánh giá công bằng giữa hai phương pháp tiếp cận, nhóm nghiên cứu thiết kế một cấu trúc dữ liệu JSON duy nhất (Master Canonical Schema), hỗ trợ đồng thời kịch bản đơn lệnh và đa lệnh gọi:
+Hai phương pháp sử dụng biểu diễn huấn luyện và đầu ra khác nhau. Để chuẩn hóa dữ liệu gốc cho cả hai, nghiên cứu dùng một cấu trúc JSON chung mang tên \textit{Master Canonical Schema}. Lược đồ này lưu truy vấn, danh mục công cụ và danh sách lời gọi chuẩn, gồm cả trường hợp đơn lệnh và đa lệnh. Từ đó, dữ liệu được chuyển thành tin nhắn hội thoại của SLM hoặc các cặp truy vấn–lược đồ cho kiến trúc phân tách:
 
 \begin{verbatim}
 {
@@ -34,50 +34,27 @@
 }
 \end{verbatim}
 
-\section{Bộ chuẩn quy mô lớn Canonical Core Benchmark}
-Từ hai nguồn dữ liệu quốc tế chất lượng cao Glaive Function Calling và xLAM, nhóm nghiên cứu thiết lập quy trình lọc bỏ các câu đa lượt (chỉ giữ first-turn) và các bản ghi trùng lặp cấu trúc, sau đó tiến hành chuyển ngữ sang tiếng Việt thông qua mô hình dịch thuật chuyên dụng \texttt{Qwen-MT} của Alibaba kết hợp với hệ thống luật kiểm định chất lượng (QA Validation Rules) nghiêm ngặt:
-\begin{itemize}
-    \item Bảo toàn nguyên vẹn tên hàm và tên tham số bằng tiếng Anh (snake\_case).
-    \item Dịch tự nhiên nội dung truy vấn của người dùng và mô tả công cụ sang tiếng Việt.
-    \item Bảo toàn cấu trúc JSON và các định danh mã hóa (UUID, biển số xe, mã hiệu).
-\end{itemize}
+Trong cấu trúc quy chuẩn trên, mỗi bản ghi có bốn thành phần: \texttt{id} định danh mẫu; \texttt{query} ghi câu truy vấn; \texttt{function_calls} chứa nhãn công cụ và tham số; \texttt{tools} mô tả lược đồ JSON Schema, gồm tên hàm, mô tả, kiểu dữ liệu, \texttt{enum} và \texttt{required}. Schema chung giúp hai phương pháp nhận cùng thông tin đầu vào ở cấp bản ghi, dù cách mã hóa và xử lý thông tin khác nhau.
 
-Bộ dữ liệu sau khi tinh lọc đạt quy mô \textbf{77,028 cặp bản ghi song ngữ} hoàn chỉnh (chia thành train: 61,615; val: 7,701; test: 7,712 bản ghi tương ứng cho mỗi ngôn ngữ) bao phủ \textbf{4,421 công cụ duy nhất}.
+\section{Bộ chuẩn quy mô lớn Canonical Core Benchmark}
+Canonical Core Benchmark được xây dựng từ Glaive Function Calling v2 và Salesforce xLAM-60k. Glaive cung cấp các lượt gọi đơn và mẫu không gọi công cụ; xLAM bổ sung những truy vấn gọi nhiều công cụ và tham số lồng ghép. Quy trình tiền xử lý chỉ giữ lượt tương tác đầu tiên, loại $42{,}762$ bản ghi trùng lặp cấu trúc và $944$ mẫu sai cú pháp.
+
+Sau khi lọc, truy vấn và mô tả công cụ được dịch sang tiếng Việt bằng \texttt{Qwen-MT} của Alibaba. Các luật kiểm định giữ nguyên tên hàm, tên tham số snake\_case, cấu trúc JSON và các định danh như UUID, mã bưu chính, biển số xe. Bộ dữ liệu cuối cùng gồm \textbf{$77{,}028$ cặp bản ghi song ngữ} tương ứng 1:1 trên \textbf{$4{,}421$ công cụ}, chia thành tập huấn luyện ($61{,}615$ mẫu), xác thực ($7{,}701$ mẫu) và kiểm thử ($7{,}712$ mẫu) cho mỗi ngôn ngữ.
 
 \section{Bộ chuẩn miền thực tế bản địa hóa CustomTools-VI}
-Để kiểm tra năng lực xử lý ngôn ngữ thực tế trong bối cảnh văn hóa và dịch vụ tại Việt Nam, nhóm nghiên cứu xây dựng bộ dữ liệu \texttt{CustomTools-VI} gồm \textbf{8,000 mẫu} bao phủ 40 công cụ thuộc 10 nhóm lĩnh vực đời sống thiết yếu:
-\begin{enumerate}
-    \item Tra cứu hành chính \& dịch vụ công (phạt nguội, tra cứu CCCD, thuế cá nhân).
-    \item Tài chính \& Ngân hàng số (chuyển khoản VietQR, nạp tiền điện tử).
-    \item Đặt vé \& Giao thông nội địa (đặt vé xe khách, tra cứu tàu hỏa, đặt xe ôm công nghệ).
-    \item Thương mại điện tử \& Vận chuyển (tra cứu vận đơn bưu điện, kiểm tra đơn hàng).
-    \item Viễn thông \& Tiện ích (thanh toán hóa đơn điện lực EVN, nạp thẻ cước di động).
-    \item Y tế \& Đặt lịch khám bệnh.
-    \item Giáo dục \& Tra cứu điểm thi tuyển sinh.
-    \item Du lịch \& Nhà hàng khách sạn.
-    \item Bất động sản \& Thuê nhà ở.
-    \item Tiện ích đời sống (dự báo thời tiết địa phương, giá vàng SJC).
-\end{enumerate}
+\texttt{CustomTools-VI} bổ sung các tình huống nghiệp vụ tại Việt Nam vào bộ chuẩn dịch từ nguồn quốc tế. Tập dữ liệu gồm \textbf{$8{,}000$ mẫu} trên 40 công cụ thuộc 10 nhóm lĩnh vực, bao quát dịch vụ công, tài chính, thương mại, giao thông, du lịch, y tế và giáo dục. Truy vấn có từ ngữ địa phương, viết tắt và biến thể chính tả thường gặp trong giao tiếp tiếng Việt.
 
-Điểm mấu chốt trong thiết kế thực nghiệm là việc phân chia nghiêm ngặt thành hai tập:
-\begin{itemize}
-    \item \textbf{Tập đã học (Seen Tools)}: Gồm 20 công cụ xuất hiện trong cả tập huấn luyện và tập kiểm thử.
-    \item \textbf{Tập chưa từng gặp (Unseen Tools)}: Gồm 20 công cụ hoàn toàn mới, chỉ xuất hiện trong tập kiểm thử (\texttt{test_unseen}) nhằm đo lường chính xác năng lực tổng quát hóa Zero-Shot của mô hình.
-\end{itemize}
+Để đánh giá công cụ mới, 40 công cụ được chia đều thành nhóm \texttt{seen} và \texttt{unseen}. Nhóm \texttt{seen} có $5{,}600$ mẫu huấn luyện, $400$ mẫu xác thực và $800$ mẫu kiểm thử; nhóm \texttt{unseen} không có mẫu huấn luyện, nhưng có $400$ mẫu xác thực và $800$ mẫu kiểm thử. Phép chia này kiểm tra khả năng xử lý schema mới trong điều kiện đã nêu, song không tự nó loại trừ mọi khả năng rò rỉ thông tin hoặc ghi nhớ mẫu.
 
 \section{Chiến lược tạo lập và kiểm soát dữ liệu âm tính (Negative Samples)}
-Trong môi trường tương tác thực tế, người dùng thường xuyên đưa ra các câu hỏi trò chuyện xã giao hoặc các truy vấn nằm ngoài phạm vi hỗ trợ của các công cụ hiện có. Nếu mô hình chỉ được huấn luyện trên các mẫu bắt buộc kích hoạt công cụ, nó sẽ mắc phải thiên kiến kích hoạt quá mức (over-triggering bias), dẫn đến việc tự động gọi hàm sai lệch ngay cả khi truy vấn không yêu cầu.
+Trong môi trường vận hành thực tế, người tương tác không chỉ đưa ra các mệnh lệnh điều khiển mà còn thường xuyên gửi các câu hỏi giao tiếp xã giao hoặc các yêu cầu nằm hoàn toàn ngoài phạm vi hỗ trợ của hệ thống API hiện có. Nếu mô hình chỉ được rèn luyện trên các mẫu dữ liệu luôn luôn có lời gọi công cụ, nó sẽ hình thành thiên kiến kích hoạt quá mức (over-triggering bias) – xu hướng gượng ép ánh xạ mọi truy vấn của người dùng vào một API bất kỳ ngay cả khi không có công cụ nào phù hợp.
 
-Nhằm triệt tiêu thiên kiến này, trong bộ dữ liệu \texttt{CustomTools-VI}, nghiên cứu thiết lập tỷ lệ mẫu âm tính cân bằng chính xác \textbf{50\%} trên toàn bộ các tập kiểm thử:
-\begin{itemize}
-    \item 800 mẫu \texttt{test_seen}: gồm 400 mẫu dương tính (yêu cầu kích hoạt công cụ) và 400 mẫu âm tính (truy vấn hội thoại xã giao hoặc nằm ngoài danh mục công cụ).
-    \item 800 mẫu \texttt{test_unseen}: gồm 400 mẫu dương tính và 400 mẫu âm tính tương tự đối với nhóm công cụ zero-shot.
-\end{itemize}
+Để đo khả năng từ chối gọi công cụ, CustomTools-VI bố trí mẫu âm tính có kiểm soát. Mỗi tập \texttt{test_seen} và \texttt{test_unseen} gồm $800$ mẫu, trong đó có $400$ mẫu dương tính và $400$ mẫu âm tính (50\%). Mẫu âm tính bao gồm hội thoại xã giao và truy vấn ngoài phạm vi danh mục API; hệ thống được kỳ vọng không gọi hàm trong các trường hợp này. Cấu trúc cân bằng giúp diễn giải riêng chỉ số từ chối trên từng tập kiểm thử, nhưng không phản ánh phân bố truy vấn khi triển khai thực tế.
 
 \section{Quy trình xây dựng tập kiểm thử áp lực (Stress Test Benchmark)}
-Nhằm đánh giá tính bền vững và khả năng mở rộng của hệ thống khi không gian tìm kiếm công cụ gia tăng đột biến, nghiên cứu thiết lập quy trình kiểm thử áp lực dựa trên \textbf{200 truy vấn mỏ neo (anchor queries)} chuẩn. Từ tập mỏ neo này, không gian ngữ cảnh được mở rộng bằng cách bổ sung có kiểm soát các công cụ gây nhiễu (distractor tools) ngẫu nhiên và cùng miền từ kho 4,421 công cụ của Core Benchmark, tạo thành các kịch bản kiểm thử đa quy mô với số lượng công cụ $N \in \{3, 10, 50, 100, 500, 1000\}$. Thiết kế này phản ánh sát điều kiện vận hành thực tế trong các hệ sinh thái doanh nghiệp lớn, nơi hàng trăm API dịch vụ cùng tồn tại trong một hệ thống.
+Để khảo sát ảnh hưởng của quy mô danh mục công cụ, nghiên cứu xây dựng stress test lấy cảm hứng từ RAG-MCP. Tập kiểm thử gồm \textbf{$200$ truy vấn mỏ neo (anchor queries)} tiếng Việt có công cụ mục tiêu. Với mỗi truy vấn, các công cụ gây nhiễu được lấy từ kho $4{,}421$ công cụ của Core Benchmark để tạo sáu mức danh mục $N \in \{3, 10, 50, 100, 500, 1{,}000\}$.
 
-
+Hai chiến lược gây nhiễu được sử dụng: chọn ngẫu nhiên công cụ từ nhiều miền (Random Distractors) và chọn công cụ có mô tả gần với công cụ mục tiêu (Same-Domain Distractors). Với $200$ truy vấn, sáu mức $N$ và hai chiến lược, tập kiểm thử có $200 \times 6 \times 2 = 2{,}400$ kịch bản. Kết quả cho phép theo dõi độ chính xác và độ trễ khi danh mục công cụ mở rộng.
 
 \begin{verbatim}
 graph TD
@@ -102,7 +79,7 @@ graph TD
         CoreBenchmark["Canonical Core Benchmark (Song ngữ EN–VI đối sánh 1:1)<br/>(61,615 Train / 7,701 Val / 7,712 Test)"]:::dataset
         CustomSeen["CustomTools-VI (Seen Tools: 20 công cụ)<br/>(5,600 Train / 400 Val / 800 Test)"]:::dataset
         CustomUnseen["CustomTools-VI (Unseen Tools: 20 công cụ Zero-Shot)<br/>(0 Train / 400 Val / 800 Test)"]:::dataset
-        StressSet["Tập kiểm thử áp lực Stress Test<br/>(200 anchors × N = 3 đến 1000 distractors)"]:::dataset
+        StressSet["Tập kiểm thử áp lực Stress Test<br/>(200 anchors × N = 3 đến 1,000 distractors)"]:::dataset
     end
 
     Glaive --> Filter
@@ -118,7 +95,7 @@ graph TD
     CoreBenchmark --> StressSet
 \end{verbatim}
 
-\textit{Hình 3.1: Quy trình xử lý dữ liệu và xây dựng các bộ tiêu chuẩn đánh giá Benchmark.}
+\textit{Hình 3.1: Quy trình xử lý dữ liệu và xây dựng bộ Benchmark Tool Calling.}
 
 \textit{(Ghi chú: Core Benchmark là tập dữ liệu song ngữ đối xứng 1:1 (Paired EN–VI). CustomTools-VI duy trì tỷ lệ mẫu âm tính cân bằng 50\% ở mọi tập kiểm thử. Tỷ lệ phân chia Train / Val / Test tuân thủ nghiêm ngặt quy chuẩn 80/10/10).}
 
@@ -144,5 +121,5 @@ graph TD
     }%
 \end{table}
 
-\textit{(Ghi chú chuyển đổi biểu diễn dữ liệu (Data Representation Mapping): Số liệu trong Bảng 3.1 thể hiện số lượng bản ghi hội thoại gốc (Master Conversational Records). Khi đưa vào huấn luyện đường ống phân biệt Method 2 Shared E4, các bản ghi này được trích xuất thành 70,988 cặp dương tính (query, tool\_description) cho bộ truy hồi Bi-Encoder (loại trừ hoàn toàn định danh của 20 công cụ unseen để bảo toàn tính nghiêm ngặt zero-shot) và 135,617 cặp (query, param\_schema) phân cấp cho bộ trích xuất Cross-Encoder. Trên Core Benchmark, Method 2 được kiểm định đồng bộ trên toàn bộ 7,712 mẫu kiểm thử tiếng Việt (VI Test) và 7,712 mẫu kiểm thử tiếng Anh (EN Test) chuẩn hóa).}
+\textit{(Ghi chú chuyển đổi biểu diễn dữ liệu (Data Representation Mapping): Số liệu trong Bảng 3.1 thể hiện số lượng bản ghi hội thoại gốc (Master Conversational Records). Khi đưa vào huấn luyện đường ống phân biệt Method 2 Shared E4, các bản ghi này được trích xuất thành $70{,}988$ cặp dương tính (query, tool\_description) cho bộ truy hồi Bi-Encoder (loại trừ hoàn toàn định danh của 20 công cụ unseen để bảo toàn tính nghiêm ngặt zero-shot) và $135{,}617$ cặp (query, param\_schema) phân cấp cho bộ trích xuất Cross-Encoder. Trên Core Benchmark, Method 2 được kiểm định đồng bộ trên toàn bộ $7{,}712$ mẫu kiểm thử tiếng Việt (VI Test) và $7{,}712$ mẫu kiểm thử tiếng Anh (EN Test) chuẩn hóa).}
 
