@@ -18,7 +18,7 @@
   - Đào Phước Thịnh (MSSV: 25210038)
   - Hà Quang Đạt (MSSV: 25210008)
 - **Thời gian thực hiện**: 15/07/2026 – 23/09/2026
-- **Trạng thái hiện tại**: **Phase 6/7 — Hoàn thành 100% thực nghiệm toàn diện**. Đồng bộ hóa 100% nội dung vào Khóa luận tốt nghiệp UIT ([thesis/khoa_luan_tot_nghiep.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/thesis/khoa_luan_tot_nghiep.md), [latex/uit_thesis/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/latex/uit_thesis/)) và bộ đôi bài báo khoa học ([paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md), [paper/paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md), [latex/paper_en/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/latex/paper_en/)).
+- **Trạng thái hiện tại**: **Phase 6/7 — Hoàn thành 100% thực nghiệm toàn diện**. Đồng bộ hóa 100% nội dung vào Khóa luận tốt nghiệp UIT ([thesis/khoa_luan_tot_nghiep.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/thesis/khoa_luan_tot_nghiep.md)) và bộ đôi bài báo khoa học ([paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md), [paper/paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md), [latex/paper_en/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/latex/paper_en/)).
 
 ---
 
@@ -111,7 +111,7 @@ tool_calling_with_retrieval_extraction/
 ├── reports/                   # Báo cáo thực nghiệm chi tiết của Method 2
 ├── thesis/                    # Bản thảo Markdown Khóa luận tốt nghiệp UIT
 ├── latex/
-│   ├── uit_thesis/            # LaTeX Khóa luận tốt nghiệp UIT chuẩn quy chế
+│   ├── paper_vi/              # LaTeX bài báo khoa học tiếng Việt
 │   └── paper_en/              # LaTeX bài báo khoa học tiếng Anh
 ├── paper/                     # Bản thảo Paper Markdown (paper_vi.md & paper_en.md)
 └── docs/                      # Tài liệu kỹ thuật chuyên sâu (architecture, methodology, guides)
@@ -136,7 +136,7 @@ tool_calling_with_retrieval_extraction/
 5. **Tuyệt đối không commit dữ liệu, checkpoints, file nặng hoặc token bảo mật**.
 
 ### 5.2 Quy chuẩn Văn phong Học thuật & Trình bày KLTN UIT (BẮT BUỘC TUÂN THỦ)
-Khi hỗ trợ viết hoặc chỉnh sửa tài liệu Khóa luận ([thesis/khoa_luan_tot_nghiep.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/thesis/khoa_luan_tot_nghiep.md), [latex/uit_thesis/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/latex/uit_thesis/)):
+Khi hỗ trợ viết hoặc chỉnh sửa tài liệu Khóa luận ([thesis/khoa_luan_tot_nghiep.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/thesis/khoa_luan_tot_nghiep.md)):
 1. **Thông tin định danh học thuật**:
    - Trường: **Trường Đại học Công nghệ Thông tin – ĐHQG-HCM**
    - Khoa: **KHOA KHOA HỌC MÁY TÍNH** *(tuyệt đối không ghi Khoa Công nghệ Thông tin)*
@@ -185,8 +185,8 @@ Khi thực hiện chuyển đổi hoặc biên tập tài liệu sang Word (`.do
 - ✅ **Method 2 (Bi-Encoder BGE-M3 + Cross-Encoder XLM-R)**: Hoàn tất 100% đánh giá trên toàn bộ các tập đối chuẩn và lưu tại `reports/method2_20260908/`, `reports/method2_20260913/`.
 - ✅ **Stress Test Đối đầu ($N = 3 \to 1000$)**: Hoàn tất đối đầu trực diện giữa Method 1 (2B_E4) và Method 2. Method 2 duy trì ổn định Tool Acc > 87%, ArgA > 84%, độ trễ 55–108 ms và VRAM 3.2 GiB. SLM gặp CUDA OOM ở $N \ge 500$ trên T4 16GB do giới hạn SDPA attention.
 - ✅ **Frontier API Baselines**: Hoàn tất đánh giá GPT-5.6 Luna và Gemini 3.8 Flash trên toàn bộ 1,600 mẫu CustomTools-VI.
-- ✅ **Đồng bộ Tài liệu**: Đồng bộ toàn diện dữ liệu vào [thesis/khoa_luan_tot_nghiep.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/thesis/khoa_luan_tot_nghiep.md), [latex/uit_thesis/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/latex/uit_thesis/), [paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md) và [latex/paper_en/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/latex/paper_en/).
-
+- ✅ **Đồng bộ Tài liệu**: Đồng bộ toàn diện dữ liệu vào [thesis/khoa_luan_tot_nghiep.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/thesis/khoa_luan_tot_nghiep.md), [paper/paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md) và [latex/paper_en/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/latex/paper_en/).
+ 
 ### 6.2 Các công việc cần tập trung hiện tại
-1. [ ] **Rà soát & Hoàn thiện Bản thảo Khóa luận**: Đọc kiểm tra chính tả, câu từ, căn chỉnh bảng biểu trong [latex/uit_thesis/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/latex/uit_thesis/) và [thesis/khoa_luan_tot_nghiep.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/thesis/khoa_luan_tot_nghiep.md) chuẩn bị in nộp.
+1. [ ] **Rà soát & Hoàn thiện Bản thảo Khóa luận**: Đọc kiểm tra chính tả, câu từ, căn chỉnh bảng biểu trong [thesis/khoa_luan_tot_nghiep.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/thesis/khoa_luan_tot_nghiep.md) và chuyển đổi sang Word (.docx) chuẩn bị in nộp.
 2. [ ] **Đóng gói mã nguồn & Benchmark**: Kiểm tra tính độc lập của mã nguồn, scripts chạy thực nghiệm, manifest và checksum dữ liệu trước khi công bố repository.

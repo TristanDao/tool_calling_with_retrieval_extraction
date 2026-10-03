@@ -157,8 +157,8 @@ def plot_fig2_customtools_comparison(lang="vi", output_dir="paper/figures"):
         'Gemini 3.8 Flash\n(Google API)'
     ]
     
-    seen_acc = [92.25, 93.25, 94.66, 93.25, 100.00]
-    seen_arga = [85.38, 87.00, 87.92, 78.25, 93.62]
+    seen_acc = [92.25, 93.25, 92.50, 93.25, 100.00]
+    seen_arga = [85.38, 87.00, 86.62, 78.25, 93.62]
     unseen_acc = [79.50, 97.00, 96.75, 97.25, 100.00]
     unseen_arga = [60.25, 86.38, 86.75, 79.50, 92.12]
 
@@ -171,9 +171,9 @@ def plot_fig2_customtools_comparison(lang="vi", output_dir="paper/figures"):
     c_unseen_arga = '#d62728'
 
     rects1 = ax.bar(x - 1.5*width, seen_acc, width, label='Seen Tool Acc (%)', color=c_seen_acc, edgecolor='black', lw=0.6)
-    rects2 = ax.bar(x - 0.5*width, seen_arga, width, label='Seen ArgA / EM (%)', color=c_seen_arga, edgecolor='black', lw=0.6)
+    rects2 = ax.bar(x - 0.5*width, seen_arga, width, label='Seen ArgA-all (%)', color=c_seen_arga, edgecolor='black', lw=0.6)
     rects3 = ax.bar(x + 0.5*width, unseen_acc, width, label='Unseen Tool Acc (%)', color=c_unseen_acc, edgecolor='black', lw=0.6)
-    rects4 = ax.bar(x + 1.5*width, unseen_arga, width, label='Unseen ArgA / EM (%)', color=c_unseen_arga, edgecolor='black', lw=0.6)
+    rects4 = ax.bar(x + 1.5*width, unseen_arga, width, label='Unseen ArgA-all (%)', color=c_unseen_arga, edgecolor='black', lw=0.6)
 
     ylabel = 'Accuracy (%)' if is_en else 'Độ chính xác / Accuracy (%)'
     title = 'Comprehensive Empirical Comparison on CustomTools-VI Benchmark (Seen vs. Unseen)' if is_en else 'So sánh đối đầu toàn diện trên benchmark CustomTools-VI (Seen vs. Unseen)'
@@ -198,7 +198,7 @@ def plot_fig2_customtools_comparison(lang="vi", output_dir="paper/figures"):
 
     # Chú thích Zero-Shot Gap cho Method 2 và SLM
     txt_drop = 'Zero-Shot Drop:\n-25.13% ArgA' if is_en else 'Suy giảm Zero-Shot:\n-25.13% ArgA'
-    txt_robust = 'Robust Zero-Shot:\nArgA Gap -1.17%' if is_en else 'Zero-Shot bền bỉ:\nArgA Gap -1.17%'
+    txt_robust = 'Robust Zero-Shot:\nArgA Gap +0.13%' if is_en else 'Zero-Shot bền bỉ:\nArgA Gap +0.13%'
 
     ax.annotate(txt_drop, xy=(0 + 1.5*width, 60.25), xytext=(-0.15, 78),
                 arrowprops=dict(arrowstyle="->", color="black", lw=1),
@@ -250,7 +250,7 @@ def plot_fig3_stress_test(lang="vi", output_dir="paper/figures"):
 
     # Vùng OOM cho SLM
     ax1.axvspan(3.5, 5.5, color='#feebe8', alpha=0.6)
-    txt_oom_box = "SLM Memory Collapse\n(CUDA OOM)\n>32GB VRAM Required" if is_en else "SLM Sụp Đổ\n(CUDA OOM)\n>32GB VRAM"
+    txt_oom_box = "SLM Memory Limit\n(CUDA OOM)\nAt N ≥ 500 on 16GB T4" if is_en else "Giới hạn bộ nhớ SLM\n(CUDA OOM)\nTại N ≥ 500 trên T4 16GB"
     ax1.text(4.5, 75, txt_oom_box, ha='center', va='center', 
              fontsize=10, fontweight='bold', color='#990000',
              bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="#990000", lw=1))
@@ -269,8 +269,8 @@ def plot_fig3_stress_test(lang="vi", output_dir="paper/figures"):
     ax1.legend(loc='lower left', fontsize=8.5)
 
     # PANEL B: ĐỘ TRỄ SUY LUẬN (P50 Latency)
-    lbl_m2_lat = 'Method 2 (Bi+Cross Pipeline)'
-    lbl_slm_lat = 'SLM (Qwen3.5-2B E4)'
+    lbl_m2_lat = 'Method 2 (Bi+Cross, P50)'
+    lbl_slm_lat = 'SLM (Qwen3.5-2B E4, batch-normalized)'
 
     ax2.plot(x_indices, m2_latency, marker='o', color='#1f77b4', lw=2.2, label=lbl_m2_lat)
     ax2.plot(x_indices[:4], slm_latency[:4], marker='^', color='#d62728', lw=2.2, label=lbl_slm_lat)
@@ -281,16 +281,9 @@ def plot_fig3_stress_test(lang="vi", output_dir="paper/figures"):
     ax2.text(4.5, 500, txt_oom_zone, ha='center', va='center', 
              fontsize=10, fontweight='bold', color='#990000')
 
-    # Mũi tên tốc độ tại N=100
-    txt_speedup = '152.7× Faster\n(61.0ms vs 9.3s)' if is_en else 'Nhanh gấp 152.7 lần\n(61.0ms vs 9.3s)'
-    ax2.annotate(txt_speedup, xy=(3, 61.01), xytext=(2.2, 500),
-                 arrowprops=dict(arrowstyle="->", color="#1f77b4", lw=1.2),
-                 fontsize=9, fontweight='bold', color='#1f77b4',
-                 bbox=dict(boxstyle="round,pad=0.2", fc="#e6f2ff", ec="#1f77b4", lw=0.8))
-
     xlabel_b = 'Number of tools in prompt ($N$)' if is_en else 'Số lượng công cụ trong prompt ($N$)'
-    ylabel_b = 'P50 Latency (ms) - Log Scale' if is_en else 'Độ trễ P50 (ms) - Thang đo Log'
-    title_b = '(b) P50 Inference Latency (ms) vs. Tool Scale' if is_en else '(b) Độ trễ suy luận P50 (ms) theo quy mô công cụ'
+    ylabel_b = 'Latency (ms) - Log Scale' if is_en else 'Độ trễ (ms) - Thang đo Log'
+    title_b = '(b) Inference Latency (Log Scale)' if is_en else '(b) Độ trễ suy luận (Thang đo Log)'
 
     ax2.set_xlabel(xlabel_b, fontsize=11, fontweight='bold')
     ax2.set_ylabel(ylabel_b, fontsize=11, fontweight='bold')
@@ -300,7 +293,7 @@ def plot_fig3_stress_test(lang="vi", output_dir="paper/figures"):
     ax2.grid(True, which="both", ls="--", alpha=0.4)
     ax2.legend(loc='upper left', fontsize=9)
 
-    suptitle = "Direct Head-to-Head Stress Test: SLM vs. Method 2 ($N = 3 \to 1,000$ tools)" if is_en else "Stress Test đối đầu trực diện: SLM vs. Method 2 ($N=3 \to 1.000$ công cụ)"
+    suptitle = "Direct Head-to-Head Stress Test: SLM vs. Method 2 (N = 3 → 1,000 tools)" if is_en else "Stress Test đối đầu trực diện: SLM vs. Method 2 (N = 3 → 1,000 công cụ)"
     plt.suptitle(suptitle, fontsize=13, fontweight='bold', y=1.00)
     plt.tight_layout()
     os.makedirs(output_dir, exist_ok=True)
@@ -344,7 +337,7 @@ def plot_fig4_scaling_syntax(lang="vi", output_dir="paper/figures"):
 
     # PANEL B: SYNTAX ERROR SUPPRESSION
     err_cats = ['Core VI Test', 'Core EN Test']
-    err_2b = [4.31, 4.35]
+    err_2b = [4.66, 4.73]
     err_4b = [0.32, 1.97]
 
     x2 = np.arange(len(err_cats))
@@ -356,14 +349,14 @@ def plot_fig4_scaling_syntax(lang="vi", output_dir="paper/figures"):
         ax2.annotate(f'{h:.2f}%', xy=(bar.get_x() + bar.get_width()/2, h),
                      xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8.5, fontweight='bold', color='#cb181d')
 
-    txt_reduc = 'Over 13× Reduction:\n4.31% → 0.32%' if is_en else 'Giảm hơn 13 lần:\n4.31% → 0.32%'
+    txt_reduc = 'Over 14× Reduction:\n4.66% → 0.32%' if is_en else 'Giảm hơn 14 lần:\n4.66% → 0.32%'
     ax2.annotate(txt_reduc, xy=(x2[0] + width/2, 0.35), xytext=(0.55, 4.2),
                  arrowprops=dict(arrowstyle="->", color="#990000", lw=1.2),
                  fontsize=9, fontweight='bold', color='#990000',
                  bbox=dict(boxstyle="round,pad=0.2", fc="#ffe6e6", ec="#990000", lw=0.8))
 
     ylabel_b = 'Syntax Error Rate (%)' if is_en else 'Tỷ lệ lỗi cú pháp / Syntax Error Rate (%)'
-    title_b = '(b) Suppression of JSON Syntax Errors' if is_en else '(b) Triệt tiêu lỗi cú pháp JSON (Syntax Error)'
+    title_b = '(b) Output Format Errors' if is_en else '(b) Lỗi định dạng đầu ra'
 
     ax2.set_ylabel(ylabel_b, fontsize=11, fontweight='bold')
     ax2.set_title(title_b, fontsize=11, fontweight='bold')

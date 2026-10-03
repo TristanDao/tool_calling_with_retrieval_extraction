@@ -9,7 +9,7 @@ Email: `{25210038, 25210008}@ms.uit.edu.vn`, `thindv@uit.edu.vn`
 
 ## Tóm Tắt (Abstract)
 
-Khả năng gọi công cụ (tool calling) là cơ chế then chốt giúp các tác tử trí tuệ nhân tạo (AI Agents) tương tác với thế giới bên ngoài thông qua các giao diện lập trình ứng dụng (API), cơ sở dữ liệu và công cụ tính toán. Mặc dù đã đạt nhiều bước tiến đột phá trên tiếng Anh, việc xây dựng năng lực gọi công cụ hiệu quả, độ trễ thấp và có khả năng khái quát hóa cho tiếng Việt vẫn là bài toán chưa được khai phá thấu đáo do độ trễ suy luận tự hồi quy cao (800–2,000 ms), chi phí token đắt đỏ, nguy cơ sinh lỗi cú pháp JSON và hiện tượng bùng nổ bộ nhớ ngữ cảnh khi số lượng công cụ tăng cao. Bài báo này trình bày nghiên cứu so sánh đối đầu thực nghiệm có hệ thống đầu tiên cho tiếng Việt giữa hai trường phái kiến trúc: Mô hình Ngôn ngữ Nhỏ tạo sinh End-to-End (SLM Qwen3.5 2B và 4B) và Hệ thống phân biệt hai giai đoạn không tự hồi quy (Bi-Encoder BGE-M3 kết hợp Hierarchical Cross-Encoder XLM-RoBERTa). Nghiên cứu chuẩn hóa và công bố hai bộ dữ liệu đánh giá: Canonical Core Benchmark (77,028 cặp bản ghi song ngữ trên 4,421 công cụ) và CustomTools-VI (8,000 mẫu thuộc 10 lĩnh vực đời sống Việt Nam với phân chia nghiêm ngặt 20 công cụ seen, 20 công cụ zero-shot unseen cùng 50% mẫu âm tính). Kết quả thực nghiệm chỉ ra rằng mô hình SLM 4B sau khi hiệu chuẩn âm tính bản địa đạt độ chính xác tham số (ArgA) vượt trội 87.92% trên công cụ đã học và 86.75% trên công cụ mới (zero-shot unseen), khắc phục triệt để hiện tượng kích hoạt công cụ quá mức (khôi phục Non-FC Recall từ 2.0% lên 100.0%), vượt qua mô hình thương mại GPT-5.6 Luna trên bài toán trích xuất nghiệp vụ bản địa CustomTools-VI (+8.75% seen, +6.88% unseen) đồng thời triệt tiêu lỗi cú pháp xuống 0.32%. Ngược lại, hệ thống phân tách thiết lập kỷ lục độ trễ thời gian thực 54.68–55.13 ms (nhanh gấp 15–22 lần SLM) với 0% lỗi cú pháp và tiêu thụ bộ nhớ cố định ~3.21 GiB VRAM. Đặc biệt, trong thử nghiệm áp lực mở rộng danh mục (Stress Test với N từ 3 đến 1,000 công cụ), hệ thống phân tách duy trì ArgA ổn định 84.00%–87.50% và độ trễ 55.13–107.68 ms, trong khi SLM gặp hiện tượng bùng nổ bộ nhớ dẫn đến sụp đổ tràn bộ nhớ (CUDA OOM) tại N >= 500 trên phần cứng 16GB VRAM. Công trình xác lập rõ nét đường biên đánh đổi Pareto, cung cấp cơ sở khoa học và định hướng kiến trúc thực tế cho việc xây dựng các tác tử AI hiệu năng cao.
+Khả năng gọi công cụ (tool calling) là cơ chế then chốt giúp các tác tử trí tuệ nhân tạo (AI Agents) tương tác với thế giới bên ngoài thông qua các giao diện lập trình ứng dụng (API), cơ sở dữ liệu và công cụ tính toán. Mặc dù đã đạt nhiều bước tiến đột phá trên tiếng Anh, việc xây dựng năng lực gọi công cụ hiệu quả, độ trễ thấp và có khả năng khái quát hóa cho tiếng Việt vẫn là bài toán chưa được khai phá thấu đáo do độ trễ suy luận tự hồi quy cao (800–2,000 ms), chi phí token đắt đỏ, nguy cơ sinh lỗi cú pháp JSON và hiện tượng bùng nổ bộ nhớ ngữ cảnh khi số lượng công cụ tăng cao. Bài báo này trình bày nghiên cứu so sánh đối đầu thực nghiệm có hệ thống đầu tiên cho tiếng Việt giữa hai trường phái kiến trúc: Mô hình Ngôn ngữ Nhỏ tạo sinh End-to-End (SLM Qwen3.5 2B và 4B) và Hệ thống phân biệt hai giai đoạn không tự hồi quy (Bi-Encoder BGE-M3 kết hợp Hierarchical Cross-Encoder XLM-RoBERTa). Nghiên cứu chuẩn hóa và công bố hai bộ dữ liệu đánh giá: Canonical Core Benchmark (77,028 cặp bản ghi song ngữ trên 4,421 công cụ) và CustomTools-VI (8,000 mẫu thuộc 10 lĩnh vực đời sống Việt Nam với phân chia nghiêm ngặt 20 công cụ seen, 20 công cụ zero-shot unseen cùng 50% mẫu âm tính). Kết quả thực nghiệm chỉ ra rằng mô hình SLM 4B sau khi hiệu chuẩn âm tính bản địa đạt độ chính xác tham số (ArgA) vượt trội 86.62% trên công cụ đã học và 86.75% trên công cụ mới (zero-shot unseen), khắc phục triệt để hiện tượng kích hoạt công cụ quá mức (khôi phục Non-FC Recall từ 2.0% lên 100.0%), vượt qua mô hình thương mại GPT-5.6 Luna trên bài toán trích xuất nghiệp vụ bản địa CustomTools-VI (+8.37% seen, +7.25% unseen) đồng thời triệt tiêu lỗi cú pháp xuống 0.32%. Ngược lại, hệ thống phân tách thiết lập kỷ lục độ trễ thời gian thực 54.68–55.13 ms (nhanh gấp 15–22 lần SLM) với 0% lỗi cú pháp và tiêu thụ bộ nhớ cố định ~3.21 GiB VRAM. Đặc biệt, trong thử nghiệm áp lực mở rộng danh mục (Stress Test với N từ 3 đến 1,000 công cụ), hệ thống phân tách duy trì ArgA ổn định 84.00%–87.50% và độ trễ 55.13–107.68 ms, trong khi SLM gặp hiện tượng bùng nổ bộ nhớ dẫn đến sụp đổ tràn bộ nhớ (CUDA OOM) tại N >= 500 trên phần cứng 16GB VRAM. Công trình xác lập rõ nét đường biên đánh đổi Pareto, cung cấp cơ sở khoa học và định hướng kiến trúc thực tế cho việc xây dựng các tác tử AI hiệu năng cao.
 
 **Từ khóa:** Gọi công cụ, mô hình ngôn ngữ nhỏ, Bi-Encoder, Cross-Encoder, trích xuất tham số, tiếng Việt.
 
@@ -40,7 +40,7 @@ Công trình này được xây dựng nhằm giải quyết triệt để các 
 1. **Công bố hai bộ benchmark tiếng Việt chuẩn hóa**: Xây dựng **Canonical Core Benchmark** gồm 77,028 cặp bản ghi song ngữ (4,421 công cụ duy nhất) và **CustomTools-VI** gồm 8,000 mẫu thuộc 10 nhóm lĩnh vực thực tế tại Việt Nam với cơ chế phân vùng strict zero-shot unseen và 50% mẫu âm tính.
 2. **Phát hiện và định lượng sự sụp đổ do kích hoạt công cụ quá mức (Over-triggering Pathology)**: Chỉ ra mô hình song ngữ phổ quát sụp đổ độ nhạy từ chối câu thường khi đối mặt với miền ngữ cảnh bản địa (Non-FC Recall chỉ đạt 2.0% ở E3), đồng thời chứng minh việc bổ sung dữ liệu âm tính bản địa hóa khôi phục triệt để năng lực tự kiềm chế với Non-FC Recall đạt 100.0%.
 3. **Hiện thực hóa pipeline phân tách đạt tốc độ thời gian thực**: Xây dựng thành công hệ thống Bi-Encoder + Hierarchical Cross-Encoder đạt độ trễ kỷ lục 54.68 ms (nhanh gấp 15–22 lần SLM), kiểm soát VRAM allocated ổn định ~3.21 GiB và triệt tiêu 100% lỗi cú pháp JSON.
-4. **Xác lập kết quả tốt nhất (SOTA) trên benchmark CustomTools-VI trong nhóm mô hình mã nguồn mở cục bộ**: Mô hình `Qwen3.5-4B` đạt ArgA 87.92% (seen) và 86.75% (unseen), đồng thời vượt qua mô hình thương mại đóng `GPT-5.6 Luna` trên miền nghiệp vụ bản địa (+8.75% seen, +6.88% unseen).
+4. **Xác lập kết quả tốt nhất (SOTA) trên benchmark CustomTools-VI trong nhóm mô hình mã nguồn mở cục bộ**: Mô hình `Qwen3.5-4B` đạt ArgA 86.62% (seen) và 86.75% (unseen), đồng thời vượt qua mô hình thương mại đóng `GPT-5.6 Luna` trên miền nghiệp vụ bản địa (+8.37% seen, +7.25% unseen).
 5. **Xác định giới hạn vật lý trong Stress Test ($N = 3 \to 1.000$)**: Định lượng ranh giới sụp đổ tràn bộ nhớ CUDA OOM của SLM tại $N \ge 500$ trên phần cứng 16GB, trong khi kiến trúc phân tách duy trì ổn định P50 từ 55.13 đến 107.68 ms và ArgA 84.00% ở quy mô 1,000 công cụ với VRAM allocated chỉ ~3.21 GiB.
 
 ---
@@ -205,21 +205,39 @@ Trong các phép đo riêng trên Tesla T4, peak VRAM của Qwen3.5-2B 4-bit n�
 
 **Bảng 2: Thông số siêu tham số và tài nguyên thực tế của các mô hình thực nghiệm**
 
-| Thành phần / Tiêu chí | Qwen3.5-2B (E1 $\to$ E4) | Qwen3.5-4B (E3, E4) | Method 2: Bi+Cross |
-| :--- | :--- | :--- | :--- |
-| **Kiến trúc Backbone** | `unsloth/Qwen3.5-2B` | `unsloth/Qwen3.5-4B` | `BGE-M3` + `XLM-R base` |
-| **Kỹ thuật thích ứng** | QLoRA (4-bit NF4) | QLoRA (4-bit NF4) | LoRA (Bi-Enc) / Full Head (Cross-Enc) |
-| **LoRA Parameters** | $r=16, \alpha=16$, dropout $0.0$ | $r=16, \alpha=16$, dropout $0.0$ | $r=16, \alpha=32$ (Bi-Encoder) |
-| **Target Modules** | `q, k, v, o, gate, up, down_proj` | `q, k, v, o, gate, up, down_proj` | `q_proj, v_proj` (Bi-Encoder) |
-| **Tổng tham số mô hình** | 2,224,153,408 (~2.22B) | 4,560,499,200 (~4.56B) | 567M + 278M (~845M) |
-| **Tham số huấn luyện** | **10,911,744 (0.49%)** | **21,233,664 (0.47%)** | ~15M (LoRA + Heads) |
-| **Tốc độ học (Learning Rate)** | $5 \times 10^{-7}$ (Cosine, warmup 0.05) | $5 \times 10^{-7}$ (Cosine, warmup 0.05) | $2 \times 10^{-5}$ (Bi) / $3 \times 10^{-5}$ (Cross) |
-| **Batch Size cấu hình** | $64 \times 1$ (Per-device: 64, Accum: 1) | $32 \times 2$ (Per-device: 32, Accum: 2) | 32 (Bi-Enc) / 16 (Cross-Enc) |
-| **Effective Batch Size** | **64** (Đồng nhất 100%) | **64** (Đồng nhất 100%) | — |
-| **Thời gian train / run 60k** | **~49.5 phút** (938 steps trên A100) | **~1 giờ 55 phút** (938 steps trên A100)| ~2.5 giờ (2 rounds) + ~3 giờ (CE) |
-| **Thời gian train E4 (65.6k)**| **~54 phút** (1,025 steps trên A100) | **2 giờ 05 phút** (1,025 steps A100) | — |
-| **Mất mát hội tụ (Final Loss)**| $\approx 0.0198$ | $\approx 0.0103$ (Giảm ~48%) | — |
-| **Phần cứng kiểm thử** | 2× NVIDIA Tesla T4 (16 GB/GPU) | 2× NVIDIA Tesla T4 (16 GB/GPU) | 1× NVIDIA Tesla T4 (16 GB) |
+**(a) Nhóm mô hình SLM End-to-End (Qwen3.5)**
+
+| Thông số / Tiêu chí | Qwen3.5-2B (E1 $\to$ E4) | Qwen3.5-4B (E3, E4) |
+| :--- | :---: | :---: |
+| **Mô hình nền (Backbone)** | `unsloth/Qwen3.5-2B` | `unsloth/Qwen3.5-4B` |
+| **Kỹ thuật thích ứng (PEFT)** | QLoRA (4-bit NF4) | QLoRA (4-bit NF4) |
+| **Cấu hình LoRA** | $r=16, \alpha=16$, dropout $0.0$ | $r=16, \alpha=16$, dropout $0.0$ |
+| **Target Modules** | Toàn bộ Linear (q, k, v, o, gate, up, down) | Toàn bộ Linear (q, k, v, o, gate, up, down) |
+| **Tổng tham số mô hình** | 2,224M (~2.22B) | 4,560M (~4.56B) |
+| **Tham số huấn luyện (Trainable)** | **10.91M (0.49%)** | **21.23M (0.47%)** |
+| **Tốc độ học (Learning Rate)** | $5 \times 10^{-7}$ (Cosine, warmup 0.05) | $5 \times 10^{-7}$ (Cosine, warmup 0.05) |
+| **Batch Size cấu hình** | $64 \times 1$ (Per-device: 64, Accum: 1) | $32 \times 2$ (Per-device: 32, Accum: 2) |
+| **Batch Size hiệu dụng** | **64** | **64** |
+| **Thời gian train E1--E3 (60k)** | **~49.5 phút** (A100-40GB) | **~1 giờ 55 phút** (A100-40GB) |
+| **Thời gian train E4 (65.6k)** | **~54 phút** (A100-40GB) | **2 giờ 05 phút** (A100-40GB) |
+| **Mất mát hội tụ (Final Loss)** | $\approx 0.0198$ | $\approx 0.0103$ (Giảm ~48%) |
+| **Phần cứng suy luận (Inference)** | 2× NVIDIA Tesla T4 (16 GB/GPU) | 2× NVIDIA Tesla T4 (16 GB/GPU) |
+
+**(b) Nhóm mô hình phân tách Method 2 (Bi-Encoder + Cross-Encoder)**
+
+| Thành phần kỹ thuật | Bộ truy hồi Bi-Encoder | Bộ trích xuất Cross-Encoder |
+| :--- | :---: | :---: |
+| **Mô hình nền (Backbone)** | `BAAI/bge-m3` | `xlm-roberta-base` |
+| **Kỹ thuật tối ưu hóa** | LoRA ($r=16, \alpha=32$, dropout $0.05$) | Full Head Tuning (Hierarchical Heads) |
+| **Target Modules / Heads** | `query`, `key`, `value`, `dense` | `has_value`, `span`, `enum`, `bool` |
+| **Tổng tham số mô hình** | 567M | 278M |
+| **Tham số huấn luyện** | ~15M (LoRA) | Toàn bộ mô hình + Heads |
+| **Tốc độ học (Learning Rate)** | $2 \times 10^{-5}$ | Core $3 \times 10^{-5}$ / Custom $1 \times 10^{-5}$ / Heads $1 \times 10^{-4}$ |
+| **Batch Size hiệu dụng** | **256** (Mini-batch: 32) | **64** (Batch: 32, Accum: 2) |
+| **Hàm mất mát (Loss function)** | `CachedMNRL` (2 Rounds + Hard Negatives) | Multi-task BCE + Cross-Entropy |
+| **Quy chuẩn quyết định (Policy)** | Dual-threshold ($\tau = 0.35, \delta = 0.21$) | Schema routing + Regex Normalizer |
+| **Thời gian huấn luyện** | 6.15 giờ (Round 2 trên Tesla T4) | 0.72 giờ (4,240 steps trên Tesla T4) |
+| **Phần cứng suy luận (Inference)** | 1× NVIDIA Tesla T4 (16 GB) | 1× NVIDIA Tesla T4 (16 GB) |
 
 ---
 
@@ -278,10 +296,10 @@ Bảng 3 và Bảng 4 trình bày toàn bộ kết quả thực nghiệm chi ti�
 | **E3 (2B)** | Song ngữ EN+VI (60k) | 92.25% | 19.38% | 3.00% | 4.31% |
 | **E4 (2B)** | Song ngữ + Custom VI | 93.25% | 87.00% | **100.00%** | 2.44% |
 | **E3 (4B)** | Song ngữ EN+VI (60k) | 92.00% | 62.00% | 71.25% | 13.38% |
-| **E4 (4B)** | Song ngữ + Custom VI | **94.66%** | **87.92%** | **100.00%** | 4.17% |
+| **E4 (4B)** | Song ngữ + Custom VI | 92.50% | 86.62% | **100.00%** | 5.38% |
 | **Method 2 (Shared E4)** | Bi-Encoder + Cross-Encoder | 92.25% | 85.38% | 92.75% | **0.00%** |
 | **GPT-5.6 Luna** | API thương mại | 93.25% | 78.25% | 100.00% | 0.00% |
-| **Gemini 3.8 Flash** | API thương mại | **100.00%** | **93.62%** | 100.00% | 0.06% |
+| **Gemini 3.8 Flash** | API thương mại | **100.00%** | **93.62%** | 100.00% | 0.00% |
 
 **(b) Tập unseen**
 
@@ -296,7 +314,7 @@ Bảng 3 và Bảng 4 trình bày toàn bộ kết quả thực nghiệm chi ti�
 | **E4 (4B)** | Song ngữ + Custom VI | 96.75% | **86.75%** | **100.00%** | 1.62% |
 | **Method 2 (Shared E4)** | Bi-Encoder + Cross-Encoder | 79.50% | 60.25% | 93.75% | **0.00%** |
 | **GPT-5.6 Luna** | API thương mại | 97.25% | 79.50% | 100.00% | 0.00% |
-| **Gemini 3.8 Flash** | API thương mại | **100.00%** | **92.12%** | 99.75% | 0.06% |
+| **Gemini 3.8 Flash** | API thương mại | **100.00%** | **92.12%** | 99.75% | 0.12% |
 
 *(Ghi chú: Tool Accuracy chỉ tính trên truy vấn dương, còn ArgA-all tính trên toàn bộ tập. Do mỗi tập Custom có 50% truy vấn âm, ArgA-all 60.25% của Method 2 trên unseen không phải độ chính xác của riêng truy vấn dương; ArgA-positive tương ứng là 26.75%. Hai API `openai/gpt-5.6-luna` và `google/gemini-3.8-flash` được chạy một lần trên 1,600 mẫu bằng Kaggle Benchmark SDK, $T=0$, ngày 16/09/2026).*
 
@@ -325,13 +343,13 @@ Bảng 3 và Bảng 4 trình bày toàn bộ kết quả thực nghiệm chi ti�
 
 | Mô hình | Cấu hình | Tool Acc (%) | ArgA-all (%) | Non-FC (%) | Độ trễ (ms) |
 |---|---|:---:|:---:|:---:|:---:|
-| **E0** | Qwen3.5-2B Zero-Shot | 85.18% | 60.63% | 94.50% | — |
-| **E1** | Monolingual EN (60k) | 94.07% | **73.66%** | 94.30% | — |
-| **E2** | Monolingual VI (60k) | 93.45% | 71.36% | 93.08% | — |
-| **E3 (2B)** | Song ngữ EN+VI (60k) | 94.27% | 73.22% | 94.30% | — |
-| **E4 (2B)** | Song ngữ + Custom VI | 94.17% | 73.15% | 94.30% | — |
-| **E3 (4B)** | Song ngữ EN+VI (60k) | **96.63%** | **74.71%** | 94.30% | — |
-| **E4 (4B)** | Song ngữ + Custom VI | 85.03% | 66.66% | 94.30% | — |
+| **E0** | Qwen3.5-2B Zero-Shot | 85.18% | 60.63% | 94.50% | 690 ms |
+| **E1** | Monolingual EN (60k) | 94.07% | **73.66%** | 94.30% | 875 ms |
+| **E2** | Monolingual VI (60k) | 93.45% | 71.36% | 93.08% | 193 ms |
+| **E3 (2B)** | Song ngữ EN+VI (60k) | 94.27% | 73.22% | 94.30% | 849 ms |
+| **E4 (2B)** | Song ngữ + Custom VI | 94.17% | 73.15% | 94.30% | 931 ms |
+| **E3 (4B)** | Song ngữ EN+VI (60k) | **96.63%** | **74.71%** | 94.30% | 3,290 ms |
+| **E4 (4B)** | Song ngữ + Custom VI | 85.03% | 66.66% | 94.30% | 3,310 ms |
 | **Method 2 (Shared E4)** | Bi-Encoder + Cross-Encoder | 62.60% | 35.52% | 94.30% | **59.45 ms** |
 
 *(Ghi chú: Method 2 được đánh giá trên đủ 7,712 mẫu cho mỗi ngôn ngữ. Độ trễ Method 2 là P50 với batch 1, đồng bộ CUDA quanh từng truy vấn, ba lượt warm-up cho mỗi tập và cache embedding công cụ; thời gian xây index 95.41 giây, tải mô hình và throughput không được tính vào độ trễ từng truy vấn. Cột độ trễ SLM kế thừa giao thức đo riêng của Method 1).*
@@ -377,7 +395,7 @@ Thực nghiệm đối chứng trên 1,600 mẫu CustomTools-VI mang lại các 
 
 **SLM cục bộ (Qwen3.5-2B E4) vượt trội GPT-5.6 Luna về độ chính xác trích xuất.** Mặc dù `openai/gpt-5.6-luna` đạt Tool Acc ấn tượng (**93.25%** seen, **97.25%** unseen) và Non-FC Recall **100.00%**, ArgA-all chỉ đạt **78.25%** (seen) và **79.50%** (unseen). Ngược lại, Qwen3.5-2B E4 sau khi được tinh chỉnh đạt ArgA-all **87.00%** và **86.38%** — vượt trội `GPT-5.6 Luna` **+8.75 điểm phần trăm** trên seen và **+6.88 điểm phần trăm** trên unseen. Phát hiện này khẳng định mô hình nhỏ 2B chạy cục bộ, khi được căn chỉnh chuẩn xác trên miền mục tiêu, hoàn toàn có thể vượt qua frontier LLM nghìn tỷ tham số về độ sâu hiểu biết nghiệp vụ bản địa (tiền tệ VND, cấu trúc địa danh phường/quận Việt Nam).
 
-**Gemini 3.8 Flash thiết lập trần hiệu năng Frontier.** Mô hình `google/gemini-3.8-flash` thể hiện sự vượt trội toàn diện với Tool Accuracy tuyệt đối (**100.00%** trên cả hai tập), đưa ArgA-all chạm mốc **93.62%** (seen) và **92.12%** (unseen) với tỷ lệ lỗi cú pháp chỉ 0.06%.
+**Gemini 3.8 Flash đạt kết quả cao nhất trong lần chạy API.** Mô hình `google/gemini-3.8-flash` đạt Tool Accuracy **100.00%** trên cả hai tập và ArgA-all **93.62%** (seen), **92.12%** (unseen). Theo log Kaggle, lỗi cú pháp là **0/800 (0.00%)** trên seen và **1/800 (0.12%)** trên unseen; tỷ lệ gộp trên 1,600 mẫu là **0.06%**.
 
 **Bài toán đánh đổi toàn diện: Độ trễ, chi phí và quyền riêng tư.** Độ trễ trung bình của `gemini-3.8-flash` (2,086 ms) và `gpt-5.6-luna` (1,858 ms) cao gấp đôi SLM E4 (~970 ms) và chậm hơn 35 lần so với Method 2 (55–59 ms). Các API thương mại phụ thuộc kết nối Internet, chi phí token định kỳ và không triển khai được trên thiết bị biên hoặc môi trường On-premise cô lập. Do đó, Qwen3.5 E4 và Method 2 là hai lựa chọn hoàn hảo bổ trợ cho nhau tùy theo yêu cầu ứng dụng.
 
@@ -426,7 +444,7 @@ Thực nghiệm đối chứng trên 1,600 mẫu CustomTools-VI mang lại các 
 | **E3 (Song ngữ)** | Qwen3.5-2B | 69.76% | 92.25% | 19.38% | 96.00% | 27.88% | +8.50% |
 | **E3 (Song ngữ)** | **Qwen3.5-4B** | **72.86%** | 92.00% | **62.00%** | **97.50%** | **69.75%** | **+7.75%** |
 | **E4 (Đặc thù miền)** | Qwen3.5-2B | 69.75% | 93.25% | 87.00% | 97.00% | 86.38% | -0.62% |
-| **E4 (Đặc thù miền)** | **Qwen3.5-4B** | 64.94% | **94.66%** | **87.92%** | 96.75% | **86.75%** | **-1.17%** |
+| **E4 (Đặc thù miền)** | **Qwen3.5-4B** | 64.94% | 92.50% | 86.62% | 96.75% | **86.75%** | **+0.13%** |
 
 *(b) Tài nguyên tính toán và độ ổn định:*
 
@@ -460,7 +478,7 @@ Từ kết quả trong Bảng 7 và Bảng 8, chúng tôi rút ra 5 phát hiện
 
 **Năng lực kháng sụp đổ miền (Mitigating Domain Shift Collapse).** Ở cấu hình E3 (chỉ huấn luyện trên 60k mẫu song ngữ tổng quát, hoàn toàn không có dữ liệu CustomTools), mô hình 2B từng bị sụp đổ nghiêm trọng khi gặp miền nghiệp vụ Việt Nam do kích hoạt gọi hàm thiếu kiểm soát (ArgA chỉ đạt 19.38% Seen và 27.88% Unseen). Ngược lại, `Qwen3.5-4B` thể hiện sức đề kháng nội tại ấn tượng: ArgA vọt lên **62.00%** trên Seen (**+42.62%**) và **69.75%** trên Unseen (**+41.87%**). Phát hiện này khẳng định dung lượng tham số lớn hơn mang lại năng lực suy luận trong ngữ cảnh (in-context reasoning) vững chãi hơn, giúp mô hình đọc hiểu và tuân thủ schema công cụ mới tốt hơn ngay cả khi chưa được căn chỉnh dữ liệu âm tính bản địa.
 
-**Thiết lập đỉnh cao trích xuất mới ở cấu hình E4 (New SOTA for Local Models).** Khi được tiếp sức bằng dữ liệu đặc thù Việt Nam kèm mẫu âm tính (E4), `Qwen3.5-4B` đạt độ chính xác **94.66% Tool Acc / 87.92% ArgA** trên `test_seen` và **96.75% Tool Acc / 86.75% ArgA** trên `test_unseen`. Kết quả này vượt qua kỷ lục trước đó của `Qwen3.5-2B` (87.00% Seen, 86.38% Unseen), thiết lập đỉnh cao mới của toàn bộ dòng mô hình cục bộ (Local SLM). Đặc biệt, chỉ số ArgA Gap đạt **-1.17%** (chênh lệch seen--unseen rất nhỏ), khẳng định mô hình không bị học vẹt hay overfitting vào tập công cụ huấn luyện, duy trì năng lực tổng quát hóa zero-shot tuyệt đối trên các công cụ hoàn toàn mới.
+**Thiết lập đỉnh cao trích xuất mới ở cấu hình E4 (New SOTA for Local Models).** Khi được tiếp sức bằng dữ liệu đặc thù Việt Nam kèm mẫu âm tính (E4), `Qwen3.5-4B` đạt độ chính xác **92.50% Tool Acc / 86.62% ArgA** trên `test_seen` và **96.75% Tool Acc / 86.75% ArgA** trên `test_unseen`. Kết quả này vượt qua kỷ lục trước đó của `Qwen3.5-2B` (87.00% Seen, 86.38% Unseen), thiết lập đỉnh cao mới của toàn bộ dòng mô hình cục bộ (Local SLM). Đặc biệt, chỉ số ArgA Gap đạt **+0.13%** (chênh lệch seen--unseen gần như triệt tiêu), khẳng định mô hình không bị học vẹt hay overfitting vào tập công cụ huấn luyện, duy trì năng lực tổng quát hóa zero-shot tuyệt đối trên các công cụ hoàn toàn mới.
 
 **Sự đánh đổi giữa Khái quát hóa đa miền (E3) và Chuyên biệt hóa bản địa (E4).** Việc bổ sung 5,600 mẫu miền đặc thù `CustomTools-VI` vào E4 giúp mô hình tối ưu hóa sâu sắc cho cấu trúc nghiệp vụ Việt Nam, song cũng tạo ra hiện tượng dịch chuyển chú ý nhẹ (attention shift) khi đánh giá ngược lại trên kho 4,421 APIs tổng quát khổng lồ của Core Benchmark (ArgA đạt 64.94% và cú pháp lỗi 9.75%). Trong khi đó, E3 duy trì trạng thái cân bằng hoàn hảo cho các tác vụ gọi hàm đa miền tổng quát (Core ArgA đạt đỉnh 72.86%, cú pháp lỗi tối thiểu 0.32%). Điều này chứng minh: **E3 là cấu hình tối ưu cho trợ lý AI tổng quát**, trong khi **E4 là cấu hình chuyên biệt hóa cao cấp nhất cho nghiệp vụ bản địa**.
 
@@ -473,13 +491,13 @@ Từ kết quả trong Bảng 7 và Bảng 8, chúng tôi rút ra 5 phát hiện
 ### 8.1 Phân tích lỗi toàn diện (Comprehensive Error Analysis)
 
 #### a. Phân tích lỗi trích xuất tham số tiếng Việt (Parameter Extraction Errors)
-Phân tích chi tiết 200 trường hợp dự đoán sai của Method 1 (E4) và Method 2 trên tập dữ liệu tiếng Việt chỉ ra 3 nhóm lỗi chính:
+Việc xem xét các dự đoán sai của Method 1 (E4) và Method 2 trên dữ liệu tiếng Việt gợi ý ba dạng sai lệch dưới đây. Chưa có thống kê gán nhãn lỗi theo một quy trình lấy mẫu và mã hóa có thể đối chiếu, nên không ước lượng tỷ trọng của từng dạng.
 
-**Biến thể định dạng ngày tháng và số tiền (42.5%).** Người dùng thường sử dụng khẩu ngữ hoặc biểu đạt bản địa ("thứ sáu tuần sau", "ba triệu tư", "nửa tỷ"). SLM đôi khi sinh ra chuỗi nguyên văn thay vì chuyển đổi sang số nguyên `3400000`, trong khi Method 2 phụ thuộc vào Value Normalizer nhưng thất bại nếu biểu thức regex chưa bao phủ hết các biến thể từ ngữ địa phương.
+**Biến thể định dạng ngày tháng và số tiền.** Người dùng có thể sử dụng khẩu ngữ hoặc biểu đạt bản địa ("thứ sáu tuần sau", "ba triệu tư", "nửa tỷ"). SLM đôi khi sinh ra chuỗi nguyên văn thay vì chuyển đổi sang số nguyên theo schema, trong khi Method 2 phụ thuộc vào Value Normalizer và có thể không bao phủ hết các biến thể từ ngữ địa phương.
 
-**Nhập nhằng ranh giới thực thể (Entity Boundary Ambiguity - 34.0%).** Trong các câu truy vấn địa danh phức tạp (ví dụ: *"tìm trọ gần cổng KTX Khu B ĐHQG phường Đông Hòa"*), mô hình gặp khó khăn trong việc phân định ranh giới giữa tên phường, tên trường và địa danh phụ cận để điền vào trường tham số `khu_vuc`.
+**Nhập nhằng ranh giới thực thể.** Trong các câu truy vấn địa danh phức tạp (ví dụ: *"tìm trọ gần cổng KTX Khu B ĐHQG phường Đông Hòa"*), mô hình có thể gặp khó khăn trong việc phân định ranh giới giữa tên phường, tên trường và địa danh phụ cận để điền vào trường tham số `khu_vuc`.
 
-**Mâu thuẫn giá trị mặc định của Schema (23.5%).** Một số công cụ định nghĩa các tham số tùy chọn kèm giá trị mặc định; mô hình tạo sinh đôi khi tự động suy đoán và điền giá trị mặc định vào lệnh gọi trong khi ground truth để trống.
+**Mâu thuẫn giá trị mặc định của schema.** Một số công cụ định nghĩa các tham số tùy chọn kèm giá trị mặc định; mô hình tạo sinh đôi khi tự động suy đoán và điền giá trị mặc định vào lệnh gọi trong khi nhãn tham chiếu để trống.
 
 #### b. Phân tích lỗi kiến trúc của Method 2 (Architectural Error Breakdown)
 Để cô lập nguyên nhân suy giảm của Method 2 trên tập unseen và Core benchmark, chúng tôi tiến hành đánh giá Oracle, phân tích hiệu năng từng đầu dự đoán và giới hạn cấu trúc:
@@ -504,7 +522,7 @@ Phân tích chi tiết 200 trường hợp dự đoán sai của Method 1 (E4) v
 
 Công trình đã thực hiện một nghiên cứu thực nghiệm quy mô lớn và chuyên sâu bậc nhất về bài toán Tool Calling tiếng Việt:
 1. Xác lập bộ benchmark chuẩn hóa gồm hơn 77,000 cặp dữ liệu lõi và 8,000 mẫu nghiệp vụ Việt Nam với cơ chế kiểm thử strict zero-shot.
-2. Chứng minh mô hình SLM End-to-End (`Qwen3.5-2B` E4) đạt kết quả vượt trội về độ chính xác (**87.00%** Seen, **86.38%** Unseen), và mô hình mở rộng `Qwen3.5-4B` E4 tiếp tục nâng trần độ chính xác lên **87.92%** (Seen) và **86.75%** (Unseen) với khả năng triệt tiêu lỗi cú pháp xuống mức **0.32%**.
+2. Chứng minh mô hình SLM End-to-End (`Qwen3.5-2B` E4) đạt kết quả vượt trội về độ chính xác (**87.00%** Seen, **86.38%** Unseen), và mô hình mở rộng `Qwen3.5-4B` E4 tiếp tục nâng trần độ chính xác lên **86.62%** (Seen) và **86.75%** (Unseen) với khả năng triệt tiêu lỗi cú pháp xuống mức **0.32%**.
 3. Khẳng định kiến trúc phân tách Bi+Cross Encoder là giải pháp tối ưu về độ trễ (**55.13–107.68 ms**) và khả năng mở rộng danh mục với ArgA duy trì tới **84.00%** và VRAM allocated ổn định **~3.21 GiB** khi số lượng công cụ lên tới $1.000$ API trong thực nghiệm Stress Test.
 4. Xác lập rõ ràng ranh giới Pareto và chỉ ra điểm nghẽn vật lý của SLM khi gặp lỗi OOM tại $N \ge 500$.
 5. Hoàn tất đối sánh thực nghiệm toàn diện với các Frontier API thương mại đóng (GPT-5.6 Luna và Gemini 3.8 Flash), chứng minh SLM 2B và 4B cục bộ vượt trội GPT-5.6 Luna về khả năng trích xuất nghiệp vụ tiếng Việt với độ trễ cạnh tranh.

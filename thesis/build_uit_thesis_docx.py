@@ -807,10 +807,18 @@ def add_markdown_table_to_doc(doc, table_lines):
         pad_v, pad_h = 100, 120
 
     # Tính toán độ rộng cột thông minh cho bảng
+    first_row_str = " ".join(parsed_rows[0]).lower() if parsed_rows else ""
     if num_cols == 2:
         col_widths_cm = [5.0, 11.0]
     elif num_cols == 3:
-        col_widths_cm = [4.5, 4.5, 7.0]
+        if "đối chiếu" in first_row_str or "lời gọi" in first_row_str:
+            col_widths_cm = [3.6, 4.8, 7.6]
+            cell_font_size = 9.5
+            pad_v, pad_h = 80, 100
+        elif "thành phần" in first_row_str or "bge-m3" in first_row_str:
+            col_widths_cm = [4.5, 4.5, 7.0]
+        else:
+            col_widths_cm = [3.8, 4.7, 7.5]
     else:
         col_widths_cm = [USABLE_WIDTH_CM / num_cols] * num_cols
 
