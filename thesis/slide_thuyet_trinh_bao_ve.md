@@ -255,9 +255,12 @@ flowchart LR
 #### 2. Nội dung hiển thị trên Slide
 ```mermaid
 flowchart LR
-    In["<b>1. ĐẦU VÀO (PROMPT)</b><br/>• Câu hỏi người dùng (Query)<br/>• Toàn bộ Tool Schemas<br/><i>(Labels = -100: Bỏ qua Loss)</i>"] 
-    --> SLM["<b>2. MÔ HÌNH NGÔN NGỮ NHỎ</b><br/><b>Qwen3.5 (2B / 4B)</b><br/>• Unsloth QLoRA 4-bit<br/>• Chạy mượt trên GPU phổ thông"]
-    --> Out["<b>3. ĐẦU RA (ASSISTANT)</b><br/>• Cú pháp JSON gọi hàm<br/><b>⚡ Response-only Loss:</b><br/><i>Dồn 100% Gradient vào JSON</i>"]
+    In["<b>1. ĐẦU VÀO (PROMPT)</b><br/>• Câu hỏi người dùng (Query)<br/>• Toàn bộ Tool Schemas<br/><i>(Masking: Bỏ qua Loss)</i>"] 
+    --> SLM["<b>2. MÔ HÌNH SLM</b><br/><b>Qwen3.5 (2B / 4B)</b><br/>• Tinh chỉnh Unsloth QLoRA"]
+    
+    SLM -->|Yêu cầu nghiệp vụ| Out1["<b>3a. Lệnh gọi Tool (JSON)</b><br/><i>Response-only Loss</i>"]
+    SLM -->|Chào hỏi xã giao| Out2["<b>3b. Trả lời tự nhiên</b><br/><i>(Chống Over-triggering)</i>"]
+
 ```
 
 - 🧠 **Backbone & Kỹ thuật tối ưu**: Sử dụng `Qwen3.5` (2B và 4B) kết hợp tinh chỉnh `Unsloth QLoRA 4-bit`, cho phép huấn luyện và suy luận hiệu quả trên phần cứng giới hạn (GPU 16GB).
@@ -267,7 +270,7 @@ flowchart LR
 #### 3. Lời thoại thuyết trình (Speaker Notes)
 > *"Kính thưa Hội đồng, ở Phương pháp 1, nhóm tinh chỉnh mô hình ngôn ngữ nhỏ SLM theo hướng đầu-cuối với backbone Qwen3.5 kích thước 2B và 4B bằng kỹ thuật Unsloth QLoRA 4-bit để tối ưu bộ nhớ.
 > 
-> Về mặt huấn luyện, điểm mấu chốt là cơ chế Response-only Loss thể hiện trên sơ đồ: hàm mất mát chỉ được tính trên khối đầu ra là câu lệnh JSON; toàn bộ phần prompt đầu vào đều được gán nhãn -100 để bỏ qua. Nhờ vậy, mô hình dồn 100% năng lực học vào việc sinh đúng tên hàm và giá trị tham số, thay vì học vẹt phần mô tả công cụ. Khi người dùng chỉ chào hỏi, mô hình tự động trả lời tự nhiên mà không kích hoạt nhầm API."*
+> Về mặt huấn luyện, điểm mấu chốt là cơ chế Response-only Loss thể hiện trên sơ đồ: hàm mất mát chỉ được tính trên khối đầu ra là câu lệnh JSON; toàn bộ phần prompt đầu vào đều được bỏ qua đạo hàm (Masked). Nhờ vậy, mô hình dồn 100% năng lực học vào việc sinh đúng tên hàm và giá trị tham số, thay vì học vẹt phần mô tả công cụ. Khi người dùng chỉ chào hỏi, mô hình tự động trả lời tự nhiên mà không kích hoạt nhầm API."*
 
 ---
 
@@ -277,18 +280,26 @@ flowchart LR
 * **Người trình bày**: Hà Quang Đạt
 
 #### 1. Bố cục trực quan (Visual Layout)
-- **Hình ảnh trung tâm**: Nhúng sơ đồ kiến trúc tích hợp toàn trình của Phương pháp 2 (`paper/figures/fig2_1_bi_cross_pipeline.png`).
-- **3 Trọng tâm High-level**: Tìm kiếm $O(1)$ $\to$ Trích xuất an toàn theo Schema $\to$ Vận hành thời gian thực.
+- **Sơ đồ luồng xử lý tuyến tính (4 Bước đối xứng với Slide 7)**: Đầu vào $\to$ Khâu 1 (Retrieval) $\to$ Khâu 2 (Trích xuất & Chuẩn hóa) $\to$ Đầu ra (2 nhánh).
+- **3 Trọng tâm High-level**: Tìm kiếm $O(1)$ $\to$ Trích xuất an toàn & Chuẩn hóa theo Schema $\to$ Vận hành thời gian thực.
 
 #### 2. Nội dung hiển thị trên Slide
-![Pipeline tích hợp Bi-Cross](../paper/figures/fig2_1_bi_cross_pipeline.png)
+```mermaid
+flowchart LR
+    In["<b>1. ĐẦU VÀO</b><br/>• Câu hỏi người dùng (Query)<br/>• Không kèm Tool Schema"] 
+    --> Bi["<b>2. KHÂU 1: RETRIEVAL</b><br/><b>Bi-Encoder BGE-M3</b><br/>• So khớp Vector &lt; 2 ms<br/>• Ngưỡng động (&tau;, &delta;)"]
+    --> Cross["<b>3. KHÂU 2: TRÍCH XUẤT & CHUẨN HÓA</b><br/>• <b>Hierarchical XLM-R</b> (Trích xuất phân cấp theo kiểu dữ liệu)<br/>• <b>Value Normalizer</b> (Chuẩn hóa số & ngày)"]
+    
+    Cross -->|Vượt ngưỡng &tau;| Out1["<b>4a. Lệnh gọi Tool (JSON)</b><br/><i>100% Chuẩn cú pháp & kiểu</i>"]
+    Cross -->|Dưới ngưỡng &tau;| Out2["<b>4b. Trả lời tự nhiên</b><br/><i>(Từ chối gọi tool an toàn)</i>"]
+```
 
 - ⚡ **Khâu 1 — Tìm kiếm & Lọc công cụ thần tốc (Bi-Encoder BGE-M3)**:
   - Mã hóa trước toàn bộ kho API thành vector; khi người dùng hỏi, hệ thống so khớp trong **$< 2\text{ ms}$** với chi phí cố định $O(1)$.
   - **Cơ chế Ngưỡng Động**: Tự động chặn các câu chào hỏi thông thường để chống kích hoạt nhầm, đồng thời linh hoạt mở rộng để giữ lại nhiều công cụ nếu câu truy vấn yêu cầu đa tác vụ song song.
-- 🛡️ **Khâu 2 — Trích xuất tham số an toàn theo Schema (Hierarchical XLM-RoBERTa)**:
-  - Thay vì sinh xâu tự do, mô hình sử dụng **cổng nhị phân kiểm tra tham số** $\implies$ triệt tiêu hơn 62% lỗi sinh ảo đối số rỗng.
-  - Định vị trực tiếp giá trị theo kiểu dữ liệu (chuỗi, enum, boolean) và chuẩn hóa tiền tệ, ngày tháng $\implies$ **đảm bảo 0.00% lỗi cú pháp JSON**.
+- 🛡️ **Khâu 2 — Trích xuất tham số phân cấp & Module Chuẩn hóa (Hierarchical XLM-R + Value Normalizer)**:
+  - **Cấu trúc phân cấp 2 tầng (Hierarchical Heads)**: Tầng 1 lọc nhị phân `has_value` (loại bỏ tham số rỗng, giảm 62.4% lỗi ảo giác); Tầng 2 gồm 3 đầu chuyên biệt (*Span, Enum, Boolean*) định vị chính xác giá trị bám sát kiểu dữ liệu Schema.
+  - **Value Normalizer (Quy tắc lai ghép)**: Tự động chuyển đổi khẩu ngữ số (*"hai củ rưỡi"* $\to$ `2500000`) và thời gian tương đối (*"ngày mai"* $\to$ `YYYY-MM-DD`) $\implies$ **đảm bảo 100% đúng kiểu dữ liệu và 0% lỗi cú pháp JSON**.
 - 🚀 **Hiệu năng vận hành toàn trình**: Toàn bộ chuỗi xử lý chỉ mất **~55 ms**, tiêu thụ cố định **3.28 GiB VRAM**, hoàn toàn đáp ứng chuẩn thời gian thực cho các trợ lý thoại (Voice Agent).
 
 #### 3. Lời thoại thuyết trình (Speaker Notes)
@@ -296,7 +307,7 @@ flowchart LR
 > 
 > Khâu 1 giao cho Bi-Encoder BGE-M3: tìm kiếm công cụ trong không gian vector chỉ mất dưới 2 ms. Nhóm thiết kế cơ chế ngưỡng động: vừa đóng vai trò chốt chặn từ chối ngay các câu chào hỏi thông thường, vừa tự mở rộng để giữ lại nhiều công cụ nếu câu hỏi yêu cầu thực hiện nhiều tác vụ cùng lúc.
 > 
-> Khâu 2 giao cho XLM-RoBERTa phân cấp: thay vì sinh xâu tự do đầy rủi ro, mô hình lọc xem tham số có xuất hiện hay không, sau đó định vị trực tiếp giá trị theo đúng schema. Kết quả là hệ thống loại trừ hoàn toàn 100% lỗi cú pháp JSON và tổng thời gian phản hồi toàn trình chỉ vỏn vẹn 55 ms."*
+> Khâu 2 giao cho XLM-RoBERTa phân cấp kết hợp module Value Normalizer: thay vì sinh chuỗi tự do đầy rủi ro, mô hình dùng cổng nhị phân để lọc tham số có xuất hiện hay không, sau đó định vị chính xác vị trí giá trị. Đặc biệt, module Value Normalizer sẽ tự động chuẩn hóa các khẩu ngữ như 'hai củ rưỡi' thành đúng con số 2.5 triệu mà API ngân hàng yêu cầu. Kết quả là hệ thống loại trừ hoàn toàn 100% lỗi cú pháp JSON và tổng thời gian phản hồi toàn trình chỉ vỏn vẹn 55 ms."*
 
 ---
 
