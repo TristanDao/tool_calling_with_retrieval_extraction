@@ -1,0 +1,791 @@
+ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINHTRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN
+CẢI TIẾN PHƯƠNG PHÁP TRÍCH XUẤT BỘ BA KHÍA CẠNH TRONG PHÂN TÍCH Ý KIẾN BÌNH LUẬN CỦA KHÁCH HÀNG
+KHÓA LUẬN TỐT NGHIỆP
+SVTH: 
+Châu Phạm Quốc Hưng - 20521360
+GVHD:
+PGS.TS. Nguyễn Lưu Thùy Ngân
+ThS. Đặng Văn Thìn
+Tp. Hồ Chí Minh, tháng 01, năm 2024
+1/27
+
+Nội dung
+GIỚI THIỆU
+MỤC TIÊU
+DỮ LIỆU
+PHƯƠNG PHÁP
+THỰC NGHIỆM
+KẾT LUẬN
+HƯỚNG PHÁT TRIỂN
+
+2/27
+
+KHÁCH HÀNG
+NHẬN XÉT
+CẢI THIỆN
+1. GIỚI THIỆU
+3/27
+
+Bài toán Phân tích cảm xúc và Khai thác quan điểm:
+ Đầu vào: Một câu/đoạn văn
+ Đầu ra: Cảm xúc tương ứng: Tích Cực (positive) - Tiêu Cực (negative) - Trung Lập (neutral)
+Ví dụ: Món mì này ngon. 🡺 Positive
+
+Nhưng Phân tích cảm xúc thông thường có thể không thực tiễn:
+Ví dụ: Món mì này ngon nhưng giá quá mắc. 🡺 ???
+1. GIỚI THIỆU
+4/27
+
+Bài toán Phân tích cảm theo khía cạnh: Xác định các thành phần cảm xúc ở các cấp độ khía cạnh khác nhau.
+
+1. GIỚI THIỆU
+5/27
+
+Bài toán Trích xuất bộ ba khía cạnh cảm xúc: Trích xuất Aspect term – Opinion term – Sentiment polarity.
+
+Câu đầu vào
+Món mì này ngon nhưng giá quá mắc.
+Bộ ba
+[1] Món mì – ngon – Positive
+
+[2] Giá – quá mắc – Negative
+1. GIỚI THIỆU
+6/27
+
+Lý do chọn đề tài:
+Trích xuất bộ ba khía cạnh cảm xúc là một bài toán con trong Phân tích cảm theo khía cạnh mới nổi gần đây (được đề xuất bởi Peng và công sự năm 2019)
+
+Chưa có nghiên cứu nào ở VN thực hiện bài toán này.
+
+Sự xuất hiện của các mô hình ngôn ngữ huấn luyện sẵn cải thiện rất nhiều các tác vụ NLP.
+1. GIỚI THIỆU
+7/27
+
+Mục tiêu: Tìm hiểu và cài đặt mô hình Trích xuất bô ba khía cạnh cảm xúc trên các bộ dữ liệu tiếng Việt.
+
+Nội dung nghiên cứu:
+Tổng quan các nghiên cứu liên quan trong nước và ngoài nước.
+Xây dựng và tiền xử lý các bộ dữ liệu thu thập được sao cho phù hợp với yêu cầu đặt ra.
+Cài đặt mô hình Trích xuất bộ ba khía cạnh sử dụng các mô hình ngôn ngữ huấn luyện sẵn.
+Áp dụng học chuyển tiếp đa miền trên các bộ dữ liệu.
+Xây dựng chương trình minh họa cho bài toán Trích xuất bộ ba.
+2. MỤC TIÊU
+8/27
+
+Ngoài nước
+Trong nước
+Peng và công sự [1]: giới thiệu bài toán trích xuất bộ ba và sử dụng phương pháp 2 giai đoạn.
+
+Zhang và cộng sự [2]: trình bày một mô hình đa tác vụ để trích xuất bộ ba.
+
+Xu và cộng sự [3]: mô hình JET sử dụng hệ thống gán nhãn theo vị trí
+
+Wu và cộng sự [4]: cải tiến bài toán AOPE gán nhãn theo dạng lưới
+
+[5], [6], [7], …
+Theo Thìn và cộng sự [8], hầu hết các nghiên cứu chỉ dừng lại bài toán ACD và ACSA
+
+2. MỤC TIÊU
+Tình hình nghiên cứu
+9/27
+
+Dữ liệu được sử dụng thuộc bài toán Khai thác quan điểm so sánh trong các đánh giá sản phẩm. 
+
+Mục tiêu: Trích xuất ba thành phần: 
+Khía cạnh (aspect)
+Từ so sánh (predicate)
+Nhãn so sánh (label)
+
+Các nhãn so sánh bao gồm: DIF, EQL, SUP+, SUP-, SUP, COM+, COM-, COM
+
+Ví dụ: 
+Điểm cộng của A53 là kích thước nhỏ gọn hơn .🡺 [(kích thước, nhỏ gọn hơn, COM+)]
+Mặc dù vậy , cảm giác mở máy không còn như xưa nữa .🡺 [(cảm giác mở máy, không còn như xưa, DIF)]
+Asus ROG Phone 2 mạnh mẽ ngang Galaxy S20 Ultra 🡺 [(None, mạnh mẽ ngang , EQL)]
+
+
+3. DỮ LIỆU 
+10/27
+
+Bộ dữ liệu shared task 3 VLSP 2023
+
+
+
+
+
+Bộ dữ liệu Ele-COQE (sau tiền xử lý)
+
+
+Thông tin
+VLSP (Điện thoại)
+Huấn luyện
+Phát triển
+Số câu
+807
+348
+Số bộ ba
+1058
+463
+Thông tin
+Ele-COQE (Công nghệ)
+Huấn luyện
+Kiểm thử
+Số câu
+1088
+340
+Số bộ ba
+1291
+412
+3. DỮ LIỆU 
+11/27
+
+4. PHƯƠNG PHÁP 
+Mô hình SBN [9] của Chen và cộng sự
+Đây là phiên bản cải tiến của mô hình cấp độ span ban đầu
+Giải quyết được các vấn đề:
+Trích xuất được các bộ ba một cách nhất quán nhờ cấu trúc hai chiều.
+Mô hình có thể phân biệt các span tương đồng tốt hơn nhờ hàm mất mát dựa trên phân kỳ KL.
+Tạo được chiến lược trích xuất các bộ ba xung đột theo hai chiều.
+
+Hình 4.1: Mô hình trích xuất bộ ba cấp độ span theo hai chiều 
+12/27
+
+ 
+4. PHƯƠNG PHÁP 
+13/27
+
+Các mô hình ngôn ngữ huấn luyện sẵn sử dụng
+4. PHƯƠNG PHÁP 
+14/27
+
+4. PHƯƠNG PHÁP 
+Source (train)
+Source (test)
+Target (test)
+Source (train)
+Source (test)
+Target (test)
+Target (train)
+Hướng tiếp cận Cross-domain transfer learning
+15/27
+
+5. THỰC NGHIỆM
+ 
+16/27
+
+5. THỰC NGHIỆM
+ 
+17/27
+
+5. THỰC NGHIỆM
+P
+R
+F1
+P
+R
+F1
+SO KHỚP
+CHÍNH XÁC
+Đa ngôn ngữ
+mBERT
+43.62
+29.73
+35.33
+57.14
+50.97
+53.46
+XLM-R
+46.41
+49.46
+47.77
+63.77
+66.26
+64.98
+InfoXLM
+47.76
+52.05
+49.81
+65.64
+66.91
+66.27
+XLM-Align
+51.54
+49.03
+50.20
+64.72
+67.56
+66.08
+Đơn ngôn ngữ
+viBERT
+43.58
+38.08
+40.63
+59.96
+55.99
+57.84
+viBert4news
+38.30
+32.90
+35.31
+55.53
+45.63
+50.08
+PhoBERT-v1
+55.52
+49.60
+52.32
+70.13
+67.72
+68.89
+PhoBERT-v2
+55.11
+52.49
+53.72
+68.82
+69.42
+69.11
+SO KHỚP
+MỘT NỬA
+Đa ngôn ngữ
+mBERT
+65.36
+44.56
+52.95
+70.15
+62.54
+65.61
+XLM-R
+63.12
+67.39
+65.03
+76.61
+79.61
+78.07
+InfoXLM
+64.01
+69.76
+66.75
+79.05
+80.58
+79.81
+XLM-Align
+68.55
+65.23
+66.77
+77.69
+81.07
+79.31
+Đơn ngôn ngữ
+viBERT
+64.38
+56.23
+60.00
+71.90
+67.15
+69.36
+viBert4news
+59.93
+51.55
+55.29
+69.05
+56.72
+62.26
+PhoBERT-v1
+72.21
+64.58
+68.08
+81.12
+78.32
+79.68
+PhoBERT-v2
+72.69
+69.26
+70.88
+80.52
+81.23
+80.87
+SO KHỚP 
+NHỊ PHÂN
+Đa ngôn ngữ
+mBERT
+68.96
+47.01
+55.86
+73.69
+65.69
+68.92
+XLM-R
+68.62
+73.22
+70.68
+79.73
+82.85
+81.25
+InfoXLM
+68.96
+75.16
+71.92
+83.26
+84.87
+84.06
+XLM-Align
+73.01
+69.47
+71.12
+81.00
+84.55
+82.70
+Đơn ngôn ngữ
+viBERT
+68.46
+59.83
+63.83
+77.70
+72.57
+74.96
+viBert4news
+62.89
+54.07
+58.01
+74.06
+60.84
+66.79
+PhoBERT-v1
+78.34
+70.05
+73.85
+84.88
+81.96
+83.37
+PhoBERT-v2
+77.59
+73.94
+75.66
+84.12
+84.87
+84.49
+18/27
+
+5. THỰC NGHIỆM
+P
+R
+F1
+P
+R
+F1
+SO KHỚP
+CHÍNH XÁC
+Đa ngôn ngữ
+mBERT
+37.15
+21.60
+27.18
+25.93
+12.31
+16.50
+XLM-R
+52.86
+59.79
+56.02
+37.81
+29.09
+32.88
+InfoXLM
+47.72
+60.76
+53.43
+36.90
+28.80
+32.33
+XLM-Align
+55.37
+55.34
+55.37
+38.44
+29.45
+33.26
+Đơn ngôn ngữ
+viBERT
+40.29
+41.51
+40.82
+33.22
+19.44
+24.48
+viBert4news
+31.51
+22.89
+26.25
+27.66
+11.45
+16.17
+PhoBERT-v1
+56.93
+58.01
+57.39
+47.50
+29.52
+36.39
+PhoBERT-v2
+56.19
+60.20
+58.00
+47.42
+32.98
+38.85
+SO KHỚP
+MỘT NỬA
+Đa ngôn ngữ
+mBERT
+67.10
+39.24
+49.27
+52.00
+24.55
+32.96
+XLM-R
+66.40
+75.16
+70.39
+60.79
+46.80
+52.88
+InfoXLM
+62.93
+80.18
+70.47
+61.70
+48.16
+54.07
+XLM-Align
+71.26
+71.20
+71.09
+62.39
+47.88
+54.04
+Đơn ngôn ngữ
+viBERT
+58.90
+60.84
+59.76
+58.09
+34.05
+42.85
+viBert4news
+57.43
+42.15
+48.11
+51.77
+21.53
+30.37
+PhoBERT-v1
+74.24
+75.56
+74.80
+68.82
+42.76
+52.72
+PhoBERT-v2
+71.71
+76.86
+74.05
+69.97
+48.74
+57.39
+SO KHỚP 
+NHỊ PHÂN
+Đa ngôn ngữ
+mBERT
+69.81
+40.78
+51.22
+57.45
+27.21
+36.50
+XLM-R
+72.60
+82.20
+76.97
+66.23
+50.97
+57.60
+InfoXLM
+67.91
+86.49
+76.04
+68.25
+53.27
+59.80
+XLM-Align
+77.01
+76.94
+76.81
+67.83
+52.05
+58.76
+Đơn ngôn ngữ
+viBERT
+65.00
+67.07
+65.91
+63.94
+37.51
+47.19
+viBert4news
+64.19
+47.25
+53.86
+62.62
+25.99
+36.68
+PhoBERT-v1
+78.43
+79.85
+79.04
+73.05
+45.43
+55.99
+PhoBERT-v2
+77.15
+82.77
+79.70
+74.44
+51.91
+61.09
+19/27
+
+5. THỰC NGHIỆM
+P
+R
+F1
+P
+R
+F1
+SO KHỚP
+CHÍNH XÁC
+Đa ngôn ngữ
+mBERT
+42.66
+34.49
+38.08
+60.54
+54.29
+57.22
+XLM-R
+49.07
+48.09
+48.57
+62.25
+66.10
+64.11
+InfoXLM
+52.51
+51.98
+52.24
+63.66
+66.91
+65.24
+XLM-Align
+52.17
+49.32
+50.66
+63.67
+66.26
+64.89
+Đơn ngôn ngữ
+viBERT
+46.18
+41.97
+43.97
+57.58
+59.06
+58.30
+viBert4news
+45.08
+35.06
+39.40
+56.31
+52.51
+54.29
+PhoBERT-v1
+54.65
+49.46
+51.82
+64.30
+65.78
+65.02
+PhoBERT-v2
+57.66
+52.12
+54.73
+67.90
+68.61
+68.25
+SO KHỚP
+MỘT NỬA
+Đa ngôn ngữ
+mBERT
+65.40
+53.06
+58.49
+74.03
+66.34
+69.95
+XLM-R
+69.56
+68.18
+68.85
+78.25
+83.09
+80.59
+InfoXLM
+69.03
+68.32
+68.67
+77.42
+81.39
+79.35
+XLM-Align
+68.93
+65.15
+66.93
+77.16
+80.26
+78.62
+Đơn ngôn ngữ
+viBERT
+66.74
+60.69
+63.56
+71.88
+73.79
+72.81
+viBert4news
+67.77
+52.92
+59.35
+71.57
+66.75
+69.01
+PhoBERT-v1
+74.86
+67.89
+71.06
+78.75
+80.58
+79.64
+PhoBERT-v2
+75.28
+68.03
+71.45
+81.35
+82.20
+81.77
+SO KHỚP 
+NHỊ PHÂN
+Đa ngôn ngữ
+mBERT
+69.84
+56.66
+62.46
+79.36
+71.12
+74.98
+XLM-R
+74.13
+72.64
+73.37
+82.45
+87.54
+84.91
+InfoXLM
+74.27
+73.50
+73.88
+82.03
+86.25
+84.08
+XLM-Align
+73.97
+69.91
+71.82
+81.53
+84.79
+83.07
+Đơn ngôn ngữ
+viBERT
+72.22
+65.66
+68.77
+78.58
+80.66
+79.59
+viBert4news
+71.72
+56.01
+62.82
+75.88
+70.80
+73.18
+PhoBERT-v1
+79.88
+72.50
+75.86
+82.80
+84.71
+83.72
+PhoBERT-v2
+80.79
+73.00
+76.67
+84.79
+85.68
+85.23
+20/27
+
+5. THỰC NGHIỆM
+HÌNH 5.1: Kết quả giữa mô hình huấn luyện trên bộ VLSP và mô hình huấn luyện trên bộ tổng hợp
+21/27
+
+5. THỰC NGHIỆM
+HÌNH 5.2: Kết quả trích xuất các nhãn
+22/27
+
+6. KẾT LUẬN
+Tìm hiểu và cài đặt thành công mô hình trích xuất bộ ba khía cạnh cảm xúc trên các bộ dữ liệu tiếng Việt.
+
+So sánh được được độ hiệu quả của các mô hình ngôn ngữ huấn luyện sẵn khi áp dụng vào mô hình.
+
+ Cho thấy việc huấn luyện mô hình trên dữ liệu đa miền mang lại các kết quả tốt hơn.
+23/27
+
+7. HƯỚNG PHÁT TRIỂN
+Mở rộng thành các bài toán như ASQP hay COQE.
+
+Thử nghiệm các mô hình ngôn ngữ huấn luyện sẵn khác.
+
+Nghiên cứu các bài toán ABSA trên các ngôn ngữ khác.
+
+ Xây dựng hoặc cải tiến các bộ dữ liệu sẵn có.
+24/27
+
+Chương trình minh họa
+25/27
+
+[1] Peng, H., Xu, L., Bing, L., Huang, F., Lu, W., & Si, L. (2020, April). Knowing what, how and why: A near complete solution for aspect-based sentiment analysis. In Proceedings of the AAAI conference on artificial intelligence (Vol. 34, No. 05, pp. 8600-8607).
+[2] Zhang, C., Li, Q., Song, D., & Wang, B. (2020). A multi-task learning framework for opinion triplet extraction. arXiv preprint arXiv:2010.01512.
+[3] Xu, L., Li, H., Lu, W., & Bing, L. (2020). Position-aware tagging for aspect sentiment triplet extraction. arXiv preprint arXiv:2010.02609.
+[4] Wu, Z., Ying, C., Zhao, F., Fan, Z., Dai, X., & Xia, R. (2020). Grid tagging scheme for aspect-oriented fine-grained opinion extraction. arXiv preprint arXiv:2010.04640.
+Tài liệu tham khảo
+26/27
+
+[5] Xu, L., Chia, Y. K., & Bing, L. (2021). Learning span-level interactions for aspect sentiment triplet extraction. arXiv preprint arXiv:2107.12214.
+[6] Chen, S., Wang, Y., Liu, J., & Wang, Y. (2021, May). Bidirectional machine reading comprehension for aspect sentiment triplet extraction. In Proceedings of the AAAI conference on artificial intelligence (Vol. 35, No. 14, pp. 12666-12674).
+[7] Yan, H., Dai, J., Qiu, X., & Zhang, Z. (2021). A unified generative framework for aspect-based sentiment analysis. arXiv preprint arXiv:2106.04300.
+[8] Van Thin, D., Hao, D. N., & Nguyen, N. L. T. (2023). A Systematic Literature Review on Vietnamese Aspect-based Sentiment Analysis. ACM Transactions on Asian and Low-Resource Language Information Processing, 22(8), 1-28.
+[9] Chen, Y., Keming, C., Sun, X., & Zhang, Z. (2022, December). A span-level bidirectional network for aspect sentiment triplet extraction. In Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing (pp. 4300-4309).
+Tài liệu tham khảo
+27/27
+
+CẢM ƠN THẦY CÔ ĐÃ LẮNG NGHE
