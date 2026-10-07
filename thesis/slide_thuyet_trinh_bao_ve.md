@@ -233,8 +233,8 @@ flowchart LR
 #### 1. Bố cục trực quan (Visual Layout)
 
 - **Hình 1 là hình chính**, chiếm phần lớn diện tích slide; giữ hai nhánh màu cam và xanh để phân biệt phương pháp.
-- **Trình bày theo ba bước**: đầu vào chung, nhánh SLM bên trái, nhánh truy hồi và trích xuất bên phải. Có thể làm nổi từng nhánh khi thuyết trình.
-- **Mức giải thích**: Nhấn vào cách chọn công cụ và tạo tham số; các đầu dự đoán nhỏ trong hình sẽ được giải thích ở slide phương pháp và phụ lục.
+- **Bố cục hai panel**: Nhánh SLM nhận truy vấn cùng các Tool Schema trong prompt; nhánh Method 2 truy hồi từ kho công cụ rồi đưa công cụ ứng viên và schema tham số sang Cross-Encoder.
+- **Mức giải thích**: Nhấn vào khác biệt giữa sinh lời gọi đầu-cuối và truy hồi–trích xuất; các đầu phân cấp của Cross-Encoder được phóng lớn ở slide 9.
 - **Khi dựng slide**: Ưu tiên bản PDF vector tại `paper/figures/fig1_system_architecture.pdf` nếu phần mềm hỗ trợ để giữ chữ rõ khi phóng lớn.
 
 #### 2. Nội dung hiển thị trên Slide
@@ -244,7 +244,7 @@ flowchart LR
 **SLM:** sinh văn bản lời gọi, rồi phân tích thành đầu ra có cấu trúc. **Bi-Encoder + Cross-Encoder:** chọn công cụ, trích xuất tham số và lắp ghép đầu ra.
 
 #### 3. Lời thoại thuyết trình (Speaker Notes)
-> *"Trên cơ sở dữ liệu vừa trình bày, đề tài khảo sát hai cách xử lý cùng một đầu vào. Ở nhánh trái, SLM nhận câu hỏi cùng danh mục công cụ, sinh phản hồi dạng thẻ, rồi bộ phân tích chuyển lời gọi thành cấu trúc dữ liệu. Ở nhánh phải, Bi-Encoder chọn tối đa ba công cụ phù hợp; Cross-Encoder trích xuất tham số, sau đó bộ chuẩn hóa và lắp ghép tạo đầu ra.
+> *"Trên cơ sở dữ liệu vừa trình bày, đề tài khảo sát hai cách xử lý cùng một truy vấn người dùng. Ở nhánh trái, SLM nhận câu hỏi cùng các Tool Schema trong prompt, sinh phản hồi rồi bộ phân tích chuyển thẻ lời gọi thành cấu trúc dữ liệu; nếu không cần công cụ, mô hình trả lời bằng ngôn ngữ tự nhiên. Ở nhánh phải, Bi-Encoder tìm công cụ ứng viên trong kho mô tả; Cross-Encoder kết hợp truy vấn với schema tham số để trích xuất giá trị, sau đó chuẩn hóa và lắp ghép đầu ra.
 >
 > Hai hướng này được đánh giá về lựa chọn công cụ, tham số, độ trễ và tài nguyên. Sau phần tổng quan, bạn Hà Quang Đạt sẽ minh họa cách huấn luyện SLM và cách kiến trúc phân tách xử lý một truy vấn."*
 

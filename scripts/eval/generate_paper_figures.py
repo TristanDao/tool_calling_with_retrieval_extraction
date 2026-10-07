@@ -2,7 +2,7 @@
 Script tạo các biểu đồ và sơ đồ học thuật (Academic Figures) cho bài báo khoa học
 về Tool Calling tiếng Việt.
 Hỗ trợ cả 2 ngôn ngữ: Tiếng Việt (vi) và Tiếng Anh (en).
-Xuất các file PDF (vector) và PNG (300 DPI) vào thư mục paper/figures và latex/paper_{vi,en}/figures.
+Xuất các file SVG, PDF (vector) và PNG (300 DPI) vào các thư mục hình của bài báo.
 """
 
 import os
@@ -20,128 +20,153 @@ plt.rcParams['grid.linestyle'] = '--'
 plt.rcParams['grid.alpha'] = 0.7
 
 
-def plot_fig1_architecture(lang="vi", output_dir="paper/figures"):
-    """Figure 1: Sơ đồ kiến trúc tổng quan (System Architecture Diagram)."""
-    fig, ax = plt.subplots(figsize=(12, 6.5), dpi=300)
-    ax.axis('off')
-    ax.set_xlim(0, 12)
-    ax.set_ylim(0, 6.5)
+def plot_fig1_architecture(lang: str = "vi", output_dir: str = "paper/figures") -> None:
+    is_en = lang == "en"
+    fig, ax = plt.subplots(figsize=(14, 8.2), dpi=300)
+    ax.axis("off")
+    ax.set_xlim(0, 14)
+    ax.set_ylim(0, 8.2)
 
-    is_en = (lang == "en")
+    colors = {
+        "ink": "#203247",
+        "muted": "#536579",
+        "line": "#718096",
+        "panel": "#f8fafc",
+        "panel_edge": "#cbd5e1",
+        "input": "#e8f1f8",
+        "model": "#d9e7f2",
+        "retrieval": "#e4edf6",
+        "head": "#e8e4f4",
+        "post": "#e8f1e8",
+        "accent1": "#a64b24",
+        "accent2": "#245b83",
+        "white": "#ffffff",
+    }
 
-    # Khung tiêu đề Input
-    p_in = patches.FancyBboxPatch(
-        (0.5, 4.9), 11.0, 1.2,
-        boxstyle="round,pad=0.2,rounding_size=0.15",
-        ec="#1f497d", fc="#e9f1f7", lw=1.5
-    )
-    ax.add_patch(p_in)
-    
-    title_in = "USER QUERY / NATURAL LANGUAGE INPUT (VIETNAMESE)" if is_en else "NGƯỜI DÙNG / TRUY VẤN TIẾNG VIỆT (USER QUERY)"
-    query_in = '"Check traffic violations for motorbike with plate 59P1-12345 in Ho Chi Minh City"' if is_en else '"Kiểm tra phạt nguội cho xe máy biển số 59P1-12345 tại TP. Hồ Chí Minh"'
-    catalog_in = "Available Tool Catalog: [tra_cuu_phat_nguoi, dat_ve_xe_khach, thanh_toan_tien_dien, ...]" if is_en else "Danh mục công cụ: [tra_cuu_phat_nguoi, dat_ve_xe_khach, thanh_toan_tien_dien, ...]"
-    
-    ax.text(6.0, 5.8, title_in, 
-            ha='center', va='center', fontsize=12, fontweight='bold', color='#1f497d')
-    ax.text(6.0, 5.3, query_in, 
-            ha='center', va='center', fontsize=11, fontstyle='italic', color='#333333')
-    ax.text(6.0, 4.85, catalog_in, 
-            ha='center', va='center', fontsize=9.5, color='#555555')
+    def box(x: float, y: float, width: float, height: float, label: str, fill: str, edge: str, size: float = 9.0, weight: str = "normal") -> None:
+        shape = patches.FancyBboxPatch(
+            (x, y), width, height,
+            boxstyle="round,pad=0.04,rounding_size=0.09",
+            ec=edge, fc=fill, lw=1.15,
+        )
+        ax.add_patch(shape)
+        ax.text(x + width / 2, y + height / 2, label, ha="center", va="center", fontsize=size, color=colors["ink"], fontweight=weight, linespacing=1.2)
 
-    # Mũi tên phân nhánh
-    ax.annotate('', xy=(3.2, 4.3), xytext=(4.5, 4.7),
-                arrowprops=dict(arrowstyle="->", lw=2, color="#2c5e8a", shrinkA=5, shrinkB=5))
-    ax.annotate('', xy=(8.8, 4.3), xytext=(7.5, 4.7),
-                arrowprops=dict(arrowstyle="->", lw=2, color="#b25e2e", shrinkA=5, shrinkB=5))
+    def arrow(start: tuple[float, float], end: tuple[float, float], color: str = "line", connection: str = "arc3,rad=0") -> None:
+        ax.annotate("", xy=end, xytext=start, arrowprops={"arrowstyle": "-|>", "lw": 1.2, "color": colors.get(color, color), "shrinkA": 2, "shrinkB": 2, "connectionstyle": connection})
 
-    # NHÁNH 1: METHOD 1 (SLM END-TO-END)
-    p_m1 = patches.FancyBboxPatch(
-        (0.5, 0.4), 5.2, 3.8,
-        boxstyle="round,pad=0.2,rounding_size=0.2",
-        ec="#b25e2e", fc="#fdf6f0", lw=1.8
-    )
-    ax.add_patch(p_m1)
-    
-    title_m1 = "METHOD 1: END-TO-END SLM (Qwen3.5 2B/4B)" if is_en else "PHƯƠNG PHÁP 1: SLM END-TO-END (Qwen3.5 2B/4B)"
-    ax.text(3.1, 3.9, title_m1, 
-            ha='center', va='center', fontsize=11, fontweight='bold', color='#b25e2e')
+    def panel(x: float, y: float, width: float, height: float, title: str, accent: str) -> None:
+        shape = patches.FancyBboxPatch(
+            (x, y), width, height,
+            boxstyle="round,pad=0.07,rounding_size=0.12",
+            ec=colors["panel_edge"], fc=colors["panel"], lw=1.0,
+        )
+        ax.add_patch(shape)
+        ax.text(x + 0.22, y + height - 0.28, title, ha="left", va="center", fontsize=11.2, color=accent, fontweight="bold")
+        ax.plot([x + 0.2, x + width - 0.2], [y + height - 0.54, y + height - 0.54], color=colors["panel_edge"], lw=0.8)
 
-    if is_en:
-        steps_m1 = [
-            ("Prompt Template & Tool JSON Schemas", "#f5e1d3"),
-            ("Qwen3.5 + QLoRA SFT\n(Loss computed strictly on Assistant response)", "#e8c2a8"),
-            ("Autoregressive Sequence Decoding\nEmits native XML structure: <tool_call>", "#dc9f7c"),
-            ("Structured Tool Call Output\nArguments directly extracted & validated", "#b25e2e", "white")
-        ]
-    else:
-        steps_m1 = [
-            ("Định dạng Prompt & JSON Schema", "#f5e1d3"),
-            ("Qwen3.5 + QLoRA SFT\n(Học loss chỉ trên Assistant response)", "#e8c2a8"),
-            ("Giải mã tự hồi quy (Autoregressive)\nSinh cấu trúc XML native: <tool_call>", "#dc9f7c"),
-            ("JSON Tool Call Output\nArguments trích xuất trực tiếp", "#b25e2e", "white")
-        ]
+    title_m1 = "(a) End-to-end SLM" if is_en else "(a) SLM đầu-cuối"
+    title_m2 = "(b) Retrieval + schema-aware extraction" if is_en else "(b) Truy hồi + trích xuất theo schema"
+    panel(0.25, 0.3, 4.15, 7.55, title_m1, colors["accent1"])
+    panel(4.6, 0.3, 9.15, 7.55, title_m2, colors["accent2"])
 
-    y_pos = 3.3
-    for s in steps_m1:
-        text, col = s[0], s[1]
-        text_col = s[2] if len(s) > 2 else '#222222'
-        box = patches.FancyBboxPatch((0.8, y_pos - 0.4), 4.6, 0.55,
-                                     boxstyle="round,pad=0.1,rounding_size=0.1",
-                                     ec="#b25e2e", fc=col, lw=1.0)
-        ax.add_patch(box)
-        ax.text(3.1, y_pos - 0.12, text, ha='center', va='center', fontsize=9, color=text_col, fontweight='bold' if text_col=='white' else 'normal')
-        if y_pos > 1.2:
-            ax.annotate('', xy=(3.1, y_pos - 0.45), xytext=(3.1, y_pos - 0.35),
-                        arrowprops=dict(arrowstyle="->", lw=1.2, color="#b25e2e"))
-        y_pos -= 0.75
+    q_label = "User request\n‘Check traffic fines for plate 59P1-12345’" if is_en else "Yêu cầu người dùng\n‘Kiểm tra phạt nguội xe 59P1-12345’"
+    schema_label = "Tool schemas\nprovided in prompt" if is_en else "Tool Schema\nđưa vào prompt"
+    model_label = "Qwen3.5 2B / 4B\nQLoRA fine-tuning\n(response-only loss)" if is_en else "Qwen3.5 2B / 4B\nTinh chỉnh QLoRA\n(response-only loss)"
+    generation_label = "Assistant generation\nautoregressive decoding" if is_en else "Sinh phản hồi assistant\ngiải mã tự hồi quy"
+    response_label = "Tool-call tags" if is_en else "Thẻ gọi công cụ"
+    natural_label = "Natural-language reply\n(no tool call)" if is_en else "Phản hồi tự nhiên\n(không gọi công cụ)"
+    parser_label = "Rule-based parser" if is_en else "Bộ phân tích thẻ"
+    call_label = "Structured tool call" if is_en else "Lời gọi có cấu trúc"
 
-    # NHÁNH 2: METHOD 2 (BI-ENCODER + CROSS-ENCODER)
-    p_m2 = patches.FancyBboxPatch(
-        (6.3, 0.4), 5.2, 3.8,
-        boxstyle="round,pad=0.2,rounding_size=0.2",
-        ec="#1f497d", fc="#f0f5fa", lw=1.8
-    )
-    ax.add_patch(p_m2)
-    
-    title_m2 = "METHOD 2: BI-ENCODER + CROSS-ENCODER" if is_en else "PHƯƠNG PHÁP 2: BI-ENCODER + CROSS-ENCODER"
-    ax.text(8.9, 3.9, title_m2, 
-            ha='center', va='center', fontsize=11, fontweight='bold', color='#1f497d')
+    box(0.55, 6.27, 2.23, 0.68, q_label, colors["input"], colors["panel_edge"], 8.5)
+    box(2.94, 6.27, 1.18, 0.68, schema_label, colors["input"], colors["panel_edge"], 8.2)
+    box(0.9, 4.96, 2.95, 0.88, model_label, colors["model"], colors["accent1"], 9.2, "bold")
+    box(0.9, 3.65, 2.95, 0.78, generation_label, colors["white"], colors["panel_edge"], 9.0)
+    box(0.62, 2.13, 1.72, 0.82, response_label, "#f7e8df", colors["accent1"], 8.8)
+    box(2.48, 2.13, 1.64, 0.82, natural_label, colors["white"], colors["panel_edge"], 8.3)
+    box(0.62, 0.82, 1.72, 0.68, parser_label, "#f7e8df", colors["accent1"], 8.8)
+    box(2.48, 0.82, 1.64, 0.68, call_label, "#f7e8df", colors["accent1"], 8.8, "bold")
+    arrow((1.65, 6.25), (1.65, 5.88), "accent1")
+    arrow((3.52, 6.25), (3.12, 5.88), "accent1", "arc3,rad=0.12")
+    arrow((2.37, 4.94), (2.37, 4.45), "accent1")
+    arrow((2.37, 3.63), (1.48, 2.98), "accent1", "arc3,rad=0.08")
+    arrow((2.37, 3.63), (3.28, 2.98), "line", "arc3,rad=-0.08")
+    arrow((1.48, 2.11), (1.48, 1.52), "accent1")
+    arrow((2.35, 1.16), (2.47, 1.16), "accent1")
 
-    if is_en:
-        steps_m2 = [
-            ("Bi-Encoder BGE-M3 (CachedMNRL)\nRetrieves Top-K candidate tools (k ≤ 3)", "#d4e4f2"),
-            ("Abstention Decision / Tool Gate\nCalibrated thresholds: τ = 0.35, δ = 0.21", "#b8d2e8"),
-            ("Cross-Encoder XLM-R (Hierarchical Heads)\n• has_value • Span head • Enum/Bool head", "#9bbddc"),
-            ("Value Normalizer + JSON Formatter\nCanonical type mapping & Schema JSON assembly", "#1f497d", "white")
-        ]
-    else:
-        steps_m2 = [
-            ("Bi-Encoder BGE-M3 (CachedMNRL)\nTruy hồi Top-K công cụ ứng viên (k ≤ 3)", "#d4e4f2"),
-            ("Đầu quyết định No-call / Selection\nNgưỡng hiệu chuẩn τ = 0.35, δ = 0.21", "#b8d2e8"),
-            ("Cross-Encoder XLM-R (Hierarchical Heads)\n• has_value • Span head • Enum/Bool head", "#9bbddc"),
-            ("Value Normalizer + JSON Validator\nÁnh xạ thực thể Việt & Chuẩn hóa JSON", "#1f497d", "white")
-        ]
+    tool_store = "Tool catalog\n(descriptions)" if is_en else "Kho công cụ\n(mô tả)"
+    q_encode = "Query\nencoder" if is_en else "Mã hóa\ntruy vấn"
+    tool_encode = "Tool\nencoder" if is_en else "Mã hóa\ncông cụ"
+    index_label = "Precomputed tool embeddings" if is_en else "Vector công cụ đã mã hóa"
+    similarity = "Cosine ranking\n+ calibrated gate" if is_en else "Xếp hạng cosine\n+ ngưỡng kích hoạt"
+    candidates = "Top-K candidates\n(k ≤ 3)" if is_en else "Công cụ ứng viên\n(Top-K, k ≤ 3)"
+    query_context = "Same user query" if is_en else "Cùng truy vấn người dùng"
+    box(4.9, 6.73, 1.48, 0.68, query_context, colors["input"], colors["panel_edge"], 8.5)
+    box(4.9, 5.83, 1.48, 0.65, q_encode, colors["retrieval"], colors["accent2"], 8.5)
+    box(6.65, 6.25, 1.75, 0.82, tool_store, colors["input"], colors["panel_edge"], 8.4)
+    box(8.62, 6.25, 1.85, 0.82, tool_encode, colors["retrieval"], colors["accent2"], 8.5)
+    box(10.69, 6.25, 1.62, 0.82, index_label, colors["retrieval"], colors["accent2"], 8.0)
+    box(7.08, 5.02, 2.45, 0.73, similarity, "#d5e3ef", colors["accent2"], 8.7, "bold")
+    box(5.03, 5.02, 1.8, 0.73, candidates, colors["retrieval"], colors["accent2"], 8.4)
+    box(10.12, 5.02, 2.25, 0.73, "No candidate above threshold\n→ no-call []" if is_en else "Không có công cụ đạt ngưỡng\n→ no-call []", colors["white"], colors["panel_edge"], 7.9)
+    arrow((5.64, 6.71), (5.64, 6.51), "accent2")
+    arrow((8.42, 6.65), (8.62, 6.65), "accent2")
+    arrow((10.47, 6.65), (10.69, 6.65), "accent2")
+    arrow((6.38, 6.15), (7.08, 5.75), "accent2", "arc3,rad=0.05")
+    arrow((11.48, 6.22), (9.53, 5.75), "accent2", "arc3,rad=-0.04")
+    arrow((7.08, 5.38), (6.83, 5.38), "accent2")
+    arrow((9.53, 5.38), (10.12, 5.38), "line")
 
-    y_pos = 3.3
-    for s in steps_m2:
-        text, col = s[0], s[1]
-        text_col = s[2] if len(s) > 2 else '#222222'
-        box = patches.FancyBboxPatch((6.6, y_pos - 0.4), 4.6, 0.55,
-                                     boxstyle="round,pad=0.1,rounding_size=0.1",
-                                     ec="#1f497d", fc=col, lw=1.0)
-        ax.add_patch(box)
-        ax.text(8.9, y_pos - 0.12, text, ha='center', va='center', fontsize=9, color=text_col, fontweight='bold' if text_col=='white' else 'normal')
-        if y_pos > 1.2:
-            ax.annotate('', xy=(8.9, y_pos - 0.45), xytext=(8.9, y_pos - 0.35),
-                        arrowprops=dict(arrowstyle="->", lw=1.2, color="#1f497d"))
-        y_pos -= 0.75
+    extraction_title = "Per-parameter cross-encoding and hierarchical prediction" if is_en else "Cross-Encoder và dự đoán phân cấp theo từng tham số"
+    pair_label = "XLM-R\nQuery + parameter\nprompt / schema" if is_en else "XLM-R\nTruy vấn + mô tả\ntham số trong schema"
+    presence_label = "has_value\npresent?" if is_en else "has_value\ncó giá trị?"
+    routing_label = "Route by\nschema type" if is_en else "Chọn nhánh theo\nkiểu schema"
+    span_label = "Span\nhead" if is_en else "Span\nhead"
+    enum_label = "Enum\nhead" if is_en else "Enum\nhead"
+    bool_label = "Boolean\nhead" if is_en else "Boolean\nhead"
+    normalizer_label = "Value normalizer" if is_en else "Chuẩn hóa giá trị"
+    assemble_label = "Schema-based\nassembly" if is_en else "Lắp ghép theo\nschema"
+    json_label = "Structured JSON\nfunction call" if is_en else "Lời gọi hàm\nJSON"
+    subpanel = patches.FancyBboxPatch((4.9, 1.8), 8.58, 2.7, boxstyle="round,pad=0.04,rounding_size=0.08", ec=colors["panel_edge"], fc=colors["white"], lw=0.9)
+    ax.add_patch(subpanel)
+    ax.text(6.95, 4.23, extraction_title, ha="left", va="center", fontsize=9.1, color=colors["accent2"], fontweight="bold")
+    box(5.12, 2.88, 1.45, 0.82, pair_label, colors["input"], colors["panel_edge"], 8.0)
+    box(6.8, 2.88, 1.3, 0.82, presence_label, colors["head"], colors["accent2"], 8.4, "bold")
+    box(8.34, 2.88, 1.35, 0.82, routing_label, colors["model"], colors["accent2"], 8.0)
+    box(10.02, 3.13, 0.94, 0.62, span_label, colors["head"], colors["accent2"], 8.2)
+    box(11.1, 3.13, 0.94, 0.62, enum_label, colors["head"], colors["accent2"], 8.2)
+    box(12.18, 3.13, 1.0, 0.62, bool_label, colors["head"], colors["accent2"], 8.0)
+    box(9.65, 2.02, 1.5, 0.62, normalizer_label, colors["post"], "#6d8965", 8.2)
+    box(11.42, 2.02, 1.0, 0.62, assemble_label, colors["post"], "#6d8965", 7.8)
+    box(12.6, 2.02, 0.7, 0.62, json_label, colors["post"], "#6d8965", 7.3, "bold")
+    arrow((11.17, 2.32), (11.42, 2.32), "line")
+    arrow((12.42, 2.32), (12.6, 2.32), "line")
+    arrow((5.93, 5.0), (5.93, 4.53), "accent2")
+    arrow((5.93, 4.5), (5.93, 3.72), "accent2")
+    ax.plot([5.0, 4.75], [6.73, 6.5], color=colors["accent2"], lw=1.2)
+    ax.plot([4.75, 4.75], [6.5, 3.29], color=colors["accent2"], lw=1.2)
+    arrow((4.75, 3.29), (5.12, 3.29), "accent2")
+    arrow((6.57, 3.29), (6.8, 3.29), "accent2")
+    arrow((8.1, 3.29), (8.34, 3.29), "accent2")
+    arrow((9.69, 3.29), (9.87, 3.29), "accent2")
+    ax.plot([9.87, 9.87], [3.29, 3.91], color=colors["accent2"], lw=1.2)
+    ax.plot([9.87, 12.68], [3.91, 3.91], color=colors["accent2"], lw=1.2)
+    for head_x in (10.49, 11.57, 12.68):
+        arrow((head_x, 3.91), (head_x, 3.77), "accent2")
+    ax.plot([10.12, 12.68], [2.88, 2.88], color=colors["line"], lw=1.0)
+    for head_x in (10.49, 11.57, 12.68):
+        arrow((head_x, 3.12), (head_x, 2.9), "accent2")
+    arrow((11.38, 2.88), (11.38, 2.66), "accent2")
+    ax.text(7.45, 2.56, "if present" if is_en else "nếu có", ha="center", va="center", fontsize=7.5, color=colors["muted"])
+    ax.text(12.8, 4.78, "τ = 0.35 · δ = 0.21" if is_en else "τ = 0.35 · δ = 0.21", ha="center", va="center", fontsize=7.6, color=colors["muted"])
 
-    plt.tight_layout()
+    plt.tight_layout(pad=0.2)
     os.makedirs(output_dir, exist_ok=True)
-    fig.savefig(os.path.join(output_dir, "fig1_system_architecture.png"), dpi=300, bbox_inches='tight')
-    fig.savefig(os.path.join(output_dir, "fig1_system_architecture.pdf"), bbox_inches='tight')
-    plt.close()
-    print(f"✓ [{lang.upper()}] Exported fig1_system_architecture to {output_dir}")
+    fig.savefig(os.path.join(output_dir, "fig1_system_architecture.png"), dpi=300, bbox_inches="tight", facecolor="white")
+    fig.savefig(os.path.join(output_dir, "fig1_system_architecture.pdf"), bbox_inches="tight", facecolor="white")
+    fig.savefig(os.path.join(output_dir, "fig1_system_architecture.svg"), bbox_inches="tight", facecolor="white")
+    plt.close(fig)
 
 
 def plot_fig2_customtools_comparison(lang="vi", output_dir="paper/figures"):
@@ -383,14 +408,14 @@ def generate_all():
     
     # 1. Vietnamese figures -> paper/figures and latex/paper_vi/figures
     for d in ["paper/figures", "latex/paper_vi/figures"]:
-        # Note: fig1 is preserved from custom agent design; do not overwrite
+        plot_fig1_architecture(lang="vi", output_dir=d)
         plot_fig2_customtools_comparison(lang="vi", output_dir=d)
         plot_fig3_stress_test(lang="vi", output_dir=d)
         plot_fig4_scaling_syntax(lang="vi", output_dir=d)
 
     # 2. English figures -> paper/figures_en and latex/paper_en/figures
     for d in ["paper/figures_en", "latex/paper_en/figures"]:
-        # Note: fig1 is preserved from custom agent design; do not overwrite
+        plot_fig1_architecture(lang="en", output_dir=d)
         plot_fig2_customtools_comparison(lang="en", output_dir=d)
         plot_fig3_stress_test(lang="en", output_dir=d)
         plot_fig4_scaling_syntax(lang="en", output_dir=d)
@@ -403,7 +428,7 @@ def generate_all():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--lang", choices=["vi", "en", "all"], default="all")
-    parser.add_argument("--overwrite-fig1", action="store_true", help="Force overwrite custom Figure 1")
+    parser.add_argument("--overwrite-fig1", action="store_true", help="Regenerate Figure 1 architecture diagrams")
     args = parser.parse_args()
 
     if args.overwrite_fig1:
