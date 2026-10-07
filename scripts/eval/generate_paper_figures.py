@@ -96,8 +96,8 @@ def plot_fig1_architecture(lang: str = "vi", output_dir: str = "paper/figures") 
     arrow((2.35, 1.16), (2.47, 1.16), "accent1")
 
     tool_store = "Tool catalog\n(descriptions)" if is_en else "Kho công cụ\n(mô tả)"
-    q_encode = "Query\nencoder" if is_en else "Mã hóa\ntruy vấn"
-    tool_encode = "Tool\nencoder" if is_en else "Mã hóa\ncông cụ"
+    q_encode = "BGE-M3 query\nencoder" if is_en else "BGE-M3 mã hóa\ntruy vấn"
+    tool_encode = "BGE-M3 tool\nencoder" if is_en else "BGE-M3 mã hóa\ncông cụ"
     index_label = "Precomputed tool embeddings" if is_en else "Vector công cụ đã mã hóa"
     similarity = "Cosine ranking\n+ calibrated gate" if is_en else "Xếp hạng cosine\n+ ngưỡng kích hoạt"
     candidates = "Top-K candidates\n(k ≤ 3)" if is_en else "Công cụ ứng viên\n(Top-K, k ≤ 3)"
@@ -119,7 +119,7 @@ def plot_fig1_architecture(lang: str = "vi", output_dir: str = "paper/figures") 
     arrow((9.53, 5.38), (10.12, 5.38), "line")
 
     extraction_title = "Per-parameter cross-encoding and hierarchical prediction" if is_en else "Cross-Encoder và dự đoán phân cấp theo từng tham số"
-    pair_label = "XLM-R\nQuery + parameter\nprompt / schema" if is_en else "XLM-R\nTruy vấn + mô tả\ntham số trong schema"
+    pair_label = "XLM-RoBERTa\nQuery + parameter\nprompt / schema" if is_en else "XLM-RoBERTa\nTruy vấn + mô tả\ntham số trong schema"
     presence_label = "has_value\npresent?" if is_en else "has_value\ncó giá trị?"
     routing_label = "Route by\nschema type" if is_en else "Chọn nhánh theo\nkiểu schema"
     span_label = "Span\nhead" if is_en else "Span\nhead"
