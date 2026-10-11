@@ -1,7 +1,8 @@
 # 📚 Tài Liệu Kỹ Thuật & Nghiên Cứu (Documentation Index)
 
-Thư mục này chứa toàn bộ các tài liệu kỹ thuật, kiến trúc, phương pháp luận và hướng dẫn thực nghiệm cho đề tài:
-**"Tool Calling tiếng Việt — So sánh 2 phương pháp: SLM End-to-End vs Bi-Encoder + Cross-Encoder"**.
+Thư mục này chứa toàn bộ các tài liệu kỹ thuật, kiến trúc, phương pháp luận và đặc tả benchmark cho đề tài:
+**"Nghiên cứu phương pháp Tool Calling dựa trên truy hồi ngữ nghĩa và trích xuất tham số theo Tool Schema"**
+*(Research on Tool Calling using Semantic Retrieval and Schema-aware Parameter Extraction)*.
 
 ---
 
@@ -9,10 +10,11 @@ Thư mục này chứa toàn bộ các tài liệu kỹ thuật, kiến trúc, p
 
 | File | Mô tả nội dung |
 |---|---|
-| [architecture.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/architecture.md) | Sơ đồ kiến trúc tổng thể, luồng dữ liệu và thiết kế 2 pipeline (Method 1: SLM và Method 2: Bi+Cross Encoder). |
-| [methodology.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/methodology.md) | Phương pháp luận nghiên cứu, các giả thuyết khoa học, thiết lập baseline và tiêu chuẩn đánh giá. |
-| [experimental_plan.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/experimental_plan.md) | Kế hoạch thực nghiệm tổng thể (controlled data budget, các nấc E0 $\to$ E4, stress test). |
-| [references.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/references.md) | Danh mục tài liệu tham khảo và các bài báo khoa học liên quan (Ersoy et al., BFCL, RAG-MCP, ToolLLM,...). |
+| [architecture.md](./architecture.md) | Sơ đồ kiến trúc tổng thể, luồng dữ liệu và thiết kế 2 pipeline (Method 1: SLM và Method 2: Bi-Encoder + Cross-Encoder). |
+| [methodology.md](./methodology.md) | Cơ sở toán học, các hàm mất mát (Multiple Negatives Ranking, Span/Classification loss) và tiêu chuẩn đánh giá. |
+| [experimental_plan.md](./experimental_plan.md) | Kế hoạch thực nghiệm tổng thể (controlled data budget, các nấc E0 $\to$ E4, stress test). |
+| [method2.md](./method2.md) | Kiến trúc kỹ thuật và hướng dẫn vận hành chuyên sâu của Method 2 (BGE-M3 + XLM-RoBERTa + Vietnamese Value Normalizer). |
+| [references.md](./references.md) | Danh mục tài liệu tham khảo và các công trình khoa học liên quan (BFCL, ToolLLM, RAG-MCP, Gorik, v.v.). |
 
 ---
 
@@ -20,37 +22,19 @@ Thư mục này chứa toàn bộ các tài liệu kỹ thuật, kiến trúc, p
 
 | File | Mô tả nội dung |
 |---|---|
-| [data_pipeline_and_splits.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/data_pipeline_and_splits.md) | **Tài liệu chuẩn tắc** về pipeline dữ liệu, frozen revision (`2026-09-02-full-dedup-seed42`), cấu trúc split train/val/test và quy cách dữ liệu. |
-| [benchmark.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/benchmark.md) | Đặc tả cấu trúc benchmark tiếng Việt, định nghĩa ground truth, phân loại function call đơn/đa lệnh. |
-| [custom_vi_dataset_plan.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/custom_vi_dataset_plan.md) | Thiết kế chi tiết tập dữ liệu đặc thù Việt Nam `CustomTools-VI` (8,000 mẫu, 40 công cụ, 10 nhóm domain, chia strict seen/unseen). |
-| [translation_guidelines.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/translation_guidelines.md) | Quy chuẩn dịch thuật EN $\to$ VI giữ nguyên identifier, cấu trúc JSON và thuật ngữ kỹ thuật. |
+| [data_pipeline_and_splits.md](./data_pipeline_and_splits.md) | **Tài liệu chuẩn tắc** về pipeline dữ liệu, frozen canonical revision (`2026-09-02-full-dedup-seed42`), cấu trúc split train/val/test và schema chuẩn. |
+| [benchmark.md](./benchmark.md) | Đặc tả cấu trúc benchmark tiếng Việt: Core Benchmark (77k mẫu) và CustomTools-VI (8,000 mẫu, 40 công cụ, chia strict Seen/Unseen). |
 
 ---
 
-## 3. Báo Cáo Kết Quả Thực Nghiệm & Kiến Trúc Chi Tiết (Reports & System Details)
+## 3. Bài Báo Khoa Học & Kết Quả (Paper & Experimental Results)
 
-| File | Mô tả nội dung |
-|---|---|
-| [method2.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/method2.md) | Hướng dẫn vận hành và kiến trúc kỹ thuật toàn diện của Method 2 (Bi-Encoder BGE-M3 + Cross-Encoder XLM-RoBERTa). |
-| [paper_vi_method2_shared.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/paper_vi_method2_shared.md) | Báo cáo thực nghiệm chuyên sâu **Method 2**: huấn luyện Shared E4, đánh giá Core Benchmark và CustomTools-VI, phân tích Oracle, Normalizer ablation. |
-| [../reports/stress_report_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/reports/stress_report_vi.md) | Báo cáo thử nghiệm ứng suất độ bền (Stress Test $N = 3 \to 1000$) đối đầu trực diện giữa Method 1 và Method 2. |
-| [../results/slm/summary_table.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/results/slm/summary_table.md) | Báo cáo tổng hợp kết quả **Method 1 (SLM Qwen3.5-2B/4B E0 $\to$ E4)** và so sánh đối đầu. |
-| [../paper/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/) | Bài báo khoa học: bản tiếng Anh ([paper_en.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_en.md)) và bản tiếng Việt ([paper_vi.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/paper/paper_vi.md)). |
-
----
-
-## 4. Hướng Dẫn Huấn Luyện & Đánh Giá (Execution Guides)
-
-| File | Môi trường / Mục đích |
-|---|---|
-| [kaggle_execution_guide.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/kaggle_execution_guide.md) | Hướng dẫn toàn diện trên Kaggle Dual GPU T4: Huấn luyện DDP Unsloth (E1 $\to$ E4) có stage resume và đánh giá suy luận (E0 / post-training). |
-| [colab_e1_e4_training_guide.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/colab_e1_e4_training_guide.md) | Hướng dẫn huấn luyện đơn GPU trên Google Colab Pro (A100 / L4 / T4) đồng bộ qua Google Drive. |
-
----
-
-## 5. Tài Liệu Tham Khảo Mở Rộng & Biểu Mẫu (References & Templates)
-
-| Đường dẫn | Mô tả nội dung |
-|---|---|
-| [references/tool_calling_Arabic_ocr.md](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/docs/references/tool_calling_Arabic_ocr.md) | Bản OCR toàn văn bài báo *Ersoy et al. (ArabicNLP 2025)* dùng làm tài liệu tham khảo đối sánh. |
-| [../thesis/templates/](file:///home/thinh/project/UIT/tool_calling_with_retrieval_extraction/thesis/templates/) | Các biểu mẫu Word chính thức của Trường ĐH Công nghệ Thông tin (`BieuMau.docx`, `phuluc2_hinhthuctrinhbay.docx`). |
+- **Bài báo khoa học**:
+  - [paper/paper_en.md](../paper/paper_en.md): Bản thảo bài báo tiếng Anh chuẩn format hội nghị quốc tế.
+  - [paper/paper_vi.md](../paper/paper_vi.md): Bản thảo bài báo tiếng Việt.
+  - [latex/](../latex/): Mã nguồn dự án LaTeX hoàn chỉnh sẵn sàng biên dịch PDF.
+- **Kết quả thực nghiệm**:
+  - [results/slm/summary_table.md](../results/slm/summary_table.md): Bảng tổng hợp số liệu chi tiết của Method 1 (SLM Qwen3.5-2B/4B E0 $\to$ E4) và đối đầu.
+  - [results/](../results/): Toàn bộ metrics JSON, predictions và biểu đồ so sánh.
+- **Khóa luận tốt nghiệp UIT**:
+  - [thesis/README.md](../thesis/README.md): Báo cáo toàn văn Khóa luận tốt nghiệp nộp Phòng Đào tạo UIT.

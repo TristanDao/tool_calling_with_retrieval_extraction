@@ -32,6 +32,7 @@ ENV/
 .env
 .env.local
 *.log
+archive/
 
 # Archives / compressed files
 *.zip

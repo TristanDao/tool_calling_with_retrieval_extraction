@@ -42,14 +42,24 @@ tool_calling_with_retrieval_extraction/
 │   ├── paper_en.md            # Bản tiếng Anh chuẩn học thuật quốc tế
 │   └── paper_vi.md            # Bản tiếng Việt chuẩn báo cáo luận văn UIT
 │
-├── docs/                      # TÀI LIỆU KỸ THUẬT & HƯỚNG DẪN
+├── docs/                      # TÀI LIỆU KỸ THUẬT & KIẾN TRÚC
 │   ├── README.md              # Mục lục toàn bộ tài liệu
 │   ├── architecture.md        # Thiết kế kiến trúc 2 pipeline
-│   ├── methodology.md         # Phương pháp luận nghiên cứu
+│   ├── methodology.md         # Phương pháp luận nghiên cứu & công thức toán
 │   ├── experimental_plan.md   # Kế hoạch thực nghiệm E0-E4 & stress test
+│   ├── method2.md             # Kiến trúc kỹ thuật chuyên sâu Method 2
 │   ├── data_pipeline_and_splits.md # Đặc tả chuẩn dữ liệu và frozen revision
-│   ├── paper_vi_method2_shared.md # Báo cáo thực nghiệm chi tiết Method 2 (Shared E4)
-│   └── ... (các hướng dẫn Kaggle/Colab, dịch thuật, CustomTools)
+│   └── benchmark.md           # Đặc tả Core Benchmark & CustomTools-VI
+│
+├── thesis/                    # KHÓA LUẬN TỐT NGHIỆP UIT (LƯU CHIỂU PĐT)
+│   ├── README.md              # Giới thiệu khóa luận
+│   ├── khoa_luan_tot_nghiep.md# Bản thảo toàn văn Khóa luận tốt nghiệp
+│   ├── khoa_luan_tot_nghiep.docx # Bản Word nộp lưu chiểu
+│   └── build_uit_thesis_docx.py # Script xuất bản Word chuẩn UIT
+│
+├── latex/                     # MÃ NGUỒN LATEX BÀI BÁO KHOA HỌC
+│   ├── paper_en/              # Dự án LaTeX bài báo tiếng Anh
+│   └── paper_vi/              # Dự án LaTeX bài báo tiếng Việt
 │
 ├── data/                      # DỮ LIỆU & BENCHMARK
 │   ├── benchmark_core/        # Frozen revision canonical (77k samples EN/VI)

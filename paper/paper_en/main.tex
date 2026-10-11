@@ -1,0 +1,470 @@
+% !TEX program = xelatex
+\documentclass[10pt,twocolumn,a4paper]{article}
+\usepackage{fontspec}
+\IfFontExistsTF{Times New Roman}{\setmainfont{Times New Roman}}{\setmainfont{Liberation Serif}}
+\usepackage[english]{babel}
+\usepackage[top=20mm,bottom=20mm,left=15mm,right=15mm]{geometry}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{cite}
+\usepackage{caption}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{makecell}
+\captionsetup{font=small,labelfont=bf,justification=justified,singlelinecheck=false}
+\setlist{nosep,leftmargin=*}
+\usepackage[hidelinks]{hyperref}
+
+\renewcommand{\arraystretch}{1.12}
+\setlength{\tabcolsep}{3pt}
+\newcommand{\tabletext}{\small}
+
+% Keep full-width tables compact on float-only pages instead of
+% stretching the vertical space between them across the page.
+\makeatletter
+\setlength{\@dblfptop}{0pt}
+\setlength{\@dblfpsep}{12pt}
+\setlength{\@dblfpbot}{0pt plus 1fil}
+\makeatother
+
+\title{Vietnamese Tool Calling: Comparing End-to-End Small Language Models with a Bi-Encoder--Cross-Encoder Architecture}
+
+\author{
+    \textbf{Phuoc Thinh Dao}$^{1}$, \textbf{Quang Dat Ha}$^{1}$, \textbf{Van Thin Dang}$^{1,*}$ \\[0.2cm]
+    $^{1}$Faculty of Computer Science, University of Information Technology \\
+    Vietnam National University Ho Chi Minh City, Vietnam \\
+    Email: \texttt{\{25210038, 25210008\}@ms.uit.edu.vn}, \texttt{thindv@uit.edu.vn} \\
+    $^{*}$Corresponding author
+}
+
+\date{2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Tool calling enables AI agents to interact with external APIs. For Vietnamese, practical deployment requires accurate argument extraction and reliable abstention within latency and memory constraints. We compare end-to-end Qwen3.5 models with 2B and 4B parameters against a two-stage system combining BGE-M3 tool retrieval with hierarchical XLM-RoBERTa argument extraction. Evaluation uses the Canonical Core Benchmark, comprising 77,028 English--Vietnamese pairs, and CustomTools-VI, comprising 8,000 Vietnamese instances. On CustomTools-VI, the fine-tuned Qwen3.5-2B model achieves exact-match call accuracy (ArgA) of 87.00\% on seen tools and 86.38\% on unseen tools. In a tool-catalog stress test, the two-stage system achieves 84.00\% ArgA with 1,000 tools, a median latency of 107.68 ms, and approximately 3.21 GiB of allocated GPU memory. The SLM encounters out-of-memory errors at catalog sizes of 500 and 1,000 on a 16 GB GPU. Resource measurements use different protocols and support descriptive comparisons only. These findings highlight a trade-off between generalization to unseen tools and resource efficiency as the tool catalog grows.
+\end{abstract}
+
+\vspace{0.3cm}
+\noindent\textbf{Keywords:} tool calling, small language models, Bi-Encoder, Cross-Encoder, parameter extraction, Vietnamese.
+
+\vspace{0.5cm}
+\section{Introduction}
+
+Tool calling, also known as function calling, enables large language models (LLMs) and AI agents to interact with external systems. Given a natural-language query and the schemas of available tools, the model must determine whether a tool is needed, select the appropriate API, and extract its structured arguments.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig1_system_architecture.png}
+    \caption{Architectures compared in this study: an end-to-end SLM and a decoupled Bi-Encoder--Cross-Encoder system. The diagram uses a Vietnamese example query.}
+    \label{fig:system-architecture}
+\end{figure*}
+
+Deploying tool-calling systems for Vietnamese presents several challenges. Processing large collections of JSON schemas and generating calls autoregressively can increase inference cost. Cloud APIs also incur usage costs and introduce data-governance requirements. Generative models may produce malformed outputs or arguments absent from the schema, while the benchmarks considered in this study lack a controlled evaluation set for Vietnamese. Figure~\ref{fig:system-architecture} illustrates the two architectures investigated here.
+
+We address five research questions. \textbf{RQ1} assesses cross-lingual transfer from English to Vietnamese tool calling. \textbf{RQ2} examines over-triggering and the role of negative examples. \textbf{RQ3} evaluates generalization to tools absent from training. \textbf{RQ4} examines the trade-off among accuracy, latency, and memory. \textbf{RQ5} studies robustness as the tool catalog grows from $3$ to $1{,}000$ entries.
+
+\subsection{Contributions}
+We construct two benchmarks: the Canonical Core Benchmark with 77,028 paired English--Vietnamese records and CustomTools-VI with 8,000 samples, a dedicated unseen-tool split, and 50\% negative queries in both test splits. We compare an end-to-end generative SLM with a schema-aware Bi-Encoder--Cross-Encoder architecture and evaluate two commercial APIs on CustomTools-VI. Finally, a stress test examines catalogs from $N=3$ to $N=1{,}000$, reporting accuracy, latency, memory, and execution failures; measurements obtained under different protocols are compared descriptively.
+
+\section{Related Work}
+
+\subsection{Tool Calling with Generative Language Models}
+Toolformer examines how language models can learn to invoke tools \cite{schick2023toolformer}, whereas Gorilla focuses on API selection from documentation \cite{patil2023gorilla}. APIGen/xLAM \cite{liu2024apigen} and ToolACE \cite{liu2024toolace} scale automatically generated and verified function-calling data. The Berkeley Function-Calling Leaderboard (BFCL) provides evaluation protocols covering different call structures and dialogue settings \cite{yan2024bfcl}.
+
+Ersoy et al. investigate SLM fine-tuning for Arabic and report benefits from combining translated and native-language data in their setting \cite{ersoy2025tool}. We investigate a corresponding question for Vietnamese while adding a Bi-Encoder--Cross-Encoder comparison and controlled bilingual data splits.
+
+\subsection{Dense Retrieval and Discriminative Argument Extraction}
+For systems with many APIs, placing every tool definition in the model context increases input length and inference cost. ToolLLM \cite{qin2024toolllm} and AnyTool \cite{du2024anytool} study retrieval or selection mechanisms that reduce the candidate set before subsequent processing. BGE-M3 provides multilingual representations and supports dense retrieval at multiple granularities \cite{chen2024bgem3}.
+
+Prior approaches build on bidirectional BERT representations \cite{devlin2019bert} for intent and slot prediction, including JointBERT \cite{chen2019jointbert} and Schema-Guided Dialogue \cite{rastogi2020schema}. XLM-RoBERTa supplies a cross-lingual encoder backbone for argument extraction \cite{conneau2020xlmr}. Unlike pipelines that retain a generative model after retrieval, our system constructs calls with schema-routed classification and extraction heads, without autoregressive output decoding.
+
+\section{Data and Evaluation Protocol}
+
+We use two complementary datasets, summarized in Table~\ref{tab:datasets}. The Canonical Core Benchmark is normalized from Glaive Function Calling v2 \cite{glaive2023dataset} and xLAM Function Calling 60k \cite{xlam2024dataset}, then paired in English and Vietnamese using the procedure in Section~\ref{sec:translation}. CustomTools-VI is constructed for this study. Core records are aligned 1:1 across the two languages; each CustomTools-VI test split contains 50\% negative queries.
+
+\begin{table*}[htbp]
+    \centering
+    \caption{Training and evaluation split statistics.}
+    \label{tab:datasets}
+    \tabletext
+    \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrr@{}}
+        \toprule
+        \textbf{Dataset} & \textbf{Positive} & \textbf{Negative} & \textbf{Train} & \textbf{Val} & \textbf{Test} & \textbf{Tools} \\
+        \midrule
+        \textbf{Core Glaive} & 13,393 & 4,817 & 14,561 & 1,819 & 1,830 & 864 \\
+        \textbf{Core xLAM} & 58,818 & 0 & 47,054 & 5,882 & 5,882 & 3,602 \\
+        \textbf{Core (EN--VI pairs)} & \textbf{72,211} & \textbf{4,817} & \textbf{61,615} & \textbf{7,701} & \textbf{7,712} & \textbf{4,421} \\
+        \midrule
+        \textbf{Custom Seen} & 4,200 & 2,600 & 5,600 & 400 & 800 & 20 \\
+        \textbf{Custom Unseen} & 600 & 600 & 0 & 400 & 800 & 20 \\
+        \textbf{CustomTools-VI} & \textbf{4,800} & \textbf{3,200} & \textbf{5,600} & \textbf{800} & \textbf{1,600} & \textbf{40} \\
+        \bottomrule
+    \end{tabular*}
+    \par\medskip
+    \begin{minipage}{\textwidth}\footnotesize\itshape
+    Core rows count aligned EN--VI pairs (77,028 pairs, with equal numbers in each language), not pooled instances. CustomTools-VI contains Vietnamese only; each test split is 50\% negative. Glaive contains single calls and negatives; xLAM contains multi-call cases. Unique tool counts in total rows need not equal the sum of the component counts because tools overlap.
+    \end{minipage}
+\end{table*}
+
+Table~\ref{tab:datasets} reports original conversational records. For Method 2 training, these records yield 70,988 positive $(\text{query},\text{tool description})$ pairs for the Bi-Encoder, excluding all 20 unseen tools, and 135,617 $(\text{query},\text{parameter schema})$ pairs for the Cross-Encoder. Method 2 is evaluated on all 7,712 Core VI and 7,712 Core EN test instances.
+
+\subsection{Translation Rules and Frozen Revision}
+\label{sec:translation}
+To limit leakage and preserve identical partitions across models, revision \texttt{2026-09-02-full-dedup-seed42} was frozen before evaluation. It contains 77,028 paired records after deduplication, partitioned approximately 80/10/10 with a fixed seed. Function names, parameter keys, UUIDs, currency codes, and schema structure remain unchanged in translation; only queries, tool descriptions, and natural-language string values are translated.
+
+\subsection{CustomTools-VI}
+CustomTools-VI comprises 8,000 instances across ten service domains: e-commerce, domestic transport and travel, food, utilities, digital banking, real estate, public administration, healthcare, education, and postal services. Tasks include order tracking, ticket booking, bill payment, bank transfers, rental searches, traffic-violation lookup, and medical appointments.
+
+\textbf{Data construction and quality control.} Construction comprises four stages: manual design of 40 tool schemas with string, integer, number, and Boolean parameters, including parameters constrained to enumerated values; prompted generation of conversational variants; automatic checks of schema conformance and required fields; and manual review of all 1,600 test instances for reference-label correctness, linguistic naturalness, and the balance of negative examples.
+
+\textbf{Unseen-tool split.} Twenty unseen tools across ten domain groups are absent from training examples and hard-negative mining for both methods; their schemas are provided only at inference time. Each of \texttt{test\_seen} and \texttt{test\_unseen} contains 800 samples, evenly split between tool-calling and non-tool queries.
+
+\subsection{Reproducibility}
+Each experiment is linked to a configuration, frozen data revision, and seed. Source code, manifests, data checksums, training configurations, and checkpoints are intended for release under appropriate licenses. Resource links will be added according to the selected venue's review policy.
+
+\section{Methods}
+
+\subsection{Method 1: End-to-End SLM}
+We formulate tool calling as conditional sequence generation. The input consists of a system prompt specifying custom tags recognized by a study-specific parser, the available tool catalog $\mathcal{T}=\{t_1,t_2,\dots,t_K\}$ with detailed JSON schemas, and the user's natural-language query $q$.
+
+\subsubsection{Response Format}
+The model is trained to generate custom tags rather than standard XML:
+\begin{verbatim}
+<tool_call>
+<function=tool_name>
+<parameter=param_name>
+param_value
+</parameter>
+</function>
+</tool_call>
+\end{verbatim}
+When no tool is required, it generates a natural conversational response (e.g., \textit{``Hello! How may I help you today?''}) rather than a special token such as \texttt{<no\_tool\_call>}.
+
+\subsubsection{Response-Only Loss}
+To focus learning on the output structure rather than reproducing the tool definitions in the prompt, loss is computed only on assistant response tokens:
+\[
+\mathcal{L}_{SFT}=-\sum_{i=1}^{N}m_i\log P(w_i\mid w_{<i},q,\mathcal{T}).
+\]
+Here $m_i=1$ if token $w_i$ belongs to the assistant response and $m_i=0$ for system, tool-schema, and user-query tokens.
+
+\subsubsection{Experimental Configurations}
+\noindent\textbf{E0 (zero-shot baseline):} The original \texttt{unsloth/}\allowbreak\texttt{Qwen3.5-2B} checkpoint, without project-specific SFT.
+
+\noindent\textbf{E1 (English only):} 60,000 English Core samples.
+
+\noindent\textbf{E2 (Vietnamese only):} The corresponding 60,000 Vietnamese Core samples.
+
+\noindent\textbf{E3 (balanced bilingual):} 30,000 English and 30,000 Vietnamese samples.
+
+\noindent\textbf{E4 (bilingual and domain-specific):} E3's 60,000 bilingual samples plus 5,600 CustomTools-VI training instances, for 65,600 in total.
+
+\subsection{Method 2: Bi-Encoder--Cross-Encoder}
+This two-stage system constructs structured outputs without autoregressive decoding.
+
+\subsubsection{Stage 1: Bi-Encoder Tool Retrieval}
+The Bi-Encoder embeds user query $q$ and tool description $d_t$ as dense vectors $\mathbf{e}_q,\mathbf{e}_t\in\mathbb{R}^{d}$:
+\[
+\mathbf{e}_q=\text{BiEncoder}(q),\qquad\mathbf{e}_t=\text{BiEncoder}(d_t).
+\]
+Semantic similarity is $s(q,t)=\cos(\mathbf{e}_q,\mathbf{e}_t)$. BGE-M3 is trained in two rounds with \texttt{CachedMultipleNegativesRankingLoss}. The first round uses 70,988 positive pairs; its checkpoint then retrieves highly similar incorrect tools as hard negatives for the second round.
+
+\textbf{Abstention.} We calibrate a minimum confidence threshold $\tau=0.35$ and top-1/top-2 score margin $\delta=0.21$ on validation data, with at most $k_{\max}=3$ tools. If the scores fail the decision criteria, the system abstains from calling a tool. These thresholds are frozen before test evaluation.
+
+\subsubsection{Stage 2: Cross-Encoder Argument Extraction}
+For each accepted tool $t$, the XLM-RoBERTa Cross-Encoder processes a BERT-QA-style pair of query $q$ and parameter definition $p_k\in\mathcal{P}_t$:
+\[
+\mathbf{h}=\text{CrossEncoder}([CLS]\circ q\circ[SEP]\circ p_k\circ[SEP]).
+\]
+The model has four prediction heads:
+\begin{enumerate}
+    \item \textbf{\texttt{has\_value}:} Predicts whether the query provides a value for parameter $p_k$:
+    \[\hat{y}_{has}=\sigma(\mathbf{W}_{has}\mathbf{h}_{[CLS]}+b_{has}).\]
+    \item \textbf{\texttt{span\_extraction}:} For free-form strings, predicts the start and end positions in the query:
+    \begin{align*}P_{start}(i)&=\text{softmax}(\mathbf{W}_s\mathbf{h}_i),\\P_{end}(j)&=\text{softmax}(\mathbf{W}_e\mathbf{h}_j).\end{align*}
+    \item \textbf{\texttt{enum\_classification}:} For enumerated parameters, scores permitted schema values:
+    \[\mathbf{p}_{enum}=\text{softmax}(\mathbf{W}_{enum}\mathbf{h}_{[CLS]}+\mathbf{b}_{enum}).\]
+    \item \textbf{\texttt{boolean}:} For Boolean parameters, predicts true or false:
+    \[\hat{y}_{bool}=\sigma(\mathbf{W}_{bool}\mathbf{h}_{[CLS]}+b_{bool}).\]
+\end{enumerate}
+
+\subsubsection{Hierarchical Multi-Task Loss}
+The Cross-Encoder is jointly optimized with a conditional loss:
+\[
+\mathcal{L}_{Cross}=\mathcal{L}_{has}+y_{has}\sum_{b\in\{span,enum,bool\}}\mathbf{1}[b=b(p_k)]\lambda_b\mathcal{L}_b.
+\]
+Here $\mathcal{L}_{has}$ is binary cross-entropy for parameter presence, with $y_{has}\in\{0,1\}$. The presence label gates sub-head losses so that a branch contributes only for a present parameter of its type $b(p_k)$. The span loss sums start and end cross-entropies; enum uses multiclass cross-entropy over schema-permitted values; and Boolean uses binary cross-entropy. The branch weights are $\lambda_{span}=\lambda_{enum}=\lambda_{bool}=1.0$.
+
+\subsubsection{Schema-Driven Inference Routing}
+At inference, the system selects the head matching the JSON Schema \texttt{type} or \texttt{enum} field if $\hat{y}_{has}\geq 0.5$. Otherwise, the parameter is treated as absent, and no sub-head value is emitted. This prevents predictions of incompatible types from being combined in the output.
+
+\subsubsection{Value Normalization}
+A dictionary- and regular-expression-based post-processor converts selected Vietnamese surface forms to canonical values, for example, \texttt{20/10/2026} to \texttt{2026-10-20} when the year is explicit, or ``nửa triệu'' to \texttt{500000}.
+Figure~\ref{fig:parameter-extraction} summarizes the Stage 2 flow from query--parameter encoding and schema-routed prediction to value normalization and assignment.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.96\textwidth]{figures/parameter_extraction.png}
+    \caption{Argument-extraction pipeline in Method 2. For each parameter of a retrieved tool, the Cross-Encoder predicts whether a value is present and applies the appropriate prediction head before normalization and assignment. The example maps the Vietnamese colloquial expression ``hai củ rưỡi'' (``two and a half million'') to 2,500,000.}
+    \label{fig:parameter-extraction}
+\end{figure*}
+
+\subsection{Hardware and Training Hyperparameters}
+SLMs are trained with Unsloth and 4-bit NF4 QLoRA \cite{dettmers2023qlora} on Google Colab Pro using one NVIDIA A100-SXM4-40GB, 83.5 GB RAM, Ubuntu 22.04 LTS, CUDA 12.4, and PyTorch 2.5. The Bi-Encoder and Cross-Encoder are trained separately on a 16 GB NVIDIA Tesla T4. Inference evaluation uses a Kaggle environment with two T4 GPUs, although each SLM query runs on only one GPU. SLM inference uses 4-bit NF4 quantization, greedy decoding, and \texttt{max\_new\_tokens=128}; Method 2 runs on one T4 at batch size 1.
+
+In separate T4 measurements, the 4-bit Qwen3.5-2B has reference peak VRAM of 4.8--5.5 GB, depending on allocator overhead; Qwen3.5-4B uses approximately 9.5 GB. Method 2 stress-test telemetry reports 3,277.14--3,283.09 MiB peak PyTorch allocated memory (approximately 3.20--3.21 GiB) and 3,388--3,772 MiB peak reserved memory. The SLM and Method 2 values reflect different profilers and allocation scopes and are compared descriptively.
+
+SLM QLoRA uses $r=16$, $\alpha=16$, zero dropout, learning rate $5\times10^{-7}$ (cosine schedule, a warmup ratio of 0.05), effective batch size 64, and adaptation of the q, k, v, o, gate, up, and down linear projections. BGE-M3 uses LoRA ($r=16$, $\alpha=32$, dropout 0.05), learning rate $2\times10^{-5}$, effective batch size 256, and two CachedMNRL rounds with hard negatives. XLM-R uses hierarchical heads and effective batch size 64, with learning rates $3\times10^{-5}$ on Core, $1\times10^{-5}$ on Custom, and $1\times10^{-4}$ for prediction heads. Training time and final loss are discussed in Section~\ref{sec:model-scale}.
+
+\section{Metrics and Evaluation Setup}
+Following structured-call evaluation in BFCL \cite{yan2024bfcl} and Ersoy et al. \cite{ersoy2025tool}, we use the following metrics across test splits.
+
+\subsection{Tool Selection Accuracy}
+\textbf{Tool Selection Accuracy (Tool Acc, \%)} is the fraction of positive queries whose predicted tool-name list exactly matches the reference, regardless of argument values. The local-model scorer requires both membership and order for multi-call queries. The stored API evaluator sorts predicted and reference tool names before comparing, retaining multiplicity but not order. The local Tool Acc metric is defined as:
+\[\mathrm{ToolAcc}=\frac{N_{\mathrm{tool\text{-}exact,positive}}}{N_{\mathrm{positive}}}.\]
+
+\subsection{Exact-Match Call Accuracy (ArgA)}
+\textbf{Argument accuracy (ArgA)} is evaluated at the complete-call level and measures the proportion of queries whose entire predicted call list exactly matches the reference, including function names, parameter keys, and extracted values. The local scorer matches calls in order and applies study-specific normalization. The API scorer matches each predicted call to an unmatched reference regardless of order; it uses a numeric tolerance of $10^{-4}$ and trims whitespace and ignores case for other values. API and local ArgA are thus descriptive comparisons, particularly for multi-call queries.
+
+The default metric across all test queries, including correctly abstained negative examples, is
+\[\mathrm{ArgA}_{\mathrm{all}}=\frac{N_{\mathrm{exact,all}}}{N_{\mathrm{all}}}.\]
+For positive queries requiring tool calls, we also report
+\[\mathrm{ArgA}_{\mathrm{positive}}=\frac{N_{\mathrm{exact,positive}}}{N_{\mathrm{positive}}}.\]
+Unless explicitly stated otherwise, ``ArgA'' denotes $\mathrm{ArgA}_{\mathrm{all}}$ throughout.
+
+\subsection{Non-FC Recall}
+This metric measures correct abstention on queries that do not require tool invocation:
+\[\mathrm{Non\text{-}FC\ Recall}=\frac{N_{\mathrm{true\ negative}}}{N_{\mathrm{negative}}}.\]
+
+\subsection{Syntax Errors and Latency}
+The syntax-error rate counts tool-call outputs not recognized by the parser associated with each method. SLMs use custom tags and a dedicated parser; APIs may use JSON. The stored API evaluator also flags failures in its exception branch, so its rate is not identical to the SLM format check. This metric does not test XML validity or argument correctness. Method 2 assembles structured outputs directly and records 0.00\% format errors under the current protocol; content correctness is evaluated by ArgA. Tables distinguish means from P50/P95 values. On Core, SLM latency is batch generation time divided by the sample count, whereas Method 2 measures single queries at batch size 1. The stress test likewise reports Method 2 P50/P95 and SLM batch-normalized time. Measurements from different protocols are compared descriptively, without computing direct speedup factors.
+
+\section{Experimental Results}
+Tables~\ref{tab:custom-results} and \ref{tab:core-results} present the main benchmark results. Bold figures identify the best values within the displayed subgroups.
+
+\begin{table*}[htbp]
+    \centering
+    \caption{CustomTools-VI results (800 seen and 800 unseen instances).}
+    \label{tab:custom-results}
+    \tabletext
+    \textbf{(a) Seen split}\\[2pt]
+    \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccc@{}}
+        \toprule
+        \textbf{Model} & \textbf{Tool Acc (\%)} & \textbf{ArgA-all (\%)} & \textbf{Non-FC (\%)} & \textbf{Syntax err. (\%)} \\
+        \midrule
+        E0 (2B) & 39.25\% & 56.75\% & 97.75\% & 11.12\% \\
+        E1 (2B) & 91.50\% & 63.12\% & 75.25\% & 5.75\% \\
+        E2 (2B) & 91.00\% & 51.50\% & 67.50\% & 8.12\% \\
+        E3 (2B) & 92.25\% & 19.38\% & 3.00\% & 5.38\% \\
+        E4 (2B) & 93.25\% & 87.00\% & \textbf{100.00\%} & 3.38\% \\
+        E3 (4B) & 92.00\% & 62.00\% & 71.25\% & 13.38\% \\
+        E4 (4B) & 92.50\% & 86.62\% & \textbf{100.00\%} & 5.38\% \\
+        Method 2 & 92.25\% & 85.38\% & 92.75\% & \textbf{0.00\%} \\
+        GPT-5.6 Luna & 93.25\% & 78.25\% & 100.00\% & 0.00\% \\
+        Gemini 3.8 Flash & \textbf{100.00\%} & \textbf{93.62\%} & 100.00\% & 0.00\% \\
+        \bottomrule
+    \end{tabular*}
+    \par\medskip
+    \textbf{(b) Unseen split}\\[2pt]
+    \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccc@{}}
+        \toprule
+        \textbf{Model} & \textbf{Tool Acc (\%)} & \textbf{ArgA-all (\%)} & \textbf{Non-FC (\%)} & \textbf{Syntax err. (\%)} \\
+        \midrule
+        E0 (2B) & 40.75\% & 62.50\% & 97.25\% & 10.88\% \\
+        E1 (2B) & 96.50\% & 70.50\% & 74.50\% & 3.25\% \\
+        E2 (2B) & 96.25\% & 59.62\% & 67.75\% & 6.25\% \\
+        E3 (2B) & 96.00\% & 27.88\% & 2.00\% & 3.25\% \\
+        E4 (2B) & 97.00\% & 86.38\% & \textbf{100.00\%} & 1.50\% \\
+        E3 (4B) & \textbf{97.50\%} & 69.75\% & 74.50\% & 10.62\% \\
+        E4 (4B) & 96.75\% & \textbf{86.75\%} & \textbf{100.00\%} & 1.62\% \\
+        Method 2 & 79.50\% & 60.25\% & 93.75\% & \textbf{0.00\%} \\
+        GPT-5.6 Luna & 97.25\% & 79.50\% & 100.00\% & 0.00\% \\
+        Gemini 3.8 Flash & \textbf{100.00\%} & \textbf{92.12\%} & 99.75\% & 0.12\% \\
+        \bottomrule
+    \end{tabular*}
+    \par\medskip
+    % \begin{minipage}{\textwidth}\footnotesize\itshape
+    % Tool Acc counts positive queries; ArgA-all counts the full test split. Because each Custom split contains 50\% negative queries, Method 2's 60.25\% unseen ArgA-all is not its positive-only accuracy, which is 26.75\%. The APIs \texttt{openai/gpt-5.6-luna} and \texttt{google/gemini-3.8-flash} were evaluated once on 1,600 instances with the Kaggle Benchmark SDK on September 16, 2026. The stored task code did not pass \texttt{temperature}, so $T=0$ cannot be confirmed. Gemini recorded 0/800 syntax errors on seen and 1/800 on unseen (0.12\% after rounding); the combined 1/1,600 rate is 0.06\%. API Tool Acc sorts names and API ArgA ignores call order with $10^{-4}$ numeric tolerance; comparisons with local scores are protocol-specific.
+    % \end{minipage}
+\end{table*}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig2_performance_comparison.pdf}
+    \caption{Tool selection and argument extraction performance on CustomTools-VI.}
+    \label{fig:performance-comparison}
+\end{figure*}
+
+\begin{table*}[htbp]
+    \centering
+    \caption{Core VI and Core EN results (7,712 instances per split).}
+    \label{tab:core-results}
+    \tabletext
+    \textbf{(a) Core VI test}\\[2pt]
+    \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccc@{}}
+        \toprule
+        \textbf{Model} & \textbf{Tool Acc (\%)} & \textbf{ArgA (\%)} & \textbf{Syntax err. (\%)} & \textbf{Latency (ms)} \\
+        \midrule
+        E0 (2B) & 56.34\% & 40.48\% & 15.13\% & 707 \\
+        E1 (2B) & 93.67\% & 65.57\% & 4.94\% & 878 \\
+        E2 (2B) & 90.25\% & 64.90\% & 9.48\% & 872 \\
+        E3 (2B) & 94.00\% & \textbf{69.76\%} & 4.66\% & 864 \\
+        E4 (2B) & 93.92\% & 69.75\% & 4.67\% & 970 \\
+        E3 (4B) & \textbf{98.73\%} & \textbf{72.86\%} & 0.32\% & 2,432 \\
+        E4 (4B) & 86.22\% & 64.94\% & 9.75\% & 2,485 \\
+        Method 2 & 59.20\% & 30.26\% & 0.00\% & \textbf{59.55} \\
+        \bottomrule
+    \end{tabular*}
+    \par\medskip
+    \textbf{(b) Core EN test}\\[2pt]
+    \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccc@{}}
+        \toprule
+        \textbf{Model} & \textbf{Tool Acc (\%)} & \textbf{ArgA (\%)} & \textbf{Syntax err. (\%)} & \textbf{Latency (ms)} \\
+        \midrule
+        E0 (2B) & 85.18\% & 60.63\% & 6.66\% & 690 \\
+        E1 (2B) & 94.07\% & \textbf{73.66\%} & 4.88\% & 875 \\
+        E2 (2B) & 93.45\% & 71.36\% & 5.64\% & 193 \\
+        E3 (2B) & 94.27\% & 73.22\% & 4.73\% & 849 \\
+        E4 (2B) & 94.17\% & 73.15\% & 4.73\% & 931 \\
+        E3 (4B) & \textbf{96.63\%} & \textbf{74.71\%} & 1.97\% & 3,290 \\
+        E4 (4B) & 85.03\% & 66.66\% & 11.36\% & 3,310 \\
+        Method 2 & 62.60\% & 35.52\% & 0.00\% & \textbf{59.45} \\
+        \bottomrule
+    \end{tabular*}
+    \par\medskip
+    % \begin{minipage}{\textwidth}\footnotesize\itshape
+    % Tool Acc covers positive queries; ArgA covers the full split. SLM syntax errors follow the custom-tag parser; Method 2 assembles structured output and records 0.00\% format errors, which does not establish correct argument values. Method 2 Non-FC Recall is 94.09\% on Core VI and 94.30\% on Core EN; SLM configurations generally reach 94.30\%, except E0 (96.33\% VI, 94.50\% EN) and E2 (93.08\% EN). SLM latency is batch time divided by sample count; Method 2 reports synchronized batch-1 P50 with cached tool embeddings, excluding model loading and 95.41 seconds of index construction. No direct latency ratio is computed.
+    % \end{minipage}
+\end{table*}
+
+\subsection{RQ1: Cross-Lingual Transfer}
+The English-only configuration (E1) performs competitively with the Vietnamese-only configuration (E2) on Vietnamese queries. On Core VI, E1 reaches 65.57\% ArgA-all against 64.90\% for E2; on Custom Unseen, the scores are 70.50\% and 59.62\%, respectively. These results are consistent with partial transfer of schema interpretation, although the experiment does not isolate multilingual pretraining from fine-tuning effects.
+
+\subsection{RQ2: Over-Triggering and Negative Examples}
+Bilingual E3 degrades markedly on CustomTools-VI: ArgA-all is 19.38\% on seen and 27.88\% on unseen, while Non-FC Recall is only 3.00\% and 2.00\%. Most negative queries are mistaken for tool requests, indicating over-triggering in this evaluation setting.
+
+After E4 adds 5,600 CustomTools-VI samples containing negatives, Non-FC Recall reaches 100.00\% on both splits and ArgA-all increases to 87.00\% on seen and 86.38\% on unseen. This difference is consistent with in-domain data improving abstention, but E3 and E4 differ in multiple data components, so the contribution of negative examples alone is not isolated.
+
+\subsection{RQ3: Generalization to Unseen Tools}
+SLM E4 reaches 86.38\% ArgA-all on unseen tools, only 0.62 percentage points below its seen result, indicating a small generalization gap on this benchmark. Method 2 drops from 85.38\% on seen to 60.25\% on unseen; unseen ArgA-positive is 26.75\% and Tool Acc is 79.50\%. The oracle analysis in Section~\ref{sec:diagnostics} identifies errors that persist even when the reference tool is supplied.
+
+\subsection{RQ4: Quality, Latency, and Memory Trade-Off}
+On CustomTools-VI, SLM 2B E4 obtains 87.00\% seen and 86.38\% unseen ArgA, compared with 85.38\% and 60.25\% for Method 2. SLM 2B E4 has 970 ms batch-normalized latency on Core VI; Method 2 has 55.05--107.68 ms batch-1 P50 across stress-test settings. Reference SLM peak VRAM is approximately 4.8--5.5 GB, compared with approximately 3.21 GiB allocated and up to 3.77 GiB reserved for Method 2 in the stress test. Timing and memory measurements follow different protocols and are compared descriptively. Across CustomTools-VI, the SLM syntax-error rate is 2.44\%, versus 0.00\% for Method 2 under its structured-output definition; this metric does not replace ArgA. SLM E4 may be appropriate when new schemas are common, whereas Method 2 may be appropriate when the catalog is comparatively stable and low batch-1 latency is a priority.
+
+\subsection{Comparison with Commercial APIs}
+We compare the local models with two commercial APIs on 1,600 CustomTools-VI instances.
+
+\textbf{GPT-5.6 Luna.} Tool Acc is 93.25\% on seen and 97.25\% on unseen, with 100.00\% Non-FC Recall. ArgA-all is 78.25\% and 79.50\%, respectively. Qwen3.5-2B E4 reaches 87.00\% and 86.38\%, higher by 8.75 and 6.88 percentage points under the respective scorers. The stored API scorer does not preserve multi-call order and allows numeric tolerance; these are therefore descriptive comparisons, not scores recomputed with one common scorer. A single benchmark and API run cannot attribute the difference solely to fine-tuning or establish generalization to other domains.
+
+\textbf{Gemini 3.8 Flash.} Tool Acc reaches 100.00\% on both splits; ArgA-all is 93.62\% on seen and 92.12\% on unseen. Kaggle logs report 0/800 syntax errors on seen and 1/800 (0.12\%) on unseen, for a combined 1/1,600 (0.06\%).
+
+\textbf{Latency, cost, and data governance.} Commercial APIs, SLMs, and Method 2 were measured under different protocols; their values are descriptive comparisons rather than normalized speedup or cost ratios. Commercial APIs depend on internet connectivity and provider pricing, whereas local models require separate infrastructure assessment.
+
+\subsection{RQ5: Tool-Catalog Scalability}
+The stress test compares \texttt{Qwen3.5-2B} E4 with Method 2 as catalog size grows from $N=3$ to $N=1{,}000$. It uses 200 Custom Seen queries, 100 positive and 100 negative, at six catalog sizes, yielding 1,200 query--catalog combinations per method. Nested candidate prefixes always contain the reference tool for positive queries. Independent re-scoring confirms the reported accuracy counts and latency summaries.
+
+\begin{table*}[htbp]
+    \centering
+    \caption{Stress-test results for Method 1 and Method 2 ($N=3$ to $1{,}000$ tools).}
+    \label{tab:stress-test}
+    \tabletext
+    \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}cccccc@{}}
+        \toprule
+        \textbf{$N$} & \textbf{SLM Tool Acc} & \textbf{M2 Tool Acc} & \textbf{SLM ArgA} & \textbf{M2 ArgA} & \textbf{M2 P50 (ms)} \\
+        \midrule
+        3 & \textbf{94.0} & 89.0 & 85.5 & \textbf{87.5} & \textbf{55.13} \\
+        10 & \textbf{93.0} & 89.0 & 84.5 & \textbf{87.5} & \textbf{55.05} \\
+        50 & \textbf{93.0} & 89.0 & 85.5 & \textbf{87.5} & \textbf{56.07} \\
+        100 & \textbf{92.0} & 89.0 & 83.0 & \textbf{87.0} & \textbf{61.01} \\
+        500 & \textit{OOM} & \textbf{87.0} & \textit{OOM} & \textbf{85.0} & 92.27 \\
+        1,000 & \textit{OOM} & \textbf{87.0} & \textit{OOM} & \textbf{84.0} & 107.68 \\
+        \bottomrule
+    \end{tabular*}
+    \par\medskip
+    % \begin{minipage}{\textwidth}\footnotesize\itshape
+    % OOM denotes CUDA out-of-memory on a 16 GB T4 GPU. Accuracy columns are percentages. Method 2 P95 rises from 84.92 to 148.21 ms; peak PyTorch allocated VRAM varies from 3,277 to 3,283 MiB across the six catalog sizes. SLM batch-normalized latencies at $N=3,10,50,100$ are 1,258.94, 1,604.68, 4,703.39, and 9,318.21 ms, respectively. Method 2 measures synchronized batch-1 P50 with cached tool embeddings. The timing protocols differ, so no direct speedup is calculated.
+    % \end{minipage}
+\end{table*}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig3_stress_test_curves.pdf}
+    \caption{Accuracy and latency as the tool catalog grows from $N=3$ to $N=1{,}000$ under the respective measurement protocols.}
+    \label{fig:stress-test}
+\end{figure*}
+
+\subsubsection{Stress-Test Analysis}
+\textbf{Accuracy.} With nested candidate sets retaining the reference tool, Method 2 ArgA falls from 87.50\% at $N=3$ to 84.00\% at $N=1{,}000$, a decline of 3.50 percentage points. At $N\leq100$, its ArgA is 2.0--4.0 percentage points above the SLM. Non-FC Recall is 95.00\% at $N=1{,}000$.
+
+\textbf{Latency.} For $N\leq100$, Method 2 P50 ranges from 55.05 to 61.01 ms and P95 from 84.74 to 86.46 ms. At $N=1{,}000$, P50 is 107.68 ms, 1.95 times the $N=3$ value. Thus, median latency increases with catalog size while remaining below 108 ms across the evaluated settings.
+
+\textbf{Memory limits.} In this T4 16 GB stress-test configuration, the SLM encounters CUDA OOM for $N\geq500$. This limit applies to the evaluated model and inference configuration. Method 2 continues to run within the available GPU memory at $N=1{,}000$ with approximately 3.21 GiB PyTorch allocated, 87.00\% Tool Acc, and 84.00\% ArgA.
+
+\subsection{Effect of Model Scale}
+\label{sec:model-scale}
+We additionally train \texttt{Qwen3.5-4B} with the same data budgets: 60,000 instances for E3 and 65,600 for E4. The learning rate remains $5\times10^{-7}$, and the effective batch size remains 64. E4 completes 1,025 steps in 2 hours 5 minutes, with a final loss near 0.0103. The comparison evaluates the two checkpoints under matched training-data budgets.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig4_model_scaling.pdf}
+    \caption{Qwen3.5-2B versus Qwen3.5-4B under E3: Core Benchmark accuracy and the decrease in Core VI output-format error rate from 4.66\% to 0.32\%.}
+    \label{fig:model-scaling}
+\end{figure*}
+
+\subsubsection{Model-Scaling Analysis}
+Five observations summarize the scale comparison.
+
+\textbf{Core Benchmark.} Under E3, 4B has a 0.32\% Core VI format-error rate versus 4.66\% for 2B. ArgA increases from 69.76\% to 72.86\% on Core VI and from 73.22\% to 74.71\% on Core EN.
+
+\textbf{Domain shift.} Without CustomTools-VI data (E3), 4B obtains 62.00\% seen and 69.75\% unseen ArgA, compared with 19.38\% and 27.88\% for 2B.
+
+\textbf{CustomTools-VI.} Under E4, 4B records 92.50\% Tool Acc and 86.62\% ArgA on seen, and 96.75\% and 86.75\% on unseen. The unseen-minus-seen ArgA gap is $+0.13$ percentage points.
+
+\textbf{Generalization and specialization.} Adding 5,600 CustomTools-VI training instances in E4 is accompanied by higher CustomTools-VI scores but lower Core VI results: E4 reaches 64.94\% ArgA and 9.75\% syntax errors, versus 72.86\% and 0.32\% for E3. This pattern highlights the importance of evaluating domain adaptation on both the target domain and the original benchmark.
+
+\textbf{Computational cost.} Training takes approximately 50--54 minutes for 2B and 1 hour 55 minutes--2 hours 05 minutes for 4B. Reported Core VI mean latency is approximately 2,432--2,485 ms for 4B versus 864--970 ms for 2B. The additional training and inference costs accompany modest Core ArgA gains under E3.
+
+\section{Discussion and Limitations}
+
+\subsection{Error Analysis}
+\subsubsection{Vietnamese Argument-Extraction Errors}
+Qualitative inspection of incorrect Method 1 E4 and Method 2 predictions suggests three types of argument-extraction error. These categories are illustrative; their prevalence was not measured through a systematic annotation protocol. Multi-call ordering is treated separately as a structural issue.
+
+\textbf{Entity-boundary ambiguity.} Multi-level addresses and complex named entities may be truncated. The Cross-Encoder span head can omit part of an entity, while the SLM may add connectors or change spelling relative to the query.
+
+\textbf{Noncanonical expressions.} Monetary amounts, dates, license plates, and identifiers may require conversion to schema-specific canonical forms. The Value Normalizer covers some common patterns but can still miss values or convert them to the wrong type.
+
+\textbf{Implicit argument assignment.} When an optional value is absent, the generative model may supply a guessed value while the gold label leaves it empty. Method 2's \texttt{has\_value} head may mitigate this error, but its contribution has not been measured separately.
+
+\subsubsection{Bi-Encoder--Cross-Encoder Diagnostics}
+\label{sec:diagnostics}
+We examine oracle retrieval, individual heads, and structural constraints to understand Method 2's decline on unseen tools and Core.
+
+\textbf{Oracle evaluation.} Given the reference tool name, Method 2 ArgA-all rises from 30.26\% to 36.81\% on Core VI, 35.52\% to 42.23\% on Core EN, 85.38\% to 92.00\% on Custom Seen, and 60.25\% to 64.25\% on Custom Unseen. Positive-only unseen ArgA rises from 26.75\% to 28.50\%. The limited improvement on unseen positive queries suggests that argument extraction remains a bottleneck even with reference tool selection. The oracle does not remove the structural constraints on repeated calls described below.
+
+\textbf{Prediction-head performance on the validation set.} The Cross-Encoder achieves \texttt{has\_value} F1 of 97.45\%, span exact match of 96.18\%, and Boolean accuracy of 98.90\%. Enum accuracy is 72.06\%, and overall argument exact match is 65.65\%. These component metrics assess different tasks and should be interpreted alongside the end-to-end results.
+
+\textbf{Structural call constraints.} The Core Benchmark contains 1,171 queries whose reference calls repeat a tool name (e.g., two \texttt{add\_item} calls with different arguments) and 146 queries with more than three calls. Method 2 maps each tool name at most once and imposes $k_{\max}=3$, preventing exact representation of these cases.
+
+\subsection{Limitations}
+\textbf{Single-turn scope.} The study examines single-turn queries that may contain multiple calls; multi-turn state tracking is outside its scope.
+
+\textbf{Tool execution.} Calls are evaluated against reference annotations for schema and argument matching, without executing actual APIs in a sandbox or evaluating their responses.
+
+\textbf{Nonuniform resource measurement.} Reference SLM peak VRAM (approximately 4.8--5.5 GB for 2B and 9.5 GB for 4B) and Method 2 PyTorch peak VRAM in the stress test (approximately 3.21 GiB allocated, 3.77 GiB reserved) are recorded under different environments and profiler definitions. Latency and memory comparisons are descriptive rather than statistically controlled speedup or savings estimates.
+
+\textbf{Attribution of observed differences.} The model-scale experiments compare checkpoints rather than isolating parameter count. Likewise, E4 adds both positive and negative in-domain examples, so its gains cannot be attributed to negative examples alone. The stress test does not isolate the memory costs of attention, the KV cache, or individual inference kernels.
+
+\textbf{Statistical uncertainty.} Tables report point estimates from one run without confidence intervals or multiple seeds. Small differences are therefore interpreted only for the evaluated test sets.
+
+\section{Conclusion}
+We construct two benchmarks and compare an end-to-end SLM with a Bi-Encoder--Cross-Encoder architecture for Vietnamese tool calling. On CustomTools-VI, Qwen3.5-2B E4 reaches 87.00\% ArgA on seen and 86.38\% on unseen tools; Qwen3.5-4B E4 reaches 86.62\% and 86.75\%, respectively. In the stress test, Method 2 records 84.00\% ArgA, 107.68 ms P50, and approximately 3.21 GiB PyTorch allocated VRAM at $N=1{,}000$, while the SLM encounters CUDA OOM from $N\geq500$ on a 16 GB T4. Together, the results support choosing the architecture according to the expected frequency of unseen tools, catalog size, and available computational resources.
+
+Future work should repeat experiments with multiple random seeds, report confidence intervals, align resource-measurement protocols across methods, and extend evaluation to multi-turn conversations with actual tool execution. A hybrid system using the Bi-Encoder to narrow the schemas supplied to an SLM should also be tested under a common protocol for accuracy, latency, and memory.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}

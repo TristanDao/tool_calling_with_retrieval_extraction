@@ -120,6 +120,7 @@ Dù đã nỗ lực hết mình để hoàn thành đề tài một cách chỉn
 - [DANH MỤC BẢNG BIỂU](#danh-mục-bảng-biểu)
 - [DANH MỤC TỪ VIẾT TẮT](#danh-mục-từ-viết-tắt)
 - [TÓM TẮT KHÓA LUẬN](#tóm-tắt-khóa-luận)
+- [ABSTRACT](#abstract)
 - [MỞ ĐẦU](#mở-đầu)
 - [Chương 1. TỔNG QUAN VỀ ĐỀ TÀI](#chương-1-tổng-quan-về-đề-tài)
   - [1.1. Mô tả đề tài và tính cấp thiết của nghiên cứu](#11-mô-tả-đề-tài-và-tính-cấp-thiết-của-nghiên-cứu)
@@ -247,17 +248,35 @@ Dù đã nỗ lực hết mình để hoàn thành đề tài một cách chỉn
 
 ## TÓM TẮT KHÓA LUẬN
 
-Gọi công cụ (tool calling / function calling) cho phép mô hình ngôn ngữ tương tác với API, cơ sở dữ liệu và công cụ tính toán. Khi triển khai tại Việt Nam, các giải pháp thương mại đám mây cần được cân nhắc về chi phí, độ trễ, bảo vệ dữ liệu và khả năng tạo đầu ra phù hợp với schema. Độ trễ SLM trong khóa luận thay đổi theo mô hình và điều kiện đánh giá; do đó, các phép so sánh phải gắn với protocol đo cụ thể.
+Gọi công cụ (tool calling / function calling) cho phép mô hình ngôn ngữ tương tác với API, cơ sở dữ liệu và các công cụ tính toán. Tuy nhiên, khi triển khai tại Việt Nam, các giải pháp thương mại đám mây cần cân nhắc về chi phí, độ trễ, bảo vệ dữ liệu và khả năng tạo đầu ra phù hợp với Tool Schema. Khóa luận tập trung nghiên cứu bài toán gọi công cụ tiếng Việt dựa trên truy hồi ngữ nghĩa và trích xuất tham số, đồng thời so sánh có hệ thống hai hướng tiếp cận.
 
-Trước bối cảnh đó, khóa luận tập trung nghiên cứu bài toán gọi công cụ tiếng Việt dựa trên truy hồi ngữ nghĩa và trích xuất tham số theo Tool Schema, đồng thời tiến hành so sánh đối đầu có hệ thống giữa hai trường phái kỹ thuật. Phương pháp 1 là mô hình ngôn ngữ nhỏ End-to-End, trong đó `Qwen3.5-2B` và `Qwen3.5-4B` được tinh chỉnh bằng QLoRA trên biểu diễn hội thoại có cấu trúc. Phương pháp 2 là kiến trúc phân tách phi tự hồi quy, kết hợp Bi-Encoder `BAAI/bge-m3` để xếp hạng các công cụ ứng viên với Cross-Encoder `xlm-roberta-base` có các đầu phân cấp để trích xuất tham số; bộ chuẩn hóa giá trị tiếng Việt được sử dụng ở bước hậu xử lý để ánh xạ các cách diễn đạt tự nhiên về kiểu dữ liệu trong schema.
+Phương pháp 1 sử dụng mô hình ngôn ngữ nhỏ End-to-End, gồm Qwen3.5-2B và Qwen3.5-4B được tinh chỉnh bằng QLoRA trên dữ liệu hội thoại có cấu trúc. Phương pháp 2 sử dụng kiến trúc phi tự hồi quy, kết hợp Bi-Encoder BAAI/bge-m3 để xếp hạng công cụ ứng viên và Cross-Encoder xlm-roberta-base để trích xuất tham số, cùng bộ chuẩn hóa giá trị tiếng Việt ở bước hậu xử lý.
 
-Để bảo đảm phép đối sánh giữa hai phương pháp, nghiên cứu xây dựng `Canonical Core Benchmark` gồm 77,028 cặp bản ghi song ngữ trên 4,421 công cụ và `CustomTools-VI` gồm 8,000 mẫu nghiệp vụ đời sống Việt Nam thuộc 40 công cụ. Bộ dữ liệu thứ hai có 3,200 mẫu âm tính (40%) trên toàn bộ 8,000 mẫu. Riêng mỗi tập kiểm thử `test_seen` và `test_unseen` được cân bằng 50% mẫu âm tính để đo cả khả năng gọi đúng và khả năng từ chối gọi công cụ.
+Nghiên cứu xây dựng Canonical Core Benchmark gồm 77,028 cặp bản ghi song ngữ trên 4,421 công cụ và CustomTools-VI gồm 8,000 mẫu nghiệp vụ tiếng Việt thuộc 40 công cụ, trong đó 40% là mẫu âm tính. Kết quả cho thấy Qwen3.5-4B E4 đạt ArgA 86.62% trên test_seen và 86.75% trên test_unseen, cao hơn GPT-5.6 Luna lần lượt 8.37 và 7.25 điểm phần trăm trong protocol CustomTools-VI. E4 cũng đạt Non-FC Recall 100.0% trên cả hai tập kiểm thử sau khi bổ sung dữ liệu bản địa.
 
-Các kết quả thực nghiệm cho thấy Qwen3.5-4B E4 đạt ArgA 86.62% trên tập seen và 86.75% trên tập unseen, cao hơn GPT-5.6 Luna lần lượt 8.37 và 7.25 điểm phần trăm trong protocol CustomTools-VI. Cấu hình E3 ghi nhận Non-FC Recall 2.0%–3.0%; E4 đạt 100.0% trên hai tập kiểm thử sau khi bổ sung dữ liệu bản địa. Kết quả phản ánh các cấu hình và lần chạy được khảo sát, chưa xác định riêng tác động của mẫu âm tính.
+Trong stress test, Method 2 đạt P50 từ 55.05–61.01 ms ở dải $N \le 100$ và tiếp tục hoạt động tại $N=1000$ với ArgA 84.00% và P50 107.68 ms, trong khi SLM phát sinh CUDA Out of Memory tại $N \ge 500$ trên GPU 16GB. Các số đo độ trễ được thực hiện theo protocol riêng của từng pipeline và không được sử dụng để quy đổi trực tiếp thành hệ số tăng tốc.
 
-Trong stress test, Method 2 ghi nhận P50 từ 55.05 đến 61.01 ms ở dải $N \le 100$, PyTorch allocated VRAM xấp xỉ 3.21 GiB và Syntax Error 0.00% theo định nghĩa structured-output. Các số đo độ trễ được thu thập theo quy cách riêng (đơn truy vấn ở Method 2 và xử lý theo batch ở SLM), nên chỉ phản ánh đặc tính vận hành của từng pipeline mà không quy đổi thành hệ số tăng tốc trực tiếp. Khi danh mục mở rộng từ $N=3$ đến $N=1000$, SLM phát sinh CUDA Out of Memory tại $N \ge 500$ trên GPU 16GB trong bài stress test, trong khi Method 2 tiếp tục đạt ArgA 84.00% và P50 107.68 ms ở $N=1000$.
+Kết quả cung cấp cơ sở đối chiếu về độ chính xác, khả năng từ chối, độ trễ và tài nguyên tính toán, hỗ trợ lựa chọn kiến trúc gọi công cụ tiếng Việt theo miền dữ liệu, quy mô danh mục API và điều kiện hạ tầng.
 
-Công trình cung cấp một bức tranh đối chiếu giữa độ chính xác, khả năng từ chối, độ trễ và tài nguyên tính toán trong các protocol đã thực hiện. Kết quả có thể được sử dụng như cơ sở tham khảo khi lựa chọn kiến trúc gọi công cụ tiếng Việt theo miền dữ liệu, quy mô danh mục API và điều kiện hạ tầng cụ thể.
+**Từ khóa:** Gọi công cụ, Mô hình ngôn ngữ nhỏ, Truy hồi ngữ nghĩa, Trích xuất tham số, Bi-Encoder, Cross-Encoder, Xử lý ngôn ngữ tự nhiên tiếng Việt.
+
+---
+
+<div style="page-break-after: always;"></div>
+
+## ABSTRACT
+
+Tool calling (or function calling) enables language models to interact with APIs, databases, and computational utilities. However, when deploying in Vietnamese operational environments, commercial cloud-based solutions entail practical considerations regarding inference cost, latency, data privacy, and strict adherence to Tool Schemas. This thesis investigates Vietnamese tool calling using semantic retrieval and schema-aware parameter extraction, while systematically comparing two technical paradigms.
+
+Method 1 adopts an end-to-end Small Language Model approach, utilizing Qwen3.5-2B and Qwen3.5-4B fine-tuned via QLoRA on structured conversational data. Method 2 employs a non-autoregressive architecture, combining a BAAI/bge-m3 Bi-Encoder for candidate tool ranking with an xlm-roberta-base Cross-Encoder for parameter extraction, supplemented by a post-processing Vietnamese Value Normalizer.
+
+The study constructs the Canonical Core Benchmark, consisting of 77,028 bilingual paired instances across 4,421 tools, and CustomTools-VI, comprising 8,000 Vietnamese domain-specific queries across 40 tools, with 40% negative samples. Empirical results show that Qwen3.5-4B E4 achieves an Argument Accuracy (ArgA) of 86.62% on test_seen and 86.75% on test_unseen, surpassing GPT-5.6 Luna by 8.37 and 7.25 percentage points, respectively, under the CustomTools-VI protocol. E4 also achieves 100.0% Non-FC Recall on both test splits after incorporating localized in-domain data.
+
+In stress testing, Method 2 achieves a P50 latency of 55.05–61.01 ms across the $N \le 100$ regime and remains operational at $N=1000$ with 84.00% ArgA and 107.68 ms P50 latency, whereas the SLM encounters CUDA Out of Memory errors at $N \ge 500$ on a 16 GB GPU. Latency metrics were recorded under each pipeline's respective protocol and are not directly converted into speedup factors.
+
+The findings provide a comparative foundation regarding accuracy, tool abstention, latency, and computational resources, supporting architectural decision-making for Vietnamese tool calling based on domain requirements, API catalog scales, and infrastructure constraints.
+
+**Keywords:** Tool Calling, Small Language Models, Semantic Retrieval, Parameter Extraction, Bi-Encoder, Cross-Encoder, Vietnamese NLP.
 
 ---
 
